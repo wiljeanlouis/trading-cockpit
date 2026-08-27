@@ -1,0 +1,17 @@
+.git/**
+node_modules/**
+coverage/**
+docs/**
+scripts/**
+tests/**
+package.json
+package-lock.json
+tsconfig.json
+tsconfig.test.json
+eslint.config.mjs
+vitest.config.ts
+.prettierrc.json
+.prettierignore
+.clasp.json
+.claspignore
+.gitignore

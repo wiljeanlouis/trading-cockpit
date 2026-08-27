@@ -1,0 +1,30 @@
+{
+  "name": "trading-cockpit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Google Apps Script trading cockpit",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.test.json",
+    "lint": "eslint .",
+    "format": "prettier --write . --ignore-unknown",
+    "format:check": "prettier --check . --ignore-unknown",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check:apps-script": "node scripts/check-apps-script.mjs",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run test && npm run check:apps-script"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/google-apps-script": "^2.0.12",
+    "@types/node": "^26.4.0",
+    "eslint": "^10.9.1",
+    "prettier": "^3.9.6",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.68.0",
+    "vitest": "^4.1.11"
+  }
+}

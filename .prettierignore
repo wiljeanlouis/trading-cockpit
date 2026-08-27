@@ -1,0 +1,5 @@
+node_modules/
+coverage/
+/*.js
+.clasp.json
+appsscript.json
