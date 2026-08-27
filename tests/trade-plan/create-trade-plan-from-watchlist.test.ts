@@ -84,6 +84,7 @@ function createDependencies(options?: {
       }
     },
     tradePlanRepository: {
+      findById: () => null,
       findActiveByWatchlistId: () => {
         calls.push('tradePlan.find');
         return options?.existingTradePlan ?? null;
@@ -91,7 +92,8 @@ function createDependencies(options?: {
       save: (tradePlan) => {
         calls.push('tradePlan.save');
         saved = tradePlan;
-      }
+      },
+      updateStatus: () => undefined
     },
     strategyRepository: {
       existsById: () => {

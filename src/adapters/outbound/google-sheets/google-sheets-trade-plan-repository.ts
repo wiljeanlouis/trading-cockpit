@@ -11,6 +11,28 @@ export class GoogleSheetsTradePlanRepository implements TradePlanRepository {
   private sheet: GoogleAppsScript.Spreadsheet.Sheet | null = null;
   private schemaValidated = false;
 
+  findById(id: string): TradePlan | null {
+    const sheet = this.getValidatedSheet();
+    const lastRow = sheet.getLastRow();
+
+    if (lastRow <= 1) {
+      return null;
+    }
+
+    const headers = this.getHeaders(sheet);
+    const idIndex = this.requireColumn(headers, 'Trade Plan ID');
+    const rows: unknown[][] = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+    const normalizedId = String(id || '').trim();
+
+    for (const row of rows) {
+      if (String(row[idIndex] || '').trim() === normalizedId) {
+        return tradePlanFromRow(headers, row);
+      }
+    }
+
+    return null;
+  }
+
   findActiveByWatchlistId(watchlistId: string): TradePlan | null {
     const sheet = this.getValidatedSheet();
     const lastRow = sheet.getLastRow();
@@ -49,6 +71,48 @@ export class GoogleSheetsTradePlanRepository implements TradePlanRepository {
 
     addTradePlanFormulas(sheet, insertedRow);
     formatTradePlanRow(sheet, insertedRow);
+  }
+
+  updateStatus(id: string, status: string): void {
+    const sheet = this.getValidatedSheet();
+    const lastRow = sheet.getLastRow();
+
+    if (lastRow <= 1) {
+      throw new Error(`Trade Plan ID introuvable : ${id}`);
+    }
+
+    const headers = this.getHeaders(sheet);
+    const idIndex = this.requireColumn(headers, 'Trade Plan ID');
+    const statusIndex = this.requireColumn(headers, 'Status');
+    const rows: unknown[][] = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+    const normalizedId = String(id || '').trim();
+
+    for (let index = 0; index < rows.length; index += 1) {
+      if (String(rows[index][idIndex] || '').trim() === normalizedId) {
+        sheet.getRange(index + 2, statusIndex + 1).setValue(status);
+        return;
+      }
+    }
+
+    throw new Error(`Trade Plan ID introuvable : ${id}`);
+  }
+
+  private getHeaders(sheet: GoogleAppsScript.Spreadsheet.Sheet): string[] {
+    return sheet
+      .getRange(1, 1, 1, sheet.getLastColumn())
+      .getValues()[0]
+      .map((value) => String(value).trim());
+  }
+
+  private requireColumn(headers: string[], name: string): number {
+    const expected = name.trim().toLowerCase();
+    const index = headers.findIndex((header) => header.trim().toLowerCase() === expected);
+
+    if (index === -1) {
+      throw new Error(`Colonne absente : ${name}`);
+    }
+
+    return index;
   }
 
   private getValidatedSheet(): GoogleAppsScript.Spreadsheet.Sheet {

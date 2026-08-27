@@ -4,8 +4,8 @@
 
 Trading Cockpit is in a progressive migration from a global Google Apps Script application to a
 modular TypeScript application. Both forms run together in the same Apps Script project. Legacy
-root-level JavaScript continues to own all workflows except the migrated Watchlist add-candidate
-and Create Trade Plan slices.
+root-level JavaScript continues to own all workflows except the migrated Watchlist add-candidate,
+Create Trade Plan, and Open Position slices.
 
 ```text
 Google Sheets menu
@@ -125,6 +125,57 @@ The mutation order remains Trade Plan append/formulas/format, then Watchlist sta
 Trade Plan theme. If the Watchlist update fails after append, a DRAFT plan can exist while the
 Watchlist is not `PLANNED`. Workflow reconciliation is the current recovery mechanism; no simulated
 transaction has been introduced.
+
+## Open Position flow
+
+```text
+Trade Plan selection
+       |
+       v
+Inbound Google Sheets adapter
+       |
+       v
+Open Position use case
+       |
+       +----> Position domain
+       +----> StrategyRepository
+       +----> PositionRepository
+       +----> TradePlanRepository -> EXECUTED
+       +----> WatchlistRepository -> ENTERED
+       +----> RuntimePort
+                          |
+                          v
+                 Google Sheets adapters
+```
+
+The plan preserves intent; Position preserves execution. Planned Entry and Planned Quantity are
+copied unchanged, while Actual Entry and Actual Quantity are separate fields produced by the
+legacy's numeric conversion of those planned values. They are equal at opening today but are not
+the same domain concept. Similarly, Trade Plan Created At and Position Opened At remain distinct.
+
+Only `DRAFT` and `READY` plans are executable. The new Position status is `OPEN`; the observed
+lifecycle also contains `CLOSED`, `STOPPED`, and `TARGET HIT`. One `OPEN` Position per Trade Plan ID
+provides duplicate protection. A normal second click sees the plan already `EXECUTED`; a retry after
+a partial failure before that transition instead sees the existing `OPEN` Position.
+
+The mutation order remains Position append/formulas/format, Trade Plan `EXECUTED`, Watchlist
+`ENTERED`, then Position theme. A failure can therefore leave an open Position with a non-executed
+plan, or an executed plan with a non-entered Watchlist. The existing workflow reconciliation can
+repair Watchlist state, but no transaction manager is introduced.
+
+Position uses no TradingConfigurationPort and does not update capital. A future account/exposure
+domain may consume actual entry and quantity, but it is intentionally outside this slice.
+
+Current Price remains an external `GOOGLEFINANCE` persistence formula. Unrealized P&L and
+Unrealized P&L % are derived business formulas with pure TypeScript equivalents and parity tests;
+their Sheet formulas remain in place under ADR 0004. See the complete
+[Position schema](position-schema.md).
+
+## Architecture POC retirement
+
+The greeting-based `src/poc` demonstration and its tests were removed after three real Cockpit
+slices validated the modular runtime. No build, runtime, or architectural check depended on them.
+The bundle smoke test still asserts that the obsolete `runArchitecturePoc` global is absent.
 
 ## Migration rule
 

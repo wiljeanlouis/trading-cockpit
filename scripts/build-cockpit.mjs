@@ -4,6 +4,7 @@ import { build } from 'esbuild';
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 
+// Prevent an obsolete local POC artifact from ever being included by clasp.
 await rm(new URL('../build/ArchitecturePoc.js', import.meta.url), { force: true });
 
 await build({
@@ -30,6 +31,10 @@ await build({
       '',
       'function createTradePlanFromSelectedWatchlist() {',
       '  return CockpitBundle.createTradePlanFromSelectedWatchlist();',
+      '}',
+      '',
+      'function executeSelectedTradePlan() {',
+      '  return CockpitBundle.executeSelectedTradePlan();',
       '}'
     ].join('\n')
   }

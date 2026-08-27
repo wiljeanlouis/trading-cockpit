@@ -56,6 +56,7 @@ entrypoints/apps-script.ts
   -> composition/cockpit.ts
        -> adapters/inbound/google-sheets/add-selected-to-watchlist.ts
        -> adapters/inbound/google-sheets/create-trade-plan-from-selected-watchlist.ts
+       -> adapters/inbound/google-sheets/execute-selected-trade-plan.ts
        -> adapters/outbound/apps-script/apps-script-runtime.ts
        -> adapters/outbound/google-sheets/google-sheets-strategy-repository.ts
        -> adapters/outbound/google-sheets/google-sheets-watchlist-repository.ts
@@ -63,6 +64,8 @@ entrypoints/apps-script.ts
        -> adapters/outbound/google-sheets/google-sheets-trade-plan-repository.ts
             -> adapters/outbound/google-sheets/trade-plan-mapper.ts
        -> adapters/outbound/google-sheets/google-sheets-trading-configuration.ts
+       -> adapters/outbound/google-sheets/google-sheets-position-repository.ts
+            -> adapters/outbound/google-sheets/position-mapper.ts
        -> core/application/watchlist/add-candidate-to-watchlist.ts
             -> core/domain/watchlist.ts
             -> ports/outbound/runtime-port.ts
@@ -72,6 +75,9 @@ entrypoints/apps-script.ts
             -> core/domain/trade-plan.ts
             -> ports/outbound/trade-plan-repository.ts
             -> ports/outbound/trading-configuration-port.ts
+       -> core/application/position/open-position-from-trade-plan.ts
+            -> core/domain/position.ts
+            -> ports/outbound/position-repository.ts
 ```
 
 Ports are interfaces and are erased from the runtime. The use case depends only on these
@@ -92,6 +98,10 @@ function addSelectedToWatchlist() {
 function createTradePlanFromSelectedWatchlist() {
   return CockpitBundle.createTradePlanFromSelectedWatchlist();
 }
+
+function executeSelectedTradePlan() {
+  return CockpitBundle.executeSelectedTradePlan();
+}
 ```
 
 This wrapper is the pattern for migrated menus and triggers: modular implementation inside the
@@ -106,7 +116,7 @@ The bundle smoke test separately verifies that:
 
 - the output is valid JavaScript;
 - no static import or export statement remains;
-- `CockpitBundle` and both migrated menu wrappers exist globally;
+- `CockpitBundle` and all three migrated menu wrappers exist globally;
 - the generated wrappers delegate to their bundled entrypoints.
 
 The lightweight architecture check rejects Apps Script globals in core and port modules and rejects
@@ -142,10 +152,10 @@ error-reporting workflow maps generated stack traces back to TypeScript.
 
 ## Future migration
 
-The Watchlist add-candidate and Create Trade Plan workflows are migrated under `core/`, `ports/`,
-and `adapters/`. The other workflows remain legacy JavaScript and must be migrated independently
-behind characterization tests. MomentumScore also remains on its existing root-level `tsc` pipeline
-until a separate migration explicitly replaces it.
+The Watchlist add-candidate, Create Trade Plan, and Open Position workflows are migrated under
+`core/`, `ports/`, and `adapters/`. The other workflows remain legacy JavaScript and must be migrated
+independently behind characterization tests. MomentumScore also remains on its existing root-level
+`tsc` pipeline until a separate migration explicitly replaces it.
 
 Each future slice should keep its stable Apps Script menu or trigger wrapper, introduce only the
 ports required by its use case, and preserve spreadsheet schemas and observable behavior during the

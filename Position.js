@@ -37,7 +37,12 @@
  *
  * Crée une position à partir du Trade Plan sélectionné.
  */
-function executeSelectedTradePlan() {
+/*
+ * Cutover Phase 6 : le menu utilise désormais le wrapper global
+ * executeSelectedTradePlan généré dans build/Cockpit.js.
+ * Cette implémentation est conservée temporairement pour rollback.
+ */
+function legacyExecuteSelectedTradePlan_() {
   const ss =
     SpreadsheetApp.getActiveSpreadsheet();
 

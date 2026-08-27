@@ -1,8 +1,4 @@
-import type {
-  TradePlan,
-  TradePlanCalculationValue,
-  TradePlanSnapshotValue
-} from '../../../core/domain/trade-plan';
+import type { TradePlan, TradePlanSnapshotValue } from '../../../core/domain/trade-plan';
 
 export const TRADE_PLAN_HEADERS = [
   'Trade Plan ID',
@@ -73,10 +69,6 @@ function numberValue(value: unknown): number {
   return Number(value);
 }
 
-function calculationValue(value: unknown): TradePlanCalculationValue {
-  return typeof value === 'number' && Number.isFinite(value) ? value : null;
-}
-
 export function tradePlanFromRow(headers: string[], row: unknown[]): TradePlan {
   return {
     id: textValue(valueByHeader(headers, row, 'Trade Plan ID')),
@@ -98,14 +90,14 @@ export function tradePlanFromRow(headers: string[], row: unknown[]): TradePlan {
     entryPrice: snapshotValue(valueByHeader(headers, row, 'Entry Price')),
     stopPrice: snapshotValue(valueByHeader(headers, row, 'Stop Price')),
     targetPrice: snapshotValue(valueByHeader(headers, row, 'Target Price')),
-    riskPerShare: calculationValue(valueByHeader(headers, row, 'Risk / Share')),
-    rewardPerShare: calculationValue(valueByHeader(headers, row, 'Reward / Share')),
-    riskReward: calculationValue(valueByHeader(headers, row, 'Risk : Reward')),
+    riskPerShare: snapshotValue(valueByHeader(headers, row, 'Risk / Share')),
+    rewardPerShare: snapshotValue(valueByHeader(headers, row, 'Reward / Share')),
+    riskReward: snapshotValue(valueByHeader(headers, row, 'Risk : Reward')),
     accountEquity: numberValue(valueByHeader(headers, row, 'Account Equity')),
     riskPercent: numberValue(valueByHeader(headers, row, 'Risk %')),
-    maxRisk: calculationValue(valueByHeader(headers, row, 'Max Risk $')),
-    positionSize: calculationValue(valueByHeader(headers, row, 'Position Size')),
-    positionValue: calculationValue(valueByHeader(headers, row, 'Position Value')),
+    maxRisk: snapshotValue(valueByHeader(headers, row, 'Max Risk $')),
+    positionSize: snapshotValue(valueByHeader(headers, row, 'Position Size')),
+    positionValue: snapshotValue(valueByHeader(headers, row, 'Position Value')),
     status: textValue(valueByHeader(headers, row, 'Status')),
     notes: textValue(valueByHeader(headers, row, 'Notes'))
   };

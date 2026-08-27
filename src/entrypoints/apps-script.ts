@@ -1,6 +1,7 @@
 import {
   runAddSelectedToWatchlist,
-  runCreateTradePlanFromSelectedWatchlist
+  runCreateTradePlanFromSelectedWatchlist,
+  runExecuteSelectedTradePlan
 } from '../composition/cockpit';
 
 export function addSelectedToWatchlist(): void {
@@ -9,4 +10,8 @@ export function addSelectedToWatchlist(): void {
 
 export function createTradePlanFromSelectedWatchlist(): void {
   runCreateTradePlanFromSelectedWatchlist();
+}
+
+export function executeSelectedTradePlan(): void {
+  runExecuteSelectedTradePlan();
 }

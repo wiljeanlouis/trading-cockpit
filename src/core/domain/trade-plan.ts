@@ -53,14 +53,14 @@ export interface TradePlan {
   entryPrice: TradePlanSnapshotValue;
   stopPrice: TradePlanSnapshotValue;
   targetPrice: TradePlanSnapshotValue;
-  riskPerShare: TradePlanCalculationValue;
-  rewardPerShare: TradePlanCalculationValue;
-  riskReward: TradePlanCalculationValue;
+  riskPerShare: TradePlanSnapshotValue;
+  rewardPerShare: TradePlanSnapshotValue;
+  riskReward: TradePlanSnapshotValue;
   accountEquity: number;
   riskPercent: number;
-  maxRisk: TradePlanCalculationValue;
-  positionSize: TradePlanCalculationValue;
-  positionValue: TradePlanCalculationValue;
+  maxRisk: TradePlanSnapshotValue;
+  positionSize: TradePlanSnapshotValue;
+  positionValue: TradePlanSnapshotValue;
   status: string;
   notes: string;
 }
