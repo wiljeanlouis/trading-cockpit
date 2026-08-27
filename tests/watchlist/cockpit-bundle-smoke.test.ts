@@ -14,7 +14,7 @@ describe('Cockpit Apps Script bundle', () => {
     expect(() => new Script(bundleSource, { filename: 'Cockpit.js' })).not.toThrow();
   });
 
-  it('exposes exactly the migrated Watchlist, Trade Plan, and Position global entrypoints', () => {
+  it('exposes exactly the migrated Watchlist, Trade Plan, Open and Close Position entrypoints', () => {
     const context = createContext({});
 
     new Script(bundleSource, { filename: 'Cockpit.js' }).runInContext(context);
@@ -22,9 +22,11 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.CockpitBundle?.addSelectedToWatchlist).toBeTypeOf('function');
     expect(context.CockpitBundle?.createTradePlanFromSelectedWatchlist).toBeTypeOf('function');
     expect(context.CockpitBundle?.executeSelectedTradePlan).toBeTypeOf('function');
+    expect(context.CockpitBundle?.closeSelectedPosition).toBeTypeOf('function');
     expect(context.addSelectedToWatchlist).toBeTypeOf('function');
     expect(context.createTradePlanFromSelectedWatchlist).toBeTypeOf('function');
     expect(context.executeSelectedTradePlan).toBeTypeOf('function');
+    expect(context.closeSelectedPosition).toBeTypeOf('function');
     expect(context.runArchitecturePoc).toBeUndefined();
   });
 });

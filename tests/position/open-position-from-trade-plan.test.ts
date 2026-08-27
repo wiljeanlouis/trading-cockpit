@@ -77,6 +77,7 @@ function createDependencies(options?: {
 
   const dependencies: OpenPositionFromTradePlanDependencies = {
     positionRepository: {
+      findById: () => null,
       findOpenByTradePlanId: () => {
         calls.push('position.find');
         return options?.existingPosition ?? null;
@@ -84,7 +85,8 @@ function createDependencies(options?: {
       save: (position) => {
         calls.push('position.save');
         saved = position;
-      }
+      },
+      close: () => undefined
     },
     tradePlanRepository: {
       findById: (id) => {

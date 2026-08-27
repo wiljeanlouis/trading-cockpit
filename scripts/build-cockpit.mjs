@@ -35,6 +35,10 @@ await build({
       '',
       'function executeSelectedTradePlan() {',
       '  return CockpitBundle.executeSelectedTradePlan();',
+      '}',
+      '',
+      'function closeSelectedPosition() {',
+      '  return CockpitBundle.closeSelectedPosition();',
       '}'
     ].join('\n')
   }

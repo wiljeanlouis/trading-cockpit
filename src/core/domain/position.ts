@@ -8,6 +8,8 @@ export type PositionRatioCalculationValue = PositionCalculationValue | 'DIVISION
 export const INITIAL_POSITION_STATUS = 'OPEN' as const;
 export const EXECUTABLE_TRADE_PLAN_STATUSES = ['DRAFT', 'READY'] as const;
 export const POSITION_STATUSES = ['OPEN', 'CLOSED', 'STOPPED', 'TARGET HIT'] as const;
+export const CLOSED_POSITION_STATUS = 'CLOSED' as const;
+export const TERMINAL_POSITION_STATUSES = ['CLOSED', 'STOPPED', 'TARGET HIT'] as const;
 
 export interface NormalizedPositionSource {
   tradePlanId: string;
@@ -86,6 +88,28 @@ export function isOpenPositionStatus(status: string): boolean {
       .trim()
       .toUpperCase() === INITIAL_POSITION_STATUS
   );
+}
+
+export function calculateRealizedPnl(
+  exitPrice: number,
+  actualEntry: number,
+  actualQuantity: number
+): number {
+  return (exitPrice - actualEntry) * actualQuantity;
+}
+
+export function closePosition(position: Position, exitPrice: number, closedAt: Date): Position {
+  if (!isOpenPositionStatus(position.status)) {
+    throw new Error(`${position.ticker} n'est pas une position OPEN.`);
+  }
+
+  return {
+    ...position,
+    closedAt,
+    exitPrice,
+    realizedPnl: calculateRealizedPnl(exitPrice, position.actualEntry, position.actualQuantity),
+    status: CLOSED_POSITION_STATUS
+  };
 }
 
 export function normalizePositionSource(tradePlan: TradePlan): NormalizedPositionSource {

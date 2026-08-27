@@ -5,7 +5,7 @@
 Trading Cockpit is in a progressive migration from a global Google Apps Script application to a
 modular TypeScript application. Both forms run together in the same Apps Script project. Legacy
 root-level JavaScript continues to own all workflows except the migrated Watchlist add-candidate,
-Create Trade Plan, and Open Position slices.
+Create Trade Plan, Open Position, and Close Position to Journal slices.
 
 ```text
 Google Sheets menu
@@ -33,8 +33,8 @@ build/Cockpit.js
 
 ## Layer responsibilities
 
-- `src/core/domain` contains Watchlist and Trade Plan business values, validations, identities,
-  defaults, statuses, and risk calculations.
+- `src/core/domain` contains Watchlist, Trade Plan, Position, and Journal Entry business values,
+  validations, identities, lifecycle transitions, and calculations.
 - `src/core/application` orchestrates the add-candidate and Create Trade Plan use cases without
   knowing Google Sheets or Apps Script APIs.
 - `src/ports/outbound` declares the minimum capabilities the use cases need: strategy existence,
@@ -50,9 +50,9 @@ build/Cockpit.js
 ## Build and runtime boundary
 
 `npm run build:cockpit` bundles TypeScript modules into the Apps Script-compatible IIFE
-`build/Cockpit.js`. The build appends stable global functions for `addSelectedToWatchlist` and
-`createTradePlanFromSelectedWatchlist`. The Sheets menu therefore keeps its existing function names
-while implementations change behind them.
+`build/Cockpit.js`. The build appends stable global functions for the four migrated menu actions,
+including `closeSelectedPosition`. The Sheets menu therefore keeps its existing function names while
+implementations change behind them.
 
 The old implementation remains temporarily in `Watchlist.js` as
 `legacyAddSelectedToWatchlist_`. It is not the active menu target and exists only as a rollback aid
@@ -170,6 +170,49 @@ Current Price remains an external `GOOGLEFINANCE` persistence formula. Unrealize
 Unrealized P&L % are derived business formulas with pure TypeScript equivalents and parity tests;
 their Sheet formulas remain in place under ADR 0004. See the complete
 [Position schema](position-schema.md).
+
+## Close Position to Journal flow
+
+```text
+Position OPEN selection + Exit Price prompt
+                 |
+                 v
+          Close Position use case
+                 |
+                 +----> PositionRepository -> CLOSED, Closed At, Exit Price, Realized P&L
+                 +----> JournalRepository -> one result snapshot per Position ID
+                 +----> WatchlistRepository -> CLOSED
+                 +----> RuntimePort -> Closed At, then Journal ID when required
+                                      |
+                                      v
+                             Google Sheets adapters
+                                      |
+                                      v
+                             Analytics (still legacy)
+```
+
+Only `OPEN` is closeable through this action, and it always transitions to `CLOSED`. The existing
+`STOPPED` and `TARGET HIT` dropdown values are terminal states but are not selected by the close
+workflow. Exit Reason remains a later user annotation in Journal and is not inferred from Position
+status, Current Stop, or Target.
+
+The mutation order remains four Position cell writes, Journal duplicate lookup and optional append,
+Watchlist `CLOSED`, then Position theme and toast. Trade Plan, Analytics, Dashboard, Cockpit Config,
+and account capital are not mutated. Journal creation preserves the historical 26-column snapshot,
+including empty annotation fields. Return %, R-Multiple, and Outcome have pure Core equivalents, but
+the adapter keeps installing the historical T/U/V formulas under ADR 0004. See
+[Journal schema](journal-schema.md).
+
+There is no cross-sheet transaction. A Position-write failure stops the flow; a Journal failure can
+leave a terminal Position without a Journal; a Watchlist failure can leave Position and Journal
+complete while Watchlist remains stale. Duplicate lookup prevents a second Journal when one already
+exists, but a normal retry cannot repair a terminal Position because non-`OPEN` status is rejected to
+preserve legacy behavior. These states can be detected later by Position ID and Watchlist ID and are
+candidates for a future reconciliation command.
+
+The old close implementation remains in `Position.js` as `legacyCloseSelectedPosition_` for rollback.
+The remaining Position helpers and all Journal sheet/formula/formatting helpers stay legacy and are
+used by the new outbound adapters.
 
 ## Architecture POC retirement
 

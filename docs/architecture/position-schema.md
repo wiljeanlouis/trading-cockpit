@@ -38,3 +38,12 @@ persist them.
 The Unrealized P&L % formula does not guard an Actual Entry of zero and therefore produces a Sheets
 division error. The Core parity function represents this explicitly as `DIVISION_BY_ZERO`; it does
 not silently normalize the legacy edge case.
+
+## Close transition
+
+The close action accepts only an `OPEN` row and always writes the terminal status `CLOSED`. It writes
+V Closed At, W Exit Price, X Realized P&L, then U Status, in that exact order. Realized P&L is
+`(Exit Price - Actual Entry) * Actual Quantity` with JavaScript number semantics and no rounding.
+Current Stop, Target, Trade Plan, and the other Position columns are not changed. Invalid manually
+edited Actual Entry or Actual Quantity values therefore retain the legacy possibility of producing
+`NaN`; this migration intentionally adds no domain hardening.

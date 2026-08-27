@@ -1,0 +1,29 @@
+import type { Position } from '../../src/core/domain/position';
+
+export const openPosition: Position = {
+  id: 'P-1',
+  tradePlanId: 'TP-1',
+  watchlistId: 'WL-1',
+  strategyId: 'S-1',
+  strategyName: 'Momentum',
+  strategyVersion: 'V1',
+  ticker: 'URNB',
+  openedAt: new Date('2026-08-27T13:00:00Z'),
+  plannedEntry: 10,
+  actualEntry: 10,
+  plannedQuantity: 5,
+  actualQuantity: 5,
+  initialStop: 8,
+  currentStop: 9,
+  target: 14,
+  plannedMaxRisk: 10,
+  plannedRiskReward: 2,
+  currentPrice: 11,
+  unrealizedPnl: 5,
+  unrealizedPnlPercent: 0.1,
+  status: 'OPEN',
+  closedAt: '',
+  exitPrice: '',
+  realizedPnl: '',
+  notes: ''
+};

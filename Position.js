@@ -1137,7 +1137,7 @@ function formatPositionRow(
  * le véritable prix d'exécution et non le Current Price
  * provenant de GOOGLEFINANCE.
  */
-function closeSelectedPosition() {
+function legacyCloseSelectedPosition_() {
   const ss =
     SpreadsheetApp.getActiveSpreadsheet();
 
