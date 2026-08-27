@@ -39,7 +39,12 @@
  * ============================================================
  */
 
-function addSelectedToWatchlist() {
+/*
+ * Cutover Phase 4 : le menu utilise désormais le wrapper global
+ * addSelectedToWatchlist généré dans build/Cockpit.js.
+ * Cette implémentation est conservée temporairement pour rollback.
+ */
+function legacyAddSelectedToWatchlist_() {
   const ss =
     SpreadsheetApp.getActiveSpreadsheet();
 

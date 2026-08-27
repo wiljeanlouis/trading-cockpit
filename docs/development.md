@@ -26,14 +26,15 @@ npm run check
 The command runs TypeScript checks, ESLint, the scoped Prettier check, Vitest, and Apps Script
 namespace/menu validation.
 
-The tests build `MomentumScore.ts` first. `MomentumScore.js` is generated Apps Script runtime code
-and must not be edited directly.
+The tests build both TypeScript pipelines first. `MomentumScore.js` and `build/Cockpit.js` are
+generated Apps Script runtime code and must not be edited directly.
 
 Individual commands are also available:
 
 ```sh
 npm run typecheck
 npm run build
+npm run build:cockpit
 npm run lint
 npm run format:check
 npm test
@@ -68,6 +69,12 @@ clasp push
 ```
 
 Always inspect the Git diff and `clasp status` before pushing. Tooling, tests, and documentation are
-excluded from Apps Script by `.claspignore`.
+excluded from Apps Script by `.claspignore`. Generated files under `build/` are ignored by Git but
+intentionally included by clasp.
+
+The deployed runtime is transitional: the root JavaScript files remain the legacy application,
+while `build/Cockpit.js` contains migrated modular slices. Stable top-level wrappers in the bundle
+keep menu and trigger names compatible with Apps Script. For the Watchlist slice, the menu still
+calls `addSelectedToWatchlist`; that wrapper delegates to the modular implementation.
 
 Do not add `clasp push` to automated checks or CI/CD without a separate architectural decision.

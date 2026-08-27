@@ -40,7 +40,7 @@ const nodeGlobals = {
 
 export default tseslint.config(
   {
-    ignores: ['node_modules/**', 'coverage/**']
+    ignores: ['node_modules/**', 'coverage/**', 'build/**']
   },
   {
     files: ['*.js'],

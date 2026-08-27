@@ -1,14 +1,22 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { Script } from 'node:vm';
 
 const repositoryRoot = new URL('../', import.meta.url);
 
-const sourceFileNames = readdirSync(repositoryRoot, {
+const legacySourceFileNames = readdirSync(repositoryRoot, {
   withFileTypes: true
 })
   .filter((entry) => entry.isFile() && entry.name.endsWith('.js'))
-  .map((entry) => entry.name)
-  .sort();
+  .map((entry) => entry.name);
+
+const buildRoot = new URL('../build/', import.meta.url);
+const bundleFileNames = existsSync(buildRoot)
+  ? readdirSync(buildRoot, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.js'))
+      .map((entry) => `build/${entry.name}`)
+  : [];
+
+const sourceFileNames = [...legacySourceFileNames, ...bundleFileNames].sort();
 
 const sources = new Map(
   sourceFileNames.map((fileName) => [
