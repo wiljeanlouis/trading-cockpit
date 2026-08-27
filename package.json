@@ -5,14 +5,16 @@
   "type": "module",
   "description": "Google Apps Script trading cockpit",
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.test.json",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.build.json --noEmit && tsc -p tsconfig.test.json",
     "lint": "eslint .",
     "format": "prettier --write . --ignore-unknown",
     "format:check": "prettier --check . --ignore-unknown",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "npm run build && vitest run",
+    "test:watch": "npm run build && vitest",
     "check:apps-script": "node scripts/check-apps-script.mjs",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm run test && npm run check:apps-script"
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run test && npm run check:apps-script",
+    "deploy:prepare": "npm run check && clasp status"
   },
   "engines": {
     "node": ">=20.19.0"

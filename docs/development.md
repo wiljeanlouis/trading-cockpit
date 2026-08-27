@@ -26,10 +26,14 @@ npm run check
 The command runs TypeScript checks, ESLint, the scoped Prettier check, Vitest, and Apps Script
 namespace/menu validation.
 
+The tests build `MomentumScore.ts` first. `MomentumScore.js` is generated Apps Script runtime code
+and must not be edited directly.
+
 Individual commands are also available:
 
 ```sh
 npm run typecheck
+npm run build
 npm run lint
 npm run format:check
 npm test
@@ -58,6 +62,7 @@ npm run test:watch
 Deployment remains a manual, human-reviewed operation:
 
 ```sh
+npm run deploy:prepare
 clasp status
 clasp push
 ```

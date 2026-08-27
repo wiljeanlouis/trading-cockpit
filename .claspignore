@@ -4,10 +4,12 @@ coverage/**
 docs/**
 scripts/**
 tests/**
+**/*.ts
 package.json
 package-lock.json
 tsconfig.json
 tsconfig.test.json
+tsconfig.build.json
 eslint.config.mjs
 vitest.config.ts
 .prettierrc.json

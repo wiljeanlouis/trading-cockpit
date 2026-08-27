@@ -83,5 +83,17 @@ export default tseslint.config(
         }
       ]
     }
+  },
+  {
+    files: ['MomentumScore.ts'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^score(52WeekHigh|RelativeVolume|MonthlyPerformance|Rsi|Sma20)$'
+        }
+      ]
+    }
   }
 );
