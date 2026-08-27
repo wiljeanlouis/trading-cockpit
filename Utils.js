@@ -31,6 +31,23 @@ function requireColumn(headers, name) {
 }
 
 
+function getSheetHeaders(
+  sheet
+) {
+  return sheet
+    .getRange(
+      1,
+      1,
+      1,
+      sheet.getLastColumn()
+    )
+    .getValues()[0]
+    .map(value =>
+      String(value).trim()
+    );
+}
+
+
 /**
  * Trouve une colonne après une position donnée.
  *
@@ -267,115 +284,6 @@ function styleDashboardCard(
     );
 }
 
-
-function applyAlternatingRows(
-  sheet,
-  startRow,
-  endRow
-) {
-  for (
-    let row = startRow;
-    row <= endRow;
-    row++
-  ) {
-
-    if (
-      (row - startRow) % 2 === 1
-    ) {
-      sheet
-        .getRange(
-          row,
-          1,
-          1,
-          9
-        )
-        .setBackground(
-          COCKPIT_THEME.lightGray
-        );
-    }
-  }
-}
-
-function writeActionSummary(
-  sheet,
-  row,
-  label,
-  count,
-  background
-) {
-  sheet
-    .getRange(
-      row,
-      10,
-      1,
-      3
-    )
-    .merge()
-    .setValue(label)
-    .setBackground(background)
-    .setFontWeight('bold');
-
-
-  sheet
-    .getRange(
-      row,
-      13
-    )
-    .setValue(count)
-    .setBackground(background)
-    .setFontWeight('bold')
-    .setHorizontalAlignment(
-      'center'
-    );
-}
-
-
-function writeActionSection(
-  sheet,
-  row,
-  title
-) {
-  sheet
-    .getRange(
-      row,
-      10,
-      1,
-      4
-    )
-    .merge()
-    .setValue(title)
-    .setBackground(
-      COCKPIT_THEME.blue
-    )
-    .setFontColor(
-      COCKPIT_THEME.white
-    )
-    .setFontWeight('bold');
-}
-
-
-function writeNoAction(
-  sheet,
-  row,
-  message
-) {
-  sheet
-    .getRange(
-      row,
-      10,
-      1,
-      4
-    )
-    .merge()
-    .setValue(message)
-    .setFontColor(
-      COCKPIT_THEME.gray
-    )
-    .setFontStyle(
-      'italic'
-    );
-}
-
 function sumValues(values) {
   return values.reduce(
     (sum, value) =>
@@ -472,102 +380,6 @@ function writeAnalyticsMetric(
   }
 }
 
-
-function writeStrategyAnalytics(
-  sheet,
-  startRow,
-  strategies
-) {
-  const headers = [
-    'Strategy',
-    'Trades',
-    'Wins',
-    'Win Rate',
-    'Total P&L',
-    'Average R',
-    'Total R'
-  ];
-
-
-  sheet
-    .getRange(
-      startRow,
-      1,
-      1,
-      headers.length
-    )
-    .setValues([
-      headers
-    ]);
-
-
-  if (
-    !strategies ||
-    strategies.length === 0
-  ) {
-    return;
-  }
-
-
-  const values =
-    strategies.map(
-      strategy => [
-        strategy.strategy,
-        strategy.trades,
-        strategy.wins,
-        strategy.winRate,
-        strategy.totalPnl,
-        strategy.averageR,
-        strategy.totalR
-      ]
-    );
-
-
-  sheet
-    .getRange(
-      startRow + 1,
-      1,
-      values.length,
-      headers.length
-    )
-    .setValues(values);
-
-
-  sheet
-    .getRange(
-      startRow + 1,
-      4,
-      values.length,
-      1
-    )
-    .setNumberFormat(
-      '0.00%'
-    );
-
-
-  sheet
-    .getRange(
-      startRow + 1,
-      5,
-      values.length,
-      1
-    )
-    .setNumberFormat(
-      '$#,##0.00'
-    );
-
-
-  sheet
-    .getRange(
-      startRow + 1,
-      6,
-      values.length,
-      2
-    )
-    .setNumberFormat(
-      '0.00'
-    );
-}
 
 /**
  * Retourne la valeur d'une ligne à partir du nom de colonne.

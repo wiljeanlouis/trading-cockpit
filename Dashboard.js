@@ -1741,23 +1741,6 @@ function writeDashboardMetricCard(
 }
 
 
-function getSheetHeaders(
-  sheet
-) {
-  return sheet
-    .getRange(
-      1,
-      1,
-      1,
-      sheet.getLastColumn()
-    )
-    .getValues()[0]
-    .map(value =>
-      String(value).trim()
-    );
-}
-
-
 function valueFromRow(
   headers,
   row,
@@ -2075,9 +2058,6 @@ function applyDashboardTheme(
  * ============================================================
  *
  * Version Dashboard spécifique à 9 colonnes.
- *
- * Cela évite de dépendre du helper générique
- * applyAlternatingRows() qui peut être utilisé ailleurs.
  */
 
 function applyDashboardAlternatingRows(
