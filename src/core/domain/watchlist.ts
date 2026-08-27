@@ -39,6 +39,7 @@ export interface WatchlistEntry {
   sector: WatchlistSnapshotValue;
   addedAt: WatchlistSnapshotValue;
   signalPrice: WatchlistSnapshotValue;
+  currentPrice: WatchlistSnapshotValue;
   momentumScore: WatchlistSnapshotValue;
   status: string;
   setupStatus: string;
@@ -148,6 +149,7 @@ export function createWatchlistEntry(
     sector: candidate.sector,
     addedAt,
     signalPrice: candidate.signalPrice,
+    currentPrice: '',
     momentumScore: candidate.momentumScore,
     status: INITIAL_WATCHLIST_STATUS,
     setupStatus: '',

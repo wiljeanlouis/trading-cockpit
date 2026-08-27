@@ -64,6 +64,7 @@ describe('Watchlist row mapper', () => {
     sector: 'Consumer Cyclical',
     addedAt,
     signalPrice: 54.25,
+    currentPrice: '',
     momentumScore: 88,
     status: 'WATCHING',
     setupStatus: '',
@@ -102,12 +103,15 @@ describe('Watchlist row mapper', () => {
     ]);
   });
 
-  it('reads a row explicitly by headers and ignores calculated Sheet columns', () => {
+  it('reads a row explicitly by headers, including the current price needed downstream', () => {
     const row = watchlistEntryToRow(entry);
     row[10] = 55;
     row[11] = 0.0138;
     row[16] = -0.02;
 
-    expect(watchlistEntryFromRow([...WATCHLIST_HEADERS], row)).toEqual(entry);
+    expect(watchlistEntryFromRow([...WATCHLIST_HEADERS], row)).toEqual({
+      ...entry,
+      currentPrice: 55
+    });
   });
 });

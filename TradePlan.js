@@ -43,7 +43,12 @@
  * ============================================================
  */
 
-function createTradePlanFromSelectedWatchlist() {
+/*
+ * Cutover Phase 5 : le menu utilise désormais le wrapper global
+ * createTradePlanFromSelectedWatchlist généré dans build/Cockpit.js.
+ * Cette implémentation est conservée temporairement pour rollback.
+ */
+function legacyCreateTradePlanFromSelectedWatchlist_() {
   const ss =
     SpreadsheetApp.getActiveSpreadsheet();
 

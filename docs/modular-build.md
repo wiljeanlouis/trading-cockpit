@@ -49,21 +49,29 @@ The existing `.clasp.json` keeps `rootDir` at the repository root. This lets cla
 hand-maintained legacy JavaScript files, the generated root `MomentumScore.js`, and the generated
 modular bundle together without copying files or changing their paths.
 
-## Watchlist slice module graph
+## Migrated slice module graph
 
 ```text
 entrypoints/apps-script.ts
-  -> composition/watchlist.ts
+  -> composition/cockpit.ts
        -> adapters/inbound/google-sheets/add-selected-to-watchlist.ts
+       -> adapters/inbound/google-sheets/create-trade-plan-from-selected-watchlist.ts
        -> adapters/outbound/apps-script/apps-script-runtime.ts
        -> adapters/outbound/google-sheets/google-sheets-strategy-repository.ts
        -> adapters/outbound/google-sheets/google-sheets-watchlist-repository.ts
             -> adapters/outbound/google-sheets/watchlist-mapper.ts
+       -> adapters/outbound/google-sheets/google-sheets-trade-plan-repository.ts
+            -> adapters/outbound/google-sheets/trade-plan-mapper.ts
+       -> adapters/outbound/google-sheets/google-sheets-trading-configuration.ts
        -> core/application/watchlist/add-candidate-to-watchlist.ts
             -> core/domain/watchlist.ts
             -> ports/outbound/runtime-port.ts
             -> ports/outbound/strategy-repository.ts
             -> ports/outbound/watchlist-repository.ts
+       -> core/application/trade-plan/create-trade-plan-from-watchlist.ts
+            -> core/domain/trade-plan.ts
+            -> ports/outbound/trade-plan-repository.ts
+            -> ports/outbound/trading-configuration-port.ts
 ```
 
 Ports are interfaces and are erased from the runtime. The use case depends only on these
@@ -80,6 +88,10 @@ the entry module in an IIFE named `CockpitBundle`. The build adds an explicit to
 function addSelectedToWatchlist() {
   return CockpitBundle.addSelectedToWatchlist();
 }
+
+function createTradePlanFromSelectedWatchlist() {
+  return CockpitBundle.createTradePlanFromSelectedWatchlist();
+}
 ```
 
 This wrapper is the pattern for migrated menus and triggers: modular implementation inside the
@@ -94,8 +106,8 @@ The bundle smoke test separately verifies that:
 
 - the output is valid JavaScript;
 - no static import or export statement remains;
-- `CockpitBundle` and `addSelectedToWatchlist` exist globally;
-- the generated wrapper delegates to the bundled entrypoint.
+- `CockpitBundle` and both migrated menu wrappers exist globally;
+- the generated wrappers delegate to their bundled entrypoints.
 
 The lightweight architecture check rejects Apps Script globals in core and port modules and rejects
 dependencies from core or ports toward adapters.
@@ -130,10 +142,10 @@ error-reporting workflow maps generated stack traces back to TypeScript.
 
 ## Future migration
 
-The Watchlist add-candidate workflow is the first business slice under `core/`, `ports/`, and
-`adapters/`. The other workflows remain legacy JavaScript and must be migrated independently behind
-characterization tests. MomentumScore also remains on its existing root-level `tsc` pipeline until
-a separate migration explicitly replaces it.
+The Watchlist add-candidate and Create Trade Plan workflows are migrated under `core/`, `ports/`,
+and `adapters/`. The other workflows remain legacy JavaScript and must be migrated independently
+behind characterization tests. MomentumScore also remains on its existing root-level `tsc` pipeline
+until a separate migration explicitly replaces it.
 
 Each future slice should keep its stable Apps Script menu or trigger wrapper, introduce only the
 ports required by its use case, and preserve spreadsheet schemas and observable behavior during the

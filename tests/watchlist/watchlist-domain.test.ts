@@ -74,6 +74,7 @@ describe('Watchlist domain', () => {
       sector: 'Consumer Cyclical',
       addedAt,
       signalPrice: 54.25,
+      currentPrice: '',
       momentumScore: 88,
       status: 'WATCHING',
       setupStatus: '',

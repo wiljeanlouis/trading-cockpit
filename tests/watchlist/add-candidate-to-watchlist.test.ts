@@ -26,6 +26,7 @@ function createDependencies(existing: WatchlistEntry | null = null) {
   let savedEntry: WatchlistEntry | null = null;
 
   const watchlistRepository: WatchlistRepository = {
+    findById: () => null,
     findActiveByIdentity: (identity) => {
       calls.push('watchlist.find');
       searchedIdentity = identity;
@@ -34,7 +35,8 @@ function createDependencies(existing: WatchlistEntry | null = null) {
     save: (entry) => {
       calls.push('watchlist.save');
       savedEntry = entry;
-    }
+    },
+    updateStatus: () => undefined
   };
   const strategyRepository: StrategyRepository = {
     existsById: () => {
@@ -105,6 +107,7 @@ describe('add candidate to Watchlist', () => {
       sector: '',
       addedAt: new Date('2026-08-20T14:00:00.000Z'),
       signalPrice: 50,
+      currentPrice: 51,
       momentumScore: 80,
       status: 'WATCHING',
       setupStatus: '',

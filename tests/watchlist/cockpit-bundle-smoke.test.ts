@@ -14,13 +14,15 @@ describe('Cockpit Apps Script bundle', () => {
     expect(() => new Script(bundleSource, { filename: 'Cockpit.js' })).not.toThrow();
   });
 
-  it('exposes exactly the migrated Watchlist global entrypoint', () => {
+  it('exposes exactly the migrated Watchlist and Trade Plan global entrypoints', () => {
     const context = createContext({});
 
     new Script(bundleSource, { filename: 'Cockpit.js' }).runInContext(context);
 
     expect(context.CockpitBundle?.addSelectedToWatchlist).toBeTypeOf('function');
+    expect(context.CockpitBundle?.createTradePlanFromSelectedWatchlist).toBeTypeOf('function');
     expect(context.addSelectedToWatchlist).toBeTypeOf('function');
+    expect(context.createTradePlanFromSelectedWatchlist).toBeTypeOf('function');
     expect(context.runArchitecturePoc).toBeUndefined();
   });
 });

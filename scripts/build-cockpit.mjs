@@ -26,6 +26,10 @@ await build({
     js: [
       'function addSelectedToWatchlist() {',
       '  return CockpitBundle.addSelectedToWatchlist();',
+      '}',
+      '',
+      'function createTradePlanFromSelectedWatchlist() {',
+      '  return CockpitBundle.createTradePlanFromSelectedWatchlist();',
       '}'
     ].join('\n')
   }

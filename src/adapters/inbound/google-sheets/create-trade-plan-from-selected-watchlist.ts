@@ -1,0 +1,45 @@
+import type { CreateTradePlanFromWatchlist } from '../../../core/application/trade-plan/create-trade-plan-from-watchlist';
+import { selectedWatchlistRowToCommand } from './watchlist-selection-mapper';
+
+const WATCHLIST_SHEET_NAME = 'Watchlist';
+
+declare function themeTradePlans(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet): void;
+
+export function createTradePlanFromSelectedWatchlistRow(
+  createTradePlan: CreateTradePlanFromWatchlist
+): void {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sourceSheet = spreadsheet.getActiveSheet();
+
+  if (sourceSheet.getName() !== WATCHLIST_SHEET_NAME) {
+    throw new Error(`Sélectionne d'abord un titre dans ${WATCHLIST_SHEET_NAME}.`);
+  }
+
+  const selectedRange = sourceSheet.getActiveRange();
+
+  if (!selectedRange) {
+    throw new Error('Aucune ligne sélectionnée.');
+  }
+
+  const rowNumber = selectedRange.getRow();
+
+  if (rowNumber < 2) {
+    throw new Error('Sélectionne une ligne contenant un titre.');
+  }
+
+  const lastColumn = sourceSheet.getLastColumn();
+  const headers = sourceSheet
+    .getRange(1, 1, 1, lastColumn)
+    .getValues()[0]
+    .map((value) => String(value).trim());
+  const row: unknown[] = sourceSheet.getRange(rowNumber, 1, 1, lastColumn).getValues()[0];
+  const result = createTradePlan(selectedWatchlistRowToCommand(headers, row));
+
+  if (result.kind === 'duplicate') {
+    spreadsheet.toast(`${result.ticker} possède déjà un Trade Plan actif.`, 'Trading Cockpit', 5);
+    return;
+  }
+
+  themeTradePlans(spreadsheet);
+  spreadsheet.toast(`Trade Plan créé pour ${result.tradePlan.ticker}.`, 'Trading Cockpit', 5);
+}
