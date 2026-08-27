@@ -37,6 +37,14 @@ const position: Position = {
 };
 
 describe('Position row mapper', () => {
+  it('preserves blank Actual execution snapshots for safe reconciliation', () => {
+    const row = positionToRow({ ...position, actualEntry: '', actualQuantity: '' });
+    expect(positionFromRow([...POSITION_HEADERS], row)).toMatchObject({
+      actualEntry: '',
+      actualQuantity: ''
+    });
+  });
+
   it('writes the exact 25-column legacy row and leaves formula-owned cells empty', () => {
     expect(positionToRow(position)).toEqual([
       'P-1',

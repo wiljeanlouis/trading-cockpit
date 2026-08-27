@@ -15,9 +15,9 @@ export interface JournalEntry {
   openedAt: PositionSnapshotValue;
   closedAt: PositionSnapshotValue;
   plannedEntry: PositionSnapshotValue;
-  actualEntry: number;
+  actualEntry: PositionSnapshotValue;
   exitPrice: PositionSnapshotValue;
-  quantity: number;
+  quantity: PositionSnapshotValue;
   initialStop: PositionSnapshotValue;
   target: PositionSnapshotValue;
   plannedMaxRisk: PositionSnapshotValue;

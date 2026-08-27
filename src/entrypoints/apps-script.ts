@@ -2,6 +2,7 @@ import {
   runAddSelectedToWatchlist,
   runCreateTradePlanFromSelectedWatchlist,
   runCloseSelectedPosition,
+  runReconcileSelectedPosition,
   runExecuteSelectedTradePlan
 } from '../composition/cockpit';
 
@@ -19,4 +20,8 @@ export function executeSelectedTradePlan(): void {
 
 export function closeSelectedPosition(): void {
   runCloseSelectedPosition();
+}
+
+export function reconcileSelectedPosition(): void {
+  runReconcileSelectedPosition();
 }

@@ -46,6 +46,10 @@ function onOpen() {
     
     .addSeparator()
     .addItem(
+      'Reconcile Selected Position',
+      'reconcileSelectedPosition'
+    )
+    .addItem(
       'Setup Momentum Ranking',
       'setupMomentumRanking'
     )

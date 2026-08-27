@@ -73,9 +73,9 @@ export function journalEntryFromRow(headers: string[], row: unknown[]): JournalE
     openedAt: snapshot(value(headers, row, 'Opened At')),
     closedAt: snapshot(value(headers, row, 'Closed At')),
     plannedEntry: snapshot(value(headers, row, 'Planned Entry')),
-    actualEntry: Number(value(headers, row, 'Actual Entry')),
+    actualEntry: snapshot(value(headers, row, 'Actual Entry')),
     exitPrice: snapshot(value(headers, row, 'Exit Price')),
-    quantity: Number(value(headers, row, 'Quantity')),
+    quantity: snapshot(value(headers, row, 'Quantity')),
     initialStop: snapshot(value(headers, row, 'Initial Stop')),
     target: snapshot(value(headers, row, 'Target')),
     plannedMaxRisk: snapshot(value(headers, row, 'Planned Max Risk')),
@@ -89,6 +89,17 @@ export function journalEntryFromRow(headers: string[], row: unknown[]): JournalE
     lessonsLearned: text(value(headers, row, 'Lessons Learned')),
     followedPlan: text(value(headers, row, 'Followed Plan?'))
   };
+}
+
+export function journalEntriesFromRowsForPosition(
+  headers: string[],
+  rows: unknown[][],
+  positionId: string
+): JournalEntry[] {
+  const normalizedPositionId = String(positionId || '').trim();
+  return rows
+    .map((row) => journalEntryFromRow(headers, row))
+    .filter((entry) => entry.positionId === normalizedPositionId);
 }
 
 export function journalEntryToRow(entry: JournalEntry): PositionSnapshotValue[] {

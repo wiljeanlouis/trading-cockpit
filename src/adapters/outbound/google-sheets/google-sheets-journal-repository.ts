@@ -1,6 +1,6 @@
 import type { JournalEntry } from '../../../core/domain/journal-entry';
 import type { JournalRepository } from '../../../ports/outbound/journal-repository';
-import { journalEntryFromRow, journalEntryToRow } from './journal-mapper';
+import { journalEntriesFromRowsForPosition, journalEntryToRow } from './journal-mapper';
 
 declare function getOrCreateJournalSheet(): GoogleAppsScript.Spreadsheet.Sheet;
 declare function validateJournalSchema(sheet: GoogleAppsScript.Spreadsheet.Sheet): boolean;
@@ -12,17 +12,16 @@ export class GoogleSheetsJournalRepository implements JournalRepository {
   private sheet: GoogleAppsScript.Spreadsheet.Sheet | null = null;
 
   findByPositionId(positionId: string): JournalEntry | null {
+    return this.findAllByPositionId(positionId)[0] ?? null;
+  }
+
+  findAllByPositionId(positionId: string): JournalEntry[] {
     const sheet = this.getSheet();
     const lastRow = sheet.getLastRow();
-    if (lastRow <= 1) return null;
+    if (lastRow <= 1) return [];
     const headers = this.headers(sheet);
     const rows: unknown[][] = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
-    const normalized = String(positionId || '').trim();
-    for (const row of rows) {
-      const entry = journalEntryFromRow(headers, row);
-      if (entry.positionId === normalized) return entry;
-    }
-    return null;
+    return journalEntriesFromRowsForPosition(headers, rows, positionId);
   }
 
   save(entry: JournalEntry): void {

@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
   closePositionCommand,
-  selectedPositionForClose
+  selectedPositionForClose,
+  selectedPositionId
 } from '../../src/adapters/inbound/google-sheets/position-close-selection-mapper';
 
 const headers = ['Position ID', 'Watchlist ID', 'Strategy ID', 'Ticker', 'Status'];
 
 describe('Position close selection mapper', () => {
+  it('extracts only the trimmed Position ID for reconciliation', () => {
+    expect(selectedPositionId(headers, [' P-1 ', '', '', '', 'CLOSED'])).toBe('P-1');
+  });
   it('preserves selection validation and normalizes OPEN only', () => {
     expect(selectedPositionForClose(headers, [' P-1 ', 'WL-1', 'S-1', 'urnb', ' open '])).toEqual({
       positionId: 'P-1',

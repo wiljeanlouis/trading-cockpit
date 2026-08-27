@@ -39,6 +39,10 @@ await build({
       '',
       'function closeSelectedPosition() {',
       '  return CockpitBundle.closeSelectedPosition();',
+      '}',
+      '',
+      'function reconcileSelectedPosition() {',
+      '  return CockpitBundle.reconcileSelectedPosition();',
       '}'
     ].join('\n')
   }

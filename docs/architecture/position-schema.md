@@ -14,9 +14,9 @@ intended ownership, not a Google Sheets permission. Every header is required by 
 | G      | Ticker           | Trade Plan               | String          | Business identity         | Uppercase snapshot | System               | Required                         |
 | H      | Opened At        | Runtime clock            | Date            | Execution audit           | Value              | System               | Required                         |
 | I      | Planned Entry    | Trade Plan Entry Price   | Number-like     | Plan intent               | Snapshot           | System               | Required nonblank                |
-| J      | Actual Entry     | Numeric conversion of I  | Number          | Execution fact            | Value              | System/broker future | Derived at opening               |
+| J      | Actual Entry     | Numeric conversion of I  | Number-like     | Execution fact            | Value              | System/broker future | Derived at opening               |
 | K      | Planned Quantity | Trade Plan Position Size | Number-like     | Plan intent               | Snapshot           | System               | Required, numeric conversion > 0 |
-| L      | Actual Quantity  | Numeric conversion of K  | Number          | Execution fact            | Value              | System/broker future | Derived at opening               |
+| L      | Actual Quantity  | Numeric conversion of K  | Number-like     | Execution fact            | Value              | System/broker future | Derived at opening               |
 | M      | Initial Stop     | Trade Plan Stop Price    | Number-like     | Plan intent               | Snapshot           | System               | Required nonblank                |
 | N      | Current Stop     | Initial Stop             | Number-like     | Position management       | Value              | User/system future   | Defaulted                        |
 | O      | Target           | Trade Plan Target Price  | Number-like     | Plan intent               | Snapshot           | User                 | Optional                         |

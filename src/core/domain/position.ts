@@ -37,9 +37,9 @@ export interface Position {
   ticker: string;
   openedAt: PositionSnapshotValue;
   plannedEntry: PositionSnapshotValue;
-  actualEntry: number;
+  actualEntry: PositionSnapshotValue;
   plannedQuantity: PositionSnapshotValue;
-  actualQuantity: number;
+  actualQuantity: PositionSnapshotValue;
   initialStop: PositionSnapshotValue;
   currentStop: PositionSnapshotValue;
   target: PositionSnapshotValue;
@@ -107,7 +107,11 @@ export function closePosition(position: Position, exitPrice: number, closedAt: D
     ...position,
     closedAt,
     exitPrice,
-    realizedPnl: calculateRealizedPnl(exitPrice, position.actualEntry, position.actualQuantity),
+    realizedPnl: calculateRealizedPnl(
+      exitPrice,
+      Number(position.actualEntry),
+      Number(position.actualQuantity)
+    ),
     status: CLOSED_POSITION_STATUS
   };
 }

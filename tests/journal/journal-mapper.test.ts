@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   JOURNAL_HEADERS,
+  journalEntriesFromRowsForPosition,
   journalEntryFromRow,
   journalEntryToRow
 } from '../../src/adapters/outbound/google-sheets/journal-mapper';
@@ -49,5 +50,22 @@ describe('Journal mapper', () => {
 
   it('requires the legacy Analytics contract headers', () => {
     expect(() => journalEntryFromRow([], [])).toThrow('Colonne absente :');
+  });
+
+  it.each([
+    [[], 0],
+    [['P-1'], 1],
+    [['P-1', ' P-1 ', 'P-2'], 2]
+  ])('finds 0, 1 or multiple rows for one Position ID', (positionIds, count) => {
+    const rows = positionIds.map((positionId, index) => {
+      const row = Array(26).fill('');
+      row[0] = `J-${index + 1}`;
+      row[1] = positionId;
+      return row;
+    });
+
+    expect(journalEntriesFromRowsForPosition([...JOURNAL_HEADERS], rows, 'P-1')).toHaveLength(
+      count
+    );
   });
 });

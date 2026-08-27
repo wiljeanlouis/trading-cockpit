@@ -44,3 +44,9 @@ division error; blank or nonpositive Planned Max Risk yields blank R-Multiple.
 The duplicate invariant is one Journal row per trimmed, case-sensitive Position ID. It is enforced
 by lookup before UUID generation and append, but not by a database uniqueness constraint. Concurrent
 executions and cross-sheet partial failures therefore remain possible.
+
+Reconciliation queries all rows for a Position ID so it can distinguish zero, one, and multiple
+matches. Zero can be repaired from a sufficiently complete persisted `CLOSED` Position; one is
+already valid; multiple matches require manual review and are never deleted or merged automatically.
+Reconciled rows use the same mapper, formulas, formats, validations, and theme as normal close rows,
+so the Analytics contract remains identical.

@@ -214,6 +214,40 @@ The old close implementation remains in `Position.js` as `legacyCloseSelectedPos
 The remaining Position helpers and all Journal sheet/formula/formatting helpers stay legacy and are
 used by the new outbound adapters.
 
+## Closed Position reconciliation
+
+Reconciliation is a focused application recovery operation for the manual close workflow. It is not
+another Position lifecycle transition and never calls `closePosition`, changes Closed At, recalculates
+Realized P&L, or reopens a Position.
+
+The completed invariant for a manually closed Position is:
+
+```text
+Position status = CLOSED
+  + Closed At, Exit Price and Realized P&L persisted
+  + exactly one Journal row for Position ID
+  + associated Watchlist status = CLOSED
+```
+
+`reconcileClosedPosition({ positionId })` accepts only `CLOSED`; `STOPPED` and `TARGET HIT` remain
+outside this recovery path. Before creating Journal, it requires the persisted identifiers, strategy
+snapshot, ticker, Closed At, Exit Price, and Realized P&L. Optional historical snapshot fields remain
+optional exactly as in normal Journal creation. Actual Entry and Actual Quantity must also be present:
+their mappers preserve blank snapshots so reconciliation blocks instead of manufacturing numeric zero.
+
+Recoverable states are a missing Journal with a stale or already-closed Watchlist, and an existing
+single Journal with a stale Watchlist. A missing Journal is recreated through the same repository,
+mapper, formulas, formatting, and theme as normal close. An already-complete state is a no-op. Two or
+more Journals for one Position are reported as inconsistent and prevent Watchlist mutation; no row is
+deleted or merged automatically.
+
+The repair order is Journal inspection/optional creation, then Watchlist inspection/optional update.
+If Journal creation fails, Watchlist is untouched. If Watchlist update fails after Journal creation, a
+retry sees the existing Journal and retries only Watchlist. The operation is sequentially idempotent,
+but no uniqueness constraint or lock prevents two simultaneous runs from both observing a missing
+Journal and appending. The menu action `Reconcile Selected Position` exposes this use case for a
+selected Positions row.
+
 ## Architecture POC retirement
 
 The greeting-based `src/poc` demonstration and its tests were removed after three real Cockpit

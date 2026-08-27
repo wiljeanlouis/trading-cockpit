@@ -29,6 +29,7 @@ function context(options?: { position?: Position | null; journal?: JournalEntry 
         calls.push('journal.find');
         return options?.journal ?? null;
       },
+      findAllByPositionId: () => (options?.journal ? [options.journal] : []),
       save: (entry) => {
         calls.push('journal.save');
         savedJournal = entry;

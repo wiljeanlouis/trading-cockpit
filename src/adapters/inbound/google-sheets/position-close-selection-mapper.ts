@@ -16,11 +16,17 @@ export interface SelectedPositionForClose {
   ticker: string;
 }
 
+export function selectedPositionId(headers: string[], row: unknown[]): string {
+  const positionId = value(headers, row, 'Position ID');
+  if (!positionId) throw new Error('Position ID absent.');
+  return String(positionId).trim();
+}
+
 export function selectedPositionForClose(
   headers: string[],
   row: unknown[]
 ): SelectedPositionForClose {
-  const positionId = value(headers, row, 'Position ID');
+  const positionId = selectedPositionId(headers, row);
   const watchlistId = value(headers, row, 'Watchlist ID');
   const strategyId = value(headers, row, 'Strategy ID');
   const ticker = value(headers, row, 'Ticker');
@@ -28,12 +34,11 @@ export function selectedPositionForClose(
     .trim()
     .toUpperCase();
 
-  if (!positionId) throw new Error('Position ID absent.');
   if (!watchlistId) throw new Error('Watchlist ID absent.');
   if (!strategyId) throw new Error('Strategy ID absent.');
   if (status !== 'OPEN') throw new Error(`${ticker} n'est pas une position OPEN.`);
 
-  return { positionId: String(positionId).trim(), ticker: String(ticker) };
+  return { positionId, ticker: String(ticker) };
 }
 
 export function closePositionCommand(
