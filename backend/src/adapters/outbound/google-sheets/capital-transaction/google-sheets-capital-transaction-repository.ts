@@ -5,6 +5,7 @@ import {
   capitalTransactionToRow,
   capitalTransactionsFromRowsForAccount
 } from './capital-transaction-mapper';
+import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 
 const CAPITAL_LEDGER_SHEET_NAME = 'Capital Ledger';
 
@@ -36,7 +37,7 @@ export class GoogleSheetsCapitalTransactionRepository implements CapitalTransact
   }
 
   private getOrCreateSheet(): GoogleAppsScript.Spreadsheet.Sheet {
-    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    const spreadsheet = getTradingCockpitSpreadsheet();
     const existing = spreadsheet.getSheetByName(CAPITAL_LEDGER_SHEET_NAME);
     if (existing) return existing;
     const sheet = spreadsheet.insertSheet(CAPITAL_LEDGER_SHEET_NAME);

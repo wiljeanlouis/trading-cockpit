@@ -19,7 +19,6 @@ import { GoogleSheetsTradingAccountRepository } from '../adapters/outbound/googl
 import { GoogleSheetsCapitalTransactionRepository } from '../adapters/outbound/google-sheets/capital-transaction/google-sheets-capital-transaction-repository';
 import { GoogleSheetsTradingAccountRiskPolicyRepository } from '../adapters/outbound/google-sheets/trading-account/google-sheets-trading-account-risk-policy-repository';
 import { GoogleSheetsWatchlistRepository } from '../adapters/outbound/google-sheets/watchlist/google-sheets-watchlist-repository';
-import { createCreateTradePlanFromWatchlist } from '../core/application/trade-plan/create-trade-plan-from-watchlist';
 import { createOpenPositionFromTradePlan } from '../core/application/position/open-position-from-trade-plan';
 import { createClosePosition } from '../core/application/position/close-position';
 import { createReconcileClosedPosition } from '../core/application/position/reconcile-closed-position';
@@ -31,7 +30,7 @@ import {
   createRecordWithdrawal,
   type RecordCapitalTransactionDependencies
 } from '../core/application/trading-account/record-capital-transaction';
-import { createGetAccountEquity } from '../core/application/trading-account/get-account-equity';
+import { createTradePlanUseCase } from './trade-plan';
 
 function isExpectedBlock(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
@@ -155,24 +154,7 @@ export function runRecordWithdrawal(): void {
 export function runCreateTradePlanFromSelectedWatchlist(): void {
   const logger = new RuntimeLogger('create-trade-plan');
   logger.start();
-  const watchlistRepository = new GoogleSheetsWatchlistRepository();
-  const tradingAccountRepository = new GoogleSheetsTradingAccountRepository();
-  const capitalTransactionRepository = new GoogleSheetsCapitalTransactionRepository();
-  const journalRepository = new GoogleSheetsJournalRepository();
-  const createTradePlan = createCreateTradePlanFromWatchlist({
-    watchlistRepository,
-    tradePlanRepository: new GoogleSheetsTradePlanRepository(),
-    strategyRepository: new GoogleSheetsStrategyRepository(),
-    tradingAccountRepository,
-    tradingAccountRiskPolicyRepository: new GoogleSheetsTradingAccountRiskPolicyRepository(),
-    getAccountEquity: createGetAccountEquity({
-      tradingAccountRepository,
-      capitalTransactionRepository,
-      journalRepository,
-      observe: (event, fields) => logger.info(event, fields)
-    }),
-    runtime: new AppsScriptRuntime()
-  });
+  const createTradePlan = createTradePlanUseCase((event, fields) => logger.info(event, fields));
 
   try {
     createTradePlanFromSelectedWatchlistRow((command) => {

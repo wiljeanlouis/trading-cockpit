@@ -13,6 +13,7 @@ import {
   validateJournalSchema
 } from './journal-sheet';
 import { readSheetHeaders } from '../sheet-headers';
+import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 declare function themeJournal(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet): void;
 
 export class GoogleSheetsJournalRepository implements JournalRepository {
@@ -46,7 +47,7 @@ export class GoogleSheetsJournalRepository implements JournalRepository {
     const row = sheet.getLastRow();
     addJournalFormulas(sheet, row);
     formatJournalRow(sheet, row);
-    themeJournal(SpreadsheetApp.getActiveSpreadsheet());
+    themeJournal(getTradingCockpitSpreadsheet());
   }
 
   private getSheet(): GoogleAppsScript.Spreadsheet.Sheet {

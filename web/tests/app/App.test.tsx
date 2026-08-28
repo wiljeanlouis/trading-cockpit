@@ -15,7 +15,9 @@ describe('App navigation', () => {
         openPositions: 0,
         closedTrades: 0
       })),
-      getWatchlist: vi.fn(async () => ({ generatedAt: '2026-08-28T16:04:00.000Z', items: [] }))
+      getWatchlist: vi.fn(async () => ({ generatedAt: '2026-08-28T16:04:00.000Z', items: [] })),
+      getTradingAccounts: vi.fn(async () => ({ accounts: [] })),
+      createTradePlan: vi.fn()
     };
     render(<App gateway={gateway} />);
 

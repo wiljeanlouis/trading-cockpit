@@ -1,18 +1,19 @@
 import type { TradingAccountRiskPolicy } from '../../../../core/domain/trading-account-risk-policy';
 import type { TradingAccountRiskPolicyRepository } from '../../../../ports/outbound/trading-account-risk-policy-repository';
 import { tradingAccountRiskPolicyFromRow } from '../trading-account/trading-account-mapper';
+import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 
 const ACCOUNTS_SHEET_NAME = 'Accounts';
 const RISK_HEADER = 'Risk % Per Trade';
 
 export class GoogleSheetsTradingAccountRiskPolicyRepository implements TradingAccountRiskPolicyRepository {
   ensureReady(): void {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ACCOUNTS_SHEET_NAME);
+    const sheet = getTradingCockpitSpreadsheet().getSheetByName(ACCOUNTS_SHEET_NAME);
     if (sheet) this.ensureRiskColumn(sheet);
   }
 
   findByAccountId(accountId: string): TradingAccountRiskPolicy | null {
-    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    const spreadsheet = getTradingCockpitSpreadsheet();
     const sheet = spreadsheet.getSheetByName(ACCOUNTS_SHEET_NAME);
     if (!sheet) return null;
     this.ensureRiskColumn(sheet);

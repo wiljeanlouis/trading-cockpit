@@ -1,4 +1,5 @@
 import { readSheetHeaders, requireColumn } from '../sheet-headers';
+import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 
 const STRATEGIES_SHEET_NAME = 'Strategies';
 
@@ -31,7 +32,7 @@ export function mapTradingStrategyRow(
 
 export class GoogleSheetsTradingStrategyReader {
   getById(strategyId: string): SheetTradingStrategy {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(STRATEGIES_SHEET_NAME);
+    const sheet = getTradingCockpitSpreadsheet().getSheetByName(STRATEGIES_SHEET_NAME);
     if (!sheet || sheet.getLastRow() <= 1) {
       throw new Error('Aucune stratégie configurée.');
     }
@@ -50,7 +51,7 @@ export class GoogleSheetsTradingStrategyReader {
   }
 
   listEnabled(): SheetTradingStrategy[] {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(STRATEGIES_SHEET_NAME);
+    const sheet = getTradingCockpitSpreadsheet().getSheetByName(STRATEGIES_SHEET_NAME);
     if (!sheet || sheet.getLastRow() <= 1) return [];
     const headers = readSheetHeaders(sheet);
     return sheet

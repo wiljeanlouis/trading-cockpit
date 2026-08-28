@@ -1,5 +1,6 @@
 import { JOURNAL_HEADERS } from './journal-mapper';
 import { readSheetHeaders, requireColumn } from '../sheet-headers';
+import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 
 const SHEET_NAME = 'Journal';
 const HISTORICAL_HEADERS = JOURNAL_HEADERS.slice(0, -1);
@@ -7,7 +8,7 @@ const HISTORICAL_HEADERS = JOURNAL_HEADERS.slice(0, -1);
 declare function themeJournal(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet): void;
 
 export function getOrCreateJournalSheet(): GoogleAppsScript.Spreadsheet.Sheet {
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const spreadsheet = getTradingCockpitSpreadsheet();
   const existing = spreadsheet.getSheetByName(SHEET_NAME);
   if (existing) return existing;
   const sheet = spreadsheet.insertSheet(SHEET_NAME);

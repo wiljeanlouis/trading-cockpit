@@ -44,10 +44,16 @@ describe('get Watchlist', () => {
           strategyName: 'Momentum Breakout',
           strategyVersion: '1.0',
           signalDate: '2026-08-27T04:00:00.000Z',
+          signalPrice: 33.2,
           currentPrice: 34.82,
           momentumScore: 87,
           status: 'READY',
-          setupStatus: 'VALID'
+          setupStatus: 'VALID',
+          breakoutLevel: 35,
+          invalidationLevel: 31,
+          earningsDate: null,
+          eventRisk: null,
+          notes: null
         }
       ]
     });

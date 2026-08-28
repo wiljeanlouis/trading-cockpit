@@ -15,6 +15,7 @@ import {
   validateWatchlistSchema
 } from './watchlist-sheet';
 import { readSheetHeaders, requireColumn } from '../sheet-headers';
+import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 declare function themeWatchlist(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet): void;
 
 const WATCHLIST_SHEET_NAME = 'Watchlist';
@@ -79,11 +80,11 @@ export class GoogleSheetsWatchlistRepository implements WatchlistRepository {
 
     addWatchlistFormulas(sheet, insertedRow);
     formatWatchlistRow(sheet, insertedRow);
-    themeWatchlist(SpreadsheetApp.getActiveSpreadsheet());
+    themeWatchlist(getTradingCockpitSpreadsheet());
   }
 
   updateStatus(id: string, status: string): void {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(WATCHLIST_SHEET_NAME);
+    const sheet = getTradingCockpitSpreadsheet().getSheetByName(WATCHLIST_SHEET_NAME);
 
     if (!sheet) {
       throw new Error(`${WATCHLIST_SHEET_NAME} est absent.`);

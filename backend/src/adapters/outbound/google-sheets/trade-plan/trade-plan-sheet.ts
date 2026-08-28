@@ -1,12 +1,13 @@
 import { TRADE_PLAN_HEADERS } from './trade-plan-mapper';
 import { readSheetHeaders, requireColumn } from '../sheet-headers';
+import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 
 const SHEET_NAME = 'Trade Plans';
 const HISTORICAL_HEADERS = TRADE_PLAN_HEADERS.slice(0, 29);
 declare function themeTradePlans(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet): void;
 
 export function getOrCreateTradePlansSheet(): GoogleAppsScript.Spreadsheet.Sheet {
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const spreadsheet = getTradingCockpitSpreadsheet();
   let sheet = spreadsheet.getSheetByName(SHEET_NAME);
   if (sheet) return sheet;
   sheet = spreadsheet.insertSheet(SHEET_NAME);

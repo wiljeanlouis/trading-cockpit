@@ -8,13 +8,7 @@ export function rememberActiveTradingCockpitSpreadsheet(): void {
 
 export function getTradingCockpitSpreadsheet(): GoogleAppsScript.Spreadsheet.Spreadsheet {
   const activeSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  if (activeSpreadsheet) {
-    PropertiesService.getScriptProperties().setProperty(
-      SPREADSHEET_ID_PROPERTY,
-      activeSpreadsheet.getId()
-    );
-    return activeSpreadsheet;
-  }
+  if (activeSpreadsheet) return activeSpreadsheet;
 
   const spreadsheetId =
     PropertiesService.getScriptProperties().getProperty(SPREADSHEET_ID_PROPERTY);

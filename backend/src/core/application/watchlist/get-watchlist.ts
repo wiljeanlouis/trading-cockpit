@@ -36,10 +36,16 @@ export function createGetWatchlist({ reader, now }: GetWatchlistDependencies): G
       strategyName: entry.strategyName,
       strategyVersion: entry.strategyVersion,
       signalDate: serializedDate(entry.signalDate),
+      signalPrice: nullableNumber(entry.signalPrice),
       currentPrice: nullableNumber(entry.currentPrice),
       momentumScore: nullableNumber(entry.momentumScore),
       status: entry.status,
-      setupStatus: entry.setupStatus
+      setupStatus: entry.setupStatus,
+      breakoutLevel: nullableNumber(entry.breakoutLevel),
+      invalidationLevel: nullableNumber(entry.invalidationLevel),
+      earningsDate: serializedDate(entry.earningsDate),
+      eventRisk: nullableText(entry.eventRisk),
+      notes: nullableText(entry.notes)
     }));
 
     return {

@@ -1,4 +1,10 @@
-import type { DashboardSummaryDto, WatchlistDto } from '@trading-cockpit/contracts';
+import type {
+  CreateTradePlanRequest,
+  CreateTradePlanResponse,
+  DashboardSummaryDto,
+  TradingAccountsDto,
+  WatchlistDto
+} from '@trading-cockpit/contracts';
 import type { CockpitGateway } from '../cockpit-gateway';
 
 function failureMessage(error: unknown): string {
@@ -25,6 +31,24 @@ export class AppsScriptCockpitGateway implements CockpitGateway {
         .withSuccessHandler(resolve)
         .withFailureHandler((error) => reject(new Error(failureMessage(error))))
         .getWatchlist();
+    });
+  }
+
+  getTradingAccounts(): Promise<TradingAccountsDto> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .getTradingAccounts();
+    });
+  }
+
+  createTradePlan(request: CreateTradePlanRequest): Promise<CreateTradePlanResponse> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .createTradePlan(request);
     });
   }
 }

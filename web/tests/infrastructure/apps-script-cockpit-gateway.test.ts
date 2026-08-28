@@ -64,4 +64,46 @@ describe('AppsScriptCockpitGateway', () => {
     await expect(new AppsScriptCockpitGateway().getWatchlist()).resolves.toEqual(watchlist);
     expect(runner.getWatchlist).toHaveBeenCalledOnce();
   });
+
+  it('loads trading accounts through the Apps Script callback bridge', async () => {
+    const accounts = { accounts: [{ id: 'A1', name: 'Primary', baseCurrency: 'CAD' }] };
+    let success: ((value: typeof accounts) => void) | undefined;
+    const runner = {
+      withSuccessHandler: vi.fn((handler) => {
+        success = handler;
+        return runner;
+      }),
+      withFailureHandler: vi.fn(() => runner),
+      getTradingAccounts: vi.fn(() => success?.(accounts))
+    };
+    vi.stubGlobal('google', { script: { run: runner } });
+
+    await expect(new AppsScriptCockpitGateway().getTradingAccounts()).resolves.toEqual(accounts);
+    expect(runner.getTradingAccounts).toHaveBeenCalledOnce();
+  });
+
+  it('sends a typed Trade Plan command and resolves the backend result', async () => {
+    const result = {
+      kind: 'created' as const,
+      tradePlanId: 'TP-1',
+      watchlistId: 'WL-1',
+      ticker: 'BOX',
+      accountId: 'A1',
+      status: 'DRAFT'
+    };
+    let success: ((value: typeof result) => void) | undefined;
+    const runner = {
+      withSuccessHandler: vi.fn((handler) => {
+        success = handler;
+        return runner;
+      }),
+      withFailureHandler: vi.fn(() => runner),
+      createTradePlan: vi.fn(() => success?.(result))
+    };
+    vi.stubGlobal('google', { script: { run: runner } });
+
+    const command = { watchlistId: 'WL-1', accountId: 'A1' };
+    await expect(new AppsScriptCockpitGateway().createTradePlan(command)).resolves.toEqual(result);
+    expect(runner.createTradePlan).toHaveBeenCalledWith(command);
+  });
 });

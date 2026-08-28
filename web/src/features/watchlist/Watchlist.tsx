@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
+import { WatchlistDetail } from './WatchlistDetail';
 
 interface WatchlistProps {
   gateway: CockpitGateway;
@@ -51,7 +52,7 @@ function statusTone(status: string): 'positive' | 'muted' | 'planned' | 'watchin
   return 'watching';
 }
 
-function WatchlistRow({ item }: { item: WatchlistItemDto }) {
+function WatchlistRow({ item, onOpen }: { item: WatchlistItemDto; onOpen: () => void }) {
   return (
     <TableRow>
       <TableCell>
@@ -74,6 +75,11 @@ function WatchlistRow({ item }: { item: WatchlistItemDto }) {
         <Badge tone={statusTone(item.status)}>{item.status || '—'}</Badge>
         {item.setupStatus && <span className="cell-detail">Setup: {item.setupStatus}</span>}
       </TableCell>
+      <TableCell className="row-action-cell">
+        <Button onClick={onOpen} aria-label={`View ${item.ticker} details`}>
+          View
+        </Button>
+      </TableCell>
     </TableRow>
   );
 }
@@ -84,6 +90,7 @@ export function Watchlist({ gateway }: WatchlistProps) {
     loading: true,
     error: null
   });
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setState((current) => ({ ...current, loading: true, error: null }));
@@ -102,6 +109,8 @@ export function Watchlist({ gateway }: WatchlistProps) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const selectedCandidate = state.data?.items.find((item) => item.id === selectedId) ?? null;
 
   return (
     <main className="watchlist-shell">
@@ -150,36 +159,49 @@ export function Watchlist({ gateway }: WatchlistProps) {
       )}
 
       {state.data && state.data.items.length > 0 && (
-        <section className="watchlist-panel" aria-label="Watchlist candidates">
-          <div className="table-summary">
-            <span>{state.data.items.length} candidates</span>
-            <small>Read-only</small>
-          </div>
-          <div className="table-scroll">
-            <Table className="watchlist-table">
-              <TableHeader>
-                <TableRow>
-                  <TableHead scope="col">Ticker</TableHead>
-                  <TableHead scope="col">Strategy</TableHead>
-                  <TableHead scope="col">Signal date</TableHead>
-                  <TableHead scope="col">Sector</TableHead>
-                  <TableHead scope="col" className="numeric-cell">
-                    Current price
-                  </TableHead>
-                  <TableHead scope="col" className="numeric-cell">
-                    Momentum
-                  </TableHead>
-                  <TableHead scope="col">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {state.data.items.map((item) => (
-                  <WatchlistRow item={item} key={item.id} />
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </section>
+        <>
+          {selectedCandidate && (
+            <WatchlistDetail
+              candidate={selectedCandidate}
+              gateway={gateway}
+              onClose={() => setSelectedId(null)}
+              onTradePlanCreated={load}
+            />
+          )}
+          <section className="watchlist-panel" aria-label="Watchlist candidates">
+            <div className="table-summary">
+              <span>{state.data.items.length} candidates</span>
+              <small>Read-only</small>
+            </div>
+            <div className="table-scroll">
+              <Table className="watchlist-table">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead scope="col">Ticker</TableHead>
+                    <TableHead scope="col">Strategy</TableHead>
+                    <TableHead scope="col">Signal date</TableHead>
+                    <TableHead scope="col">Sector</TableHead>
+                    <TableHead scope="col" className="numeric-cell">
+                      Current price
+                    </TableHead>
+                    <TableHead scope="col" className="numeric-cell">
+                      Momentum
+                    </TableHead>
+                    <TableHead scope="col">Status</TableHead>
+                    <TableHead scope="col">
+                      <span className="visually-hidden">Actions</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {state.data.items.map((item) => (
+                    <WatchlistRow item={item} key={item.id} onOpen={() => setSelectedId(item.id)} />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </section>
+        </>
       )}
     </main>
   );

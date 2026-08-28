@@ -4,6 +4,7 @@ import {
 } from '../../../../core/domain/trading-account';
 import type { TradingAccountRepository } from '../../../../ports/outbound/trading-account-repository';
 import { TRADING_ACCOUNT_HEADERS, tradingAccountFromRow } from './trading-account-mapper';
+import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 
 const ACCOUNTS_SHEET_NAME = 'Accounts';
 
@@ -32,7 +33,7 @@ export class GoogleSheetsTradingAccountRepository implements TradingAccountRepos
   }
 
   private getOrCreateSheet(): GoogleAppsScript.Spreadsheet.Sheet {
-    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    const spreadsheet = getTradingCockpitSpreadsheet();
     const existing = spreadsheet.getSheetByName(ACCOUNTS_SHEET_NAME);
     if (existing) {
       const headers = existing

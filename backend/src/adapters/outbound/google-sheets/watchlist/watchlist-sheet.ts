@@ -1,11 +1,12 @@
 import { WATCHLIST_HEADERS } from './watchlist-mapper';
 import { readSheetHeaders, requireColumn } from '../sheet-headers';
+import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 
 const SHEET_NAME = 'Watchlist';
 declare function themeWatchlist(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet): void;
 
 export function getOrCreateWatchlistSheet(): GoogleAppsScript.Spreadsheet.Sheet {
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const spreadsheet = getTradingCockpitSpreadsheet();
   let sheet = spreadsheet.getSheetByName(SHEET_NAME);
   if (sheet) return sheet;
   sheet = spreadsheet.insertSheet(SHEET_NAME);
@@ -48,7 +49,7 @@ export function formatWatchlistRow(sheet: GoogleAppsScript.Spreadsheet.Sheet, ro
 }
 
 export function refreshWatchlistValidations(): void {
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const spreadsheet = getTradingCockpitSpreadsheet();
   const sheet = spreadsheet.getSheetByName(SHEET_NAME);
   if (!sheet) throw new Error('La Watchlist n’existe pas.');
   const headers = readSheetHeaders(sheet);

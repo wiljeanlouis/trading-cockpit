@@ -23,6 +23,13 @@ describe('Trading Cockpit spreadsheet locator', () => {
     expect(setProperty).toHaveBeenCalledWith('TRADING_COCKPIT_SPREADSHEET_ID', 'cockpit-sheet-id');
   });
 
+  it('uses the active spreadsheet without requiring Web App properties', () => {
+    const spreadsheet = { getId: () => 'active-sheet-id' };
+    vi.stubGlobal('SpreadsheetApp', { getActiveSpreadsheet: () => spreadsheet });
+
+    expect(getTradingCockpitSpreadsheet()).toBe(spreadsheet);
+  });
+
   it('opens the registered spreadsheet when called from a Web App', () => {
     const spreadsheet = { getId: () => 'cockpit-sheet-id' };
     const openById = vi.fn(() => spreadsheet);

@@ -15,7 +15,12 @@ const summary: DashboardSummaryDto = {
 };
 
 function gateway(getDashboardSummary: CockpitGateway['getDashboardSummary']): CockpitGateway {
-  return { getDashboardSummary, getWatchlist: vi.fn() };
+  return {
+    getDashboardSummary,
+    getWatchlist: vi.fn(),
+    getTradingAccounts: vi.fn(),
+    createTradePlan: vi.fn()
+  };
 }
 
 describe('Dashboard', () => {
