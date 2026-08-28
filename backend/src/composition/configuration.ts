@@ -1,7 +1,7 @@
 import {
   readLegacyCockpitConfiguration,
   setupLegacyCockpitConfiguration
-} from '../adapters/outbound/google-sheets/cockpit-configuration-sheet';
+} from '../adapters/outbound/google-sheets/cockpit-config/cockpit-configuration-sheet';
 
 export function runSetupCockpitConfiguration(): void {
   setupLegacyCockpitConfiguration();

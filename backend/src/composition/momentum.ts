@@ -1,9 +1,9 @@
 import { refreshMomentumRankingFromSheets } from '../adapters/inbound/google-sheets/refresh-momentum-ranking';
-import { GoogleSheetsMomentumRankingProjection } from '../adapters/outbound/google-sheets/google-sheets-momentum-ranking-projection';
+import { GoogleSheetsMomentumRankingProjection } from '../adapters/outbound/google-sheets/momentum/google-sheets-momentum-ranking-projection';
 import {
   GoogleSheetsMomentumSignalRepository,
   GoogleSheetsMomentumStrategyRepository
-} from '../adapters/outbound/google-sheets/google-sheets-momentum-signal-repository';
+} from '../adapters/outbound/google-sheets/momentum/google-sheets-momentum-signal-repository';
 import { createRefreshMomentumRanking } from '../core/application/momentum/refresh-momentum-ranking';
 import { RuntimeLogger } from '../adapters/outbound/apps-script/runtime-logger';
 

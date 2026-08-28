@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { updateWatchlistStatusInSheet } from '../../src/adapters/outbound/google-sheets/watchlist-status-writer';
+import { updateWatchlistStatusInSheet } from '../../src/adapters/outbound/google-sheets/watchlist/watchlist-status-writer';
 
 function createSheet(headers: unknown[], rows: unknown[][]) {
   const setValue = vi.fn();

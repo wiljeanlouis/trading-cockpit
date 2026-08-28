@@ -5,7 +5,7 @@ import {
   mapLegacyCockpitConfiguration,
   readLegacyCockpitConfiguration,
   setupLegacyCockpitConfiguration
-} from '../../src/adapters/outbound/google-sheets/cockpit-configuration-sheet';
+} from '../../src/adapters/outbound/google-sheets/cockpit-config/cockpit-configuration-sheet';
 
 afterEach(() => vi.unstubAllGlobals());
 

@@ -4,7 +4,7 @@ import {
   WATCHLIST_HEADERS,
   watchlistEntryFromRow,
   watchlistEntryToRow
-} from '../../src/adapters/outbound/google-sheets/watchlist-mapper';
+} from '../../src/adapters/outbound/google-sheets/watchlist/watchlist-mapper';
 import type { WatchlistEntry } from '../../src/core/domain/watchlist';
 
 describe('Momentum Ranking candidate mapper', () => {

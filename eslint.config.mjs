@@ -71,7 +71,7 @@ export default tseslint.config(
     rules: js.configs.recommended.rules
   },
   {
-    files: ['**/*.ts'],
+    files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     languageOptions: {
       globals: nodeGlobals

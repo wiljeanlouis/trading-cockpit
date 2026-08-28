@@ -4,7 +4,7 @@ import {
   journalEntriesFromRowsForPosition,
   journalEntryFromRow,
   journalEntryToRow
-} from '../../src/adapters/outbound/google-sheets/journal-mapper';
+} from '../../src/adapters/outbound/google-sheets/journal/journal-mapper';
 import { createJournalEntryFromClosedPosition } from '../../src/core/domain/journal-entry';
 import { openPosition } from '../fixtures/position';
 

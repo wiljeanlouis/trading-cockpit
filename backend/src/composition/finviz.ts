@@ -15,8 +15,8 @@ import {
 } from '../adapters/outbound/finviz/finviz-market-signal-source';
 import { FinvizTokenService } from '../adapters/outbound/finviz/finviz-token-service';
 import { GoogleSheetsFinvizSignalProjection } from '../adapters/outbound/finviz/google-sheets-finviz-signal-projection';
-import { GoogleSheetsSignalHistoryRepository } from '../adapters/outbound/google-sheets/google-sheets-signal-history-repository';
-import { GoogleSheetsTradingStrategyCatalog } from '../adapters/outbound/google-sheets/google-sheets-trading-strategy-catalog';
+import { GoogleSheetsSignalHistoryRepository } from '../adapters/outbound/google-sheets/signal-history/google-sheets-signal-history-repository';
+import { GoogleSheetsTradingStrategyCatalog } from '../adapters/outbound/google-sheets/trading-strategy/google-sheets-trading-strategy-catalog';
 import { createArchiveMarketSignals } from '../core/application/market-signals/archive-market-signals';
 import { createRefreshMarketSignals } from '../core/application/market-signals/refresh-market-signals';
 

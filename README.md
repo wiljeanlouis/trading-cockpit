@@ -8,6 +8,9 @@ prepared to host more than one user interface while keeping one authoritative ba
 ```text
 trading-cockpit/
 ├── backend/       # Current Google Apps Script application, TypeScript source and tests
+├── web/           # React + TypeScript inbound UI
+├── packages/
+│   └── contracts/ # Serializable contracts shared by backend and web
 ├── docs/          # Architecture documentation and ADRs
 ├── package.json   # Repository-level npm orchestration
 └── README.md
@@ -28,37 +31,29 @@ npm run deploy:prepare
 `deploy:prepare` builds and validates the runtime and prints `clasp status`; it does not deploy.
 `clasp push` remains a separate manual operation.
 
-## Future web application
+## Web cockpit
 
-A later phase may add `web/` as a React + TypeScript inbound interface. It will call backend
-application capabilities and will not access Google Sheets directly. Administration will be a
-feature under `web/src/features/admin/`, not a separate application.
+`web/` is a React + TypeScript inbound interface. Its read-only Dashboard calls the backend through
+a typed `CockpitGateway`; it never accesses Google Sheets or Apps Script globals directly. Vite dev
+uses explicit mock data, while the production build uses `google.script.run` behind the gateway.
 
-The anticipated frontend feature areas are dashboard, watchlist, trade plans, positions, journal,
-analytics and admin. No React application, frontend gateway or shared-contract package is created in
-Phase 11.8.
+Start local frontend development with:
 
-The provisional, non-implemented frontend direction is:
+```sh
+npm run dev
+```
+
+The currently implemented frontend shape is:
 
 ```text
 web/src/
 ├── app/
 ├── features/
-│   ├── dashboard/
-│   ├── watchlist/
-│   ├── trade-plans/
-│   ├── positions/
-│   ├── journal/
-│   ├── analytics/
-│   └── admin/
-│       ├── strategies/
-│       ├── accounts/
-│       ├── risk/
-│       ├── data-sources/
-│       └── system/
-├── components/
+│   └── dashboard/
 └── infrastructure/
+    └── apps-script/
 ```
 
-See [development workflow](docs/development.md) and
-[architecture overview](docs/architecture/overview.md).
+Administration will eventually live under `web/src/features/admin/`, not in a separate SPA.
+
+See [development workflow](docs/development.md) and [web cockpit](docs/web-cockpit.md).

@@ -7,8 +7,8 @@ import {
   getOrCreateTradePlansSheet,
   refreshTradePlanValidations,
   validateTradePlansSchema
-} from '../../src/adapters/outbound/google-sheets/trade-plan-sheet';
-import { TRADE_PLAN_HEADERS } from '../../src/adapters/outbound/google-sheets/trade-plan-mapper';
+} from '../../src/adapters/outbound/google-sheets/trade-plan/trade-plan-sheet';
+import { TRADE_PLAN_HEADERS } from '../../src/adapters/outbound/google-sheets/trade-plan/trade-plan-mapper';
 
 afterEach(() => vi.unstubAllGlobals());
 

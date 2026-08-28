@@ -4,20 +4,32 @@
   "private": true,
   "type": "module",
   "description": "Trading Cockpit repository orchestration",
+  "workspaces": [
+    "web",
+    "packages/*"
+  ],
   "scripts": {
+    "dev": "npm run dev --workspace @trading-cockpit/web",
     "build:runtime": "tsc -p backend/tsconfig.build.json",
     "build:cockpit": "node backend/scripts/build-cockpit.mjs",
-    "build": "npm run build:runtime && npm run build:cockpit",
-    "typecheck": "tsc -p backend/tsconfig.json && tsc -p backend/tsconfig.build.json --noEmit && tsc -p backend/tsconfig.app.json && tsc -p backend/tsconfig.test.json",
+    "build:backend": "npm run build:runtime && npm run build:cockpit",
+    "build:web": "npm run build --workspace @trading-cockpit/web",
+    "build": "npm run build:backend && npm run build:web",
+    "typecheck:backend": "tsc -p backend/tsconfig.json && tsc -p backend/tsconfig.build.json --noEmit && tsc -p backend/tsconfig.app.json && tsc -p backend/tsconfig.test.json",
+    "typecheck:contracts": "tsc -p packages/contracts/tsconfig.json",
+    "typecheck:web": "npm run typecheck --workspace @trading-cockpit/web",
+    "typecheck": "npm run typecheck:backend && npm run typecheck:contracts && npm run typecheck:web",
     "lint": "eslint .",
     "format": "prettier --write . --ignore-unknown",
     "format:check": "prettier --check . --ignore-unknown",
-    "test": "npm run build && vitest run --root backend --config vitest.config.ts",
-    "test:watch": "npm run build && vitest --root backend --config vitest.config.ts",
+    "test:backend": "npm run build:backend && vitest run --root backend --config vitest.config.ts",
+    "test:web": "npm run test --workspace @trading-cockpit/web",
+    "test": "npm run test:backend && npm run test:web",
+    "test:watch": "vitest --root backend --config vitest.config.ts",
     "check:architecture": "node backend/scripts/check-architecture.mjs",
     "check:apps-script": "node backend/scripts/check-apps-script.mjs",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run test && npm run check:architecture && npm run check:apps-script",
-    "deploy:prepare": "npm run check && clasp status"
+    "deploy:prepare": "npm run build && npm run check && clasp status"
   },
   "engines": {
     "node": ">=20.19.0"

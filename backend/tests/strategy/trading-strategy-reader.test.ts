@@ -3,7 +3,7 @@ import {
   GoogleSheetsTradingStrategyReader,
   mapTradingStrategyRow,
   type SheetTradingStrategy
-} from '../../src/adapters/outbound/google-sheets/google-sheets-trading-strategy-reader';
+} from '../../src/adapters/outbound/google-sheets/trading-strategy/google-sheets-trading-strategy-reader';
 import { validateEnabledStrategies } from '../../src/adapters/inbound/google-sheets/setup-strategies';
 
 afterEach(() => vi.unstubAllGlobals());

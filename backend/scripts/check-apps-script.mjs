@@ -17,6 +17,19 @@ const bundleFileNames = existsSync(buildRoot)
   : [];
 
 const sourceFileNames = [...legacySourceFileNames, ...bundleFileNames].sort();
+const webHtmlPath = new URL('../build/CockpitWeb.html', import.meta.url);
+
+if (!existsSync(webHtmlPath)) {
+  throw new Error('Missing generated Apps Script web artifact: build/CockpitWeb.html');
+}
+
+const webHtml = readFileSync(webHtmlPath, 'utf8');
+if (!webHtml.includes('<div id="root"></div>')) {
+  throw new Error('CockpitWeb.html does not contain the React root.');
+}
+if (/<script[^>]+src=|<link[^>]+rel=["']stylesheet["']/i.test(webHtml)) {
+  throw new Error('CockpitWeb.html contains an external runtime asset.');
+}
 
 const sources = new Map(
   sourceFileNames.map((fileName) => [
@@ -101,7 +114,7 @@ if (collisions.length > 0 || reintroducedWorkflowFunctions.length > 0) {
     process.exitCode = 1;
   } else {
     console.log(
-      `Apps Script check passed: ${sourceFileNames.length} files, ` +
+      `Apps Script check passed: ${sourceFileNames.length} JavaScript files and 1 inline HTML file, ` +
         `${definitions.size} global functions, ${menuTargets.length} menu targets.`
     );
   }

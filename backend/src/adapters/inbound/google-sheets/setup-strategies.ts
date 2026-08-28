@@ -1,7 +1,7 @@
 import {
   GoogleSheetsTradingStrategyReader,
   type SheetTradingStrategy
-} from '../../outbound/google-sheets/google-sheets-trading-strategy-reader';
+} from '../../outbound/google-sheets/trading-strategy/google-sheets-trading-strategy-reader';
 
 declare function themeSimpleSheet(
   spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet,

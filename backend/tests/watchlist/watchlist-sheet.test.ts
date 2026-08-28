@@ -7,7 +7,7 @@ import {
   getOrCreateWatchlistSheet,
   refreshWatchlistValidations,
   validateWatchlistSchema
-} from '../../src/adapters/outbound/google-sheets/watchlist-sheet';
+} from '../../src/adapters/outbound/google-sheets/watchlist/watchlist-sheet';
 
 afterEach(() => vi.unstubAllGlobals());
 

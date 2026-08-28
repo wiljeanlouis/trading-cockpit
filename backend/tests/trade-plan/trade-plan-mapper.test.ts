@@ -3,7 +3,7 @@ import {
   TRADE_PLAN_HEADERS,
   tradePlanFromRow,
   tradePlanToRow
-} from '../../src/adapters/outbound/google-sheets/trade-plan-mapper';
+} from '../../src/adapters/outbound/google-sheets/trade-plan/trade-plan-mapper';
 import { selectedWatchlistRowToCommand } from '../../src/adapters/inbound/google-sheets/watchlist-selection-mapper';
 import type { TradePlan } from '../../src/core/domain/trade-plan';
 

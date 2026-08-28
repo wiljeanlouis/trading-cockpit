@@ -1,7 +1,7 @@
 /// <reference types="google-apps-script" />
 
 import { describe, expect, it, vi } from 'vitest';
-import { JOURNAL_HEADERS } from '../../src/adapters/outbound/google-sheets/journal-mapper';
+import { JOURNAL_HEADERS } from '../../src/adapters/outbound/google-sheets/journal/journal-mapper';
 import {
   addJournalFormulas,
   ensureJournalAccountColumn,
@@ -9,7 +9,7 @@ import {
   getOrCreateJournalSheet,
   refreshJournalValidations,
   validateJournalSchema
-} from '../../src/adapters/outbound/google-sheets/journal-sheet';
+} from '../../src/adapters/outbound/google-sheets/journal/journal-sheet';
 
 function sheetWithHeaders(headers: readonly string[]) {
   const formulas = new Map<number, string>();

@@ -3,7 +3,7 @@ import {
   TRADING_ACCOUNT_HEADERS,
   tradingAccountFromRow,
   tradingAccountRiskPolicyFromRow
-} from '../../src/adapters/outbound/google-sheets/trading-account-mapper';
+} from '../../src/adapters/outbound/google-sheets/trading-account/trading-account-mapper';
 
 describe('Trading Account mapper', () => {
   it('maps the three-column Accounts schema', () => {

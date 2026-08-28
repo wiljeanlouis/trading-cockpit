@@ -10,10 +10,29 @@ Signals History slices.
 The multi-account foundation adds explicit Trading Account identity to new Positions and Journals.
 
 The repository root is an orchestration boundary. `backend/` contains the supported Apps Script
-application, including the Google Sheets inbound UI. A future `web/` React application may become a
-second inbound UI, but it must call backend application capabilities rather than reading Google
-Sheets directly. Backend domain rules, sizing, risk, scoring, state transitions, persistence and
-provider integrations remain authoritative.
+application and Google Sheets inbound UI. `web/` is a second, React-based inbound UI. It calls
+backend application capabilities through a typed gateway and never reads Google Sheets directly.
+Backend domain rules, sizing, risk, scoring, state transitions, persistence and provider
+integrations remain authoritative.
+
+```text
+React Dashboard
+      |
+      v
+CockpitGateway -> AppsScriptCockpitGateway -> google.script.run
+                                              |
+                                              v
+                                      Apps Script entrypoint
+                                              |
+                                              v
+                                      application use case
+                                              |
+                                              v
+                                  Google Sheets outbound adapter
+```
+
+The shared `packages/contracts` package contains only serializable boundary DTOs. It contains no
+Google Sheets or Apps Script types. See [Web cockpit](../web-cockpit.md) and ADR 0011.
 
 ```text
 Google Sheets menu
@@ -90,7 +109,9 @@ adapter types. See ADR 0009.
 ## Build and runtime boundary
 
 `npm run build:cockpit` bundles TypeScript modules into the Apps Script-compatible IIFE
-`backend/build/Cockpit.js`. The build appends stable global functions for migrated menu actions and `onOpen`.
+`backend/build/Cockpit.js`. The build appends stable global functions for migrated menu actions,
+`onOpen`, `doGet`, and the React Dashboard endpoint. Vite produces a second generated runtime file,
+`backend/build/CockpitWeb.html`, with its JavaScript and CSS inlined for HtmlService.
 The menu definition itself is maintained in a TypeScript inbound adapter. The Sheets menu therefore
 keeps its existing labels and callback names while implementations change behind them. Watchlist,
 Trade Plan, Position, Journal, Strategy, setup, and Cockpit Config physical infrastructure are now

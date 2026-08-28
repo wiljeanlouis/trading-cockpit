@@ -1,7 +1,7 @@
 /// <reference types="google-apps-script" />
 
 import { describe, expect, it, vi } from 'vitest';
-import { POSITION_HEADERS } from '../../src/adapters/outbound/google-sheets/position-mapper';
+import { POSITION_HEADERS } from '../../src/adapters/outbound/google-sheets/position/position-mapper';
 import {
   addPositionFormulas,
   ensurePositionAccountColumn,
@@ -9,7 +9,7 @@ import {
   getOrCreatePositionsSheet,
   refreshPositionValidations,
   validatePositionsSchema
-} from '../../src/adapters/outbound/google-sheets/position-sheet';
+} from '../../src/adapters/outbound/google-sheets/position/position-sheet';
 
 function sheetWithHeaders(headers: readonly string[]) {
   const formulas = new Map<number, string>();

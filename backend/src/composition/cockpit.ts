@@ -11,14 +11,14 @@ import {
   recordInitialFundingFromSheets,
   recordWithdrawalFromSheets
 } from '../adapters/inbound/google-sheets/record-capital-transaction';
-import { GoogleSheetsStrategyRepository } from '../adapters/outbound/google-sheets/google-sheets-strategy-repository';
-import { GoogleSheetsPositionRepository } from '../adapters/outbound/google-sheets/google-sheets-position-repository';
-import { GoogleSheetsJournalRepository } from '../adapters/outbound/google-sheets/google-sheets-journal-repository';
-import { GoogleSheetsTradePlanRepository } from '../adapters/outbound/google-sheets/google-sheets-trade-plan-repository';
-import { GoogleSheetsTradingAccountRepository } from '../adapters/outbound/google-sheets/google-sheets-trading-account-repository';
-import { GoogleSheetsCapitalTransactionRepository } from '../adapters/outbound/google-sheets/google-sheets-capital-transaction-repository';
-import { GoogleSheetsTradingAccountRiskPolicyRepository } from '../adapters/outbound/google-sheets/google-sheets-trading-account-risk-policy-repository';
-import { GoogleSheetsWatchlistRepository } from '../adapters/outbound/google-sheets/google-sheets-watchlist-repository';
+import { GoogleSheetsStrategyRepository } from '../adapters/outbound/google-sheets/trading-strategy/google-sheets-strategy-repository';
+import { GoogleSheetsPositionRepository } from '../adapters/outbound/google-sheets/position/google-sheets-position-repository';
+import { GoogleSheetsJournalRepository } from '../adapters/outbound/google-sheets/journal/google-sheets-journal-repository';
+import { GoogleSheetsTradePlanRepository } from '../adapters/outbound/google-sheets/trade-plan/google-sheets-trade-plan-repository';
+import { GoogleSheetsTradingAccountRepository } from '../adapters/outbound/google-sheets/trading-account/google-sheets-trading-account-repository';
+import { GoogleSheetsCapitalTransactionRepository } from '../adapters/outbound/google-sheets/capital-transaction/google-sheets-capital-transaction-repository';
+import { GoogleSheetsTradingAccountRiskPolicyRepository } from '../adapters/outbound/google-sheets/trading-account/google-sheets-trading-account-risk-policy-repository';
+import { GoogleSheetsWatchlistRepository } from '../adapters/outbound/google-sheets/watchlist/google-sheets-watchlist-repository';
 import { createCreateTradePlanFromWatchlist } from '../core/application/trade-plan/create-trade-plan-from-watchlist';
 import { createOpenPositionFromTradePlan } from '../core/application/position/open-position-from-trade-plan';
 import { createClosePosition } from '../core/application/position/close-position';

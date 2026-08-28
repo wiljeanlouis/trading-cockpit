@@ -28,9 +28,22 @@ import {
   runRefreshFinviz,
   runSetFinvizToken
 } from '../composition/finviz';
+import type { DashboardSummaryDto } from '@trading-cockpit/contracts';
+import { serveReactCockpit } from '../adapters/inbound/apps-script/serve-react-cockpit';
+import { runGetDashboardSummary } from '../composition/dashboard';
+import { rememberActiveTradingCockpitSpreadsheet } from '../adapters/outbound/google-sheets/trading-cockpit-spreadsheet';
+
+export function doGet(): GoogleAppsScript.HTML.HtmlOutput {
+  return serveReactCockpit();
+}
+
+export function getDashboardSummary(): DashboardSummaryDto {
+  return runGetDashboardSummary();
+}
 
 export function onOpen(): void {
   installCockpitMenu();
+  rememberActiveTradingCockpitSpreadsheet();
 }
 
 export function refreshMomentumRanking(): void {

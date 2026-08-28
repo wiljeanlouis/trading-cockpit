@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const sourceRoot = join(repositoryRoot, 'src');
+const webRoot = join(repositoryRoot, '../web/src');
+const webTestsRoot = join(repositoryRoot, '../web/tests');
 const forbiddenAppsScriptGlobals = [
   'SpreadsheetApp',
   'UrlFetchApp',
@@ -21,12 +23,13 @@ function collectTypeScriptFiles(directory) {
       return collectTypeScriptFiles(path);
     }
 
-    return entry.isFile() && entry.name.endsWith('.ts') ? [path] : [];
+    return entry.isFile() && /\.tsx?$/.test(entry.name) ? [path] : [];
   });
 }
 
 const violations = [];
 const sourceFiles = collectTypeScriptFiles(sourceRoot);
+const webFiles = [...collectTypeScriptFiles(webRoot), ...collectTypeScriptFiles(webTestsRoot)];
 
 for (const filePath of sourceFiles) {
   const source = readFileSync(filePath, 'utf8');
@@ -70,6 +73,33 @@ for (const filePath of sourceFiles) {
   }
 }
 
+for (const filePath of webFiles) {
+  const source = readFileSync(filePath, 'utf8');
+  const repositoryPath = relative(join(repositoryRoot, '..'), filePath).replaceAll('\\', '/');
+  const isAppsScriptGateway =
+    repositoryPath.endsWith('infrastructure/apps-script/apps-script-cockpit-gateway.ts') ||
+    repositoryPath.endsWith('tests/infrastructure/apps-script-cockpit-gateway.test.ts');
+
+  if (/from\s+['"][^'"]*backend\//.test(source)) {
+    violations.push(`${repositoryPath}: web must not import backend implementation`);
+  }
+  if (/\bSpreadsheetApp\b/.test(source)) {
+    violations.push(`${repositoryPath}: web must not use SpreadsheetApp`);
+  }
+  if (/google\.script\.run/.test(source) && !isAppsScriptGateway) {
+    violations.push(
+      `${repositoryPath}: google.script.run is restricted to AppsScriptCockpitGateway`
+    );
+  }
+  if (
+    /\/(?:app|features|components)\//.test(repositoryPath) &&
+    /apps-script-cockpit-gateway/.test(source) &&
+    !repositoryPath.endsWith('app/create-cockpit-gateway.ts')
+  ) {
+    violations.push(`${repositoryPath}: React components must depend on CockpitGateway`);
+  }
+}
+
 if (violations.length > 0) {
   for (const violation of violations) {
     console.error(violation);
@@ -78,7 +108,7 @@ if (violations.length > 0) {
   process.exitCode = 1;
 } else {
   console.log(
-    `Architecture check passed: ${sourceFiles.length} TypeScript modules, ` +
+    `Architecture check passed: ${sourceFiles.length} backend and ${webFiles.length} web modules, ` +
       'no core/port dependency on adapters, Apps Script globals, or external provider names; ' +
       'no non-theme legacy global dependency.'
   );

@@ -4,7 +4,7 @@ import {
   capitalTransactionFromRow,
   capitalTransactionToRow,
   capitalTransactionsFromRowsForAccount
-} from '../../src/adapters/outbound/google-sheets/capital-transaction-mapper';
+} from '../../src/adapters/outbound/google-sheets/capital-transaction/capital-transaction-mapper';
 
 describe('Capital Ledger mapper', () => {
   it('maps exact append-only schema in both directions', () => {
