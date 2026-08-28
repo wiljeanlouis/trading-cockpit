@@ -62,6 +62,19 @@ function onOpen() {
       'Setup Trading Accounts',
       'setupTradingAccounts'
     )
+    .addSeparator()
+    .addItem(
+      'Record Initial Funding',
+      'recordInitialFunding'
+    )
+    .addItem(
+      'Record Deposit',
+      'recordDeposit'
+    )
+    .addItem(
+      'Record Withdrawal',
+      'recordWithdrawal'
+    )
     .addItem(
       'Setup Strategies',
       'setupStrategies'

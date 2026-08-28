@@ -1,10 +1,16 @@
 import type { TradingAccount } from '../../../core/domain/trading-account';
 
-export function setupTradingAccounts(listAccounts: () => TradingAccount[]): void {
+export function setupTradingAccounts(
+  listAccounts: () => TradingAccount[],
+  setupCapitalLedger: () => void,
+  setupRiskPolicy: () => void
+): void {
   const accounts = listAccounts();
+  setupCapitalLedger();
+  setupRiskPolicy();
   SpreadsheetApp.getActiveSpreadsheet().toast(
     accounts.length === 0
-      ? 'Feuille Accounts créée. Ajoute Account ID, Name et Base Currency.'
+      ? 'Feuilles Accounts et Capital Ledger prêtes. Configure les comptes sans inventer de financement.'
       : `${accounts.length} Trading Account(s) configuré(s).`,
     'Trading Cockpit',
     7

@@ -2,10 +2,18 @@
 
 ## Domain and storage
 
-A Trading Account is identity/configuration only: stable `id`, user-facing `name`, and explicit
-`baseCurrency`. The `Accounts` sheet has exactly `Account ID`, `Name`, and `Base Currency`. Setup
+A Trading Account remains identity/configuration only: stable `id`, user-facing `name`, and explicit
+`baseCurrency`. The `Accounts` sheet has `Account ID`, `Name`, `Base Currency`, and
+`Risk % Per Trade`. Setup
 creates headers but no sample or real accounts. `ALL` is rejected as an ID because consolidation is
 a `PortfolioScope`, not a persisted account.
+
+`Risk % Per Trade` is an optional account policy foundation with the existing system bound
+`0 < risk <= 1`. It is not yet consumed by Trade Plan creation. Cockpit Config Default Risk % remains
+the sole runtime sizing source until Phase 11, so there is no unexplained fallback or dual precedence.
+
+External active-trading allocations live in the separate append-only
+[Capital Ledger](capital-ledger.md), never as mutable TradingAccount balances.
 
 ## Characterized single-account assumptions
 

@@ -47,6 +47,18 @@ await build({
       '',
       'function setupTradingAccounts() {',
       '  return CockpitBundle.setupTradingAccounts();',
+      '}',
+      '',
+      'function recordInitialFunding() {',
+      '  return CockpitBundle.recordInitialFunding();',
+      '}',
+      '',
+      'function recordDeposit() {',
+      '  return CockpitBundle.recordDeposit();',
+      '}',
+      '',
+      'function recordWithdrawal() {',
+      '  return CockpitBundle.recordWithdrawal();',
       '}'
     ].join('\n')
   }

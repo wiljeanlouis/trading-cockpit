@@ -178,6 +178,14 @@ Trading Accounts are identity/configuration only; capital remains outside the mo
 stay single-execution, so the same ticker may be opened in several accounts through distinct plans.
 See [Trading Accounts foundation](trading-accounts.md) and ADR 0005.
 
+## Active trading external capital
+
+The `Capital Ledger` records INITIAL_FUNDING, DEPOSIT, and WITHDRAWAL per Trading Account as immutable
+append-only history. These external flows are separate from Position/Journal trading performance.
+Account-level summaries derive NetExternalCapital in the account base currency, but never reinterpret
+it as cash or equity. Trade Plan sizing remains driven by the frozen global Cockpit Config equity and
+risk inputs. See [Capital Ledger](capital-ledger.md) and ADR 0006.
+
 ## Close Position to Journal flow
 
 ```text

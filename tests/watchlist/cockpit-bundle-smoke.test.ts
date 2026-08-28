@@ -25,12 +25,18 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.CockpitBundle?.closeSelectedPosition).toBeTypeOf('function');
     expect(context.CockpitBundle?.reconcileSelectedPosition).toBeTypeOf('function');
     expect(context.CockpitBundle?.setupTradingAccounts).toBeTypeOf('function');
+    expect(context.CockpitBundle?.recordInitialFunding).toBeTypeOf('function');
+    expect(context.CockpitBundle?.recordDeposit).toBeTypeOf('function');
+    expect(context.CockpitBundle?.recordWithdrawal).toBeTypeOf('function');
     expect(context.addSelectedToWatchlist).toBeTypeOf('function');
     expect(context.createTradePlanFromSelectedWatchlist).toBeTypeOf('function');
     expect(context.executeSelectedTradePlan).toBeTypeOf('function');
     expect(context.closeSelectedPosition).toBeTypeOf('function');
     expect(context.reconcileSelectedPosition).toBeTypeOf('function');
     expect(context.setupTradingAccounts).toBeTypeOf('function');
+    expect(context.recordInitialFunding).toBeTypeOf('function');
+    expect(context.recordDeposit).toBeTypeOf('function');
+    expect(context.recordWithdrawal).toBeTypeOf('function');
     expect(context.runArchitecturePoc).toBeUndefined();
   });
 });

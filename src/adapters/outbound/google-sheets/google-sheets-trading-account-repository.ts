@@ -34,7 +34,19 @@ export class GoogleSheetsTradingAccountRepository implements TradingAccountRepos
   private getOrCreateSheet(): GoogleAppsScript.Spreadsheet.Sheet {
     const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     const existing = spreadsheet.getSheetByName(ACCOUNTS_SHEET_NAME);
-    if (existing) return existing;
+    if (existing) {
+      const headers = existing
+        .getRange(1, 1, 1, existing.getLastColumn())
+        .getValues()[0]
+        .map((value) => String(value).trim());
+      if (!headers.includes('Risk % Per Trade')) {
+        existing
+          .getRange(1, existing.getLastColumn() + 1)
+          .setValue('Risk % Per Trade')
+          .setFontWeight('bold');
+      }
+      return existing;
+    }
 
     const sheet = spreadsheet.insertSheet(ACCOUNTS_SHEET_NAME);
     sheet
