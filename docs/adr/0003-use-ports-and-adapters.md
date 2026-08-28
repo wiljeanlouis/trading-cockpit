@@ -5,7 +5,7 @@
 
 ## Context
 
-Trading Cockpit is a Google Apps Script application whose root JavaScript files share one global
+Trading Cockpit is a Google Apps Script application whose JavaScript files share one global
 namespace and directly combine spreadsheet access, business decisions, formatting, and user
 interaction. Rewriting the application at once would put working spreadsheet behavior and data
 contracts at risk. The modular TypeScript build is already able to coexist with the legacy runtime,

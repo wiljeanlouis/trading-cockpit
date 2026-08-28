@@ -4,7 +4,9 @@ import tseslint from 'typescript-eslint';
 
 const repositoryRoot = new URL('.', import.meta.url);
 
-const sourceFileNames = readdirSync(repositoryRoot, {
+const backendRoot = new URL('backend/', repositoryRoot);
+
+const sourceFileNames = readdirSync(backendRoot, {
   withFileTypes: true
 })
   .filter((entry) => entry.isFile() && entry.name.endsWith('.js'))
@@ -13,7 +15,7 @@ const sourceFileNames = readdirSync(repositoryRoot, {
 const projectGlobals = {};
 
 for (const fileName of sourceFileNames) {
-  const source = readFileSync(new URL(fileName, repositoryRoot), 'utf8');
+  const source = readFileSync(new URL(fileName, backendRoot), 'utf8');
 
   for (const match of source.matchAll(/^function\s+([A-Za-z_$][\w$]*)\s*\(/gm)) {
     projectGlobals[match[1]] = 'readonly';
@@ -40,10 +42,10 @@ const nodeGlobals = {
 
 export default tseslint.config(
   {
-    ignores: ['node_modules/**', 'coverage/**', 'build/**']
+    ignores: ['node_modules/**', 'coverage/**', 'backend/build/**']
   },
   {
-    files: ['*.js'],
+    files: ['backend/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'script',
@@ -85,7 +87,7 @@ export default tseslint.config(
     }
   },
   {
-    files: ['MomentumScore.ts'],
+    files: ['backend/MomentumScore.ts'],
     rules: {
       '@typescript-eslint/no-unused-vars': [
         'error',

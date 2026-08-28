@@ -11,11 +11,11 @@ and exposes internal helpers as Apps Script globals.
 
 ## Decision
 
-TypeScript under `src/` is the maintained source for migrated application behavior. esbuild produces
-`build/Cockpit.js` as an IIFE and appends the stable global functions required by Apps Script triggers
+TypeScript under `backend/src/` is the maintained source for migrated application behavior. esbuild produces
+`backend/build/Cockpit.js` as an IIFE and appends the stable global functions required by Apps Script triggers
 and menu callbacks. Generated JavaScript is never edited manually.
 
-Root JavaScript is allowed only for explicitly inventoried legacy features or temporary Google
+JavaScript at the `backend/` root is allowed only for explicitly inventoried legacy features or temporary Google
 Sheets adapter helpers. A migrated workflow's competing JavaScript implementation is deleted after
 reference analysis and regression validation. Legacy migration proceeds by vertical slice, not by
 blind syntax conversion.

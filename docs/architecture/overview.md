@@ -4,17 +4,23 @@
 
 Trading Cockpit is in a progressive migration from a global Google Apps Script application to a
 modular TypeScript application. Both forms run together in the same Apps Script project. Legacy
-root-level JavaScript continues to own the remaining inventoried workflows. TypeScript owns the
+JavaScript under `backend/` continues to own the remaining inventoried workflows. TypeScript owns the
 migrated Watchlist, Trade Plan, Position, Journal, account capital, Momentum, Market Signals, and
 Signals History slices.
 The multi-account foundation adds explicit Trading Account identity to new Positions and Journals.
+
+The repository root is an orchestration boundary. `backend/` contains the supported Apps Script
+application, including the Google Sheets inbound UI. A future `web/` React application may become a
+second inbound UI, but it must call backend application capabilities rather than reading Google
+Sheets directly. Backend domain rules, sizing, risk, scoring, state transitions, persistence and
+provider integrations remain authoritative.
 
 ```text
 Google Sheets menu
         |
         | stable global wrappers
         v
-build/Cockpit.js
+backend/build/Cockpit.js
   entrypoint -> composition root -> inbound Google Sheets adapter
                                       |
                                       v
@@ -35,19 +41,19 @@ build/Cockpit.js
 
 ## Layer responsibilities
 
-- `src/core/domain` contains Watchlist, Trade Plan, Position, Journal Entry, Momentum, and market
+- `backend/src/core/domain` contains Watchlist, Trade Plan, Position, Journal Entry, Momentum, and market
   signal business values,
   validations, identities, lifecycle transitions, and calculations.
-- `src/core/application` orchestrates migrated trading, capital, Momentum, and market signal use
+- `backend/src/core/application` orchestrates migrated trading, capital, Momentum, and market signal use
   cases without knowing Google Sheets, Apps Script APIs, or external provider details.
-- `src/ports/outbound` declares the minimum capabilities the use cases need: strategy existence,
+- `backend/src/ports/outbound` declares the minimum capabilities the use cases need: strategy existence,
   Watchlist and Trade Plan persistence, trading configuration, current time, and ID generation.
-- `src/adapters/inbound` translates active spreadsheet selections into application commands and
+- `backend/src/adapters/inbound` translates active spreadsheet selections into application commands and
   translates results into the existing spreadsheet toasts.
-- `src/adapters/outbound` implements ports with Google Sheets and Apps Script. The Watchlist mapper
+- `backend/src/adapters/outbound` implements ports with Google Sheets and Apps Script. The Watchlist mapper
   is the explicit boundary between the 22-column sheet schema and domain entries.
-- `src/composition` manually wires the use case and concrete adapters.
-- `src/entrypoints` exposes functions to the generated bundle. It does not itself create Apps Script
+- `backend/src/composition` manually wires the use case and concrete adapters.
+- `backend/src/entrypoints` exposes functions to the generated bundle. It does not itself create Apps Script
   globals.
 
 ## External market signal provider boundary
@@ -59,7 +65,7 @@ strategy, replaces the current projection, and archives the signal snapshot.
 
 Finviz is an outbound adapter implementing that capability. Its URL, screener query, authentication
 token, Script Properties storage, HTTP behavior, CSV parsing, response shape, error translation, and
-transport-to-signal mapping stay under `src/adapters/outbound/finviz`. The composition root selects
+transport-to-signal mapping stay under `backend/src/adapters/outbound/finviz`. The composition root selects
 this implementation. The inbound adapter, public callbacks, menu label `Refresh Finviz`, and physical
 sheet `Finviz - Momentum` remain provider-specific compatibility surfaces.
 
@@ -84,7 +90,7 @@ adapter types. See ADR 0009.
 ## Build and runtime boundary
 
 `npm run build:cockpit` bundles TypeScript modules into the Apps Script-compatible IIFE
-`build/Cockpit.js`. The build appends stable global functions for migrated menu actions and `onOpen`.
+`backend/build/Cockpit.js`. The build appends stable global functions for migrated menu actions and `onOpen`.
 The menu definition itself is maintained in a TypeScript inbound adapter. The Sheets menu therefore
 keeps its existing labels and callback names while implementations change behind them. Watchlist,
 Trade Plan, Position, Journal, Strategy, setup, and Cockpit Config physical infrastructure are now
@@ -295,7 +301,7 @@ selected Positions row.
 
 ## Architecture POC retirement
 
-The greeting-based `src/poc` demonstration and its tests were removed after three real Cockpit
+The greeting-based `backend/src/poc` demonstration and its tests were removed after three real Cockpit
 slices validated the modular runtime. No build, runtime, or architectural check depended on them.
 The bundle smoke test still asserts that the obsolete `runArchitecturePoc` global is absent.
 

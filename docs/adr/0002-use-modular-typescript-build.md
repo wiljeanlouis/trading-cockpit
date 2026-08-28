@@ -17,11 +17,12 @@ remain discoverable for menus and triggers.
 ## Decision
 
 Use esbuild to bundle modular TypeScript entrypoints into non-minified IIFE JavaScript files under
-`build/`.
+`backend/build/`.
 
-- TypeScript sources live under `src/` and are excluded from clasp.
-- Generated `build/` output is ignored by Git but included by clasp.
-- The existing repository-root `rootDir` remains unchanged during coexistence.
+- TypeScript sources live under `backend/src/` and are excluded from clasp.
+- Generated `backend/build/` output is ignored by Git but included by clasp.
+- Since Phase 11.8, `.clasp.json` uses `backend` as `rootDir`; the earlier repository-root layout is
+  retained only in history.
 - `tsc --noEmit` performs strict typechecking independently of esbuild.
 - Each Apps Script entrypoint is exposed by an explicit top-level wrapper function added by the build.
 - Unit tests import source modules directly; separate smoke tests execute the generated bundle.
@@ -58,7 +59,7 @@ Positive consequences:
 
 - Source modules can use real imports, exports, interfaces, and type-only imports.
 - Apps Script receives one plain JavaScript file per modular entrypoint.
-- Legacy files and modular output deploy together without changing their current paths.
+- Legacy files and modular output deploy together from the isolated `backend/` clasp root.
 - Global functions are explicit and auditable.
 - The build remains small and fast.
 
@@ -67,5 +68,5 @@ Trade-offs:
 - Generated bundles must exist before `clasp push`.
 - Typechecking and bundling remain two separate operations.
 - Global wrappers must be maintained as part of the build configuration.
-- The temporary deployment layout mixes root legacy files and generated files under `build/`.
+- The transitional deployment layout mixes legacy files and generated files inside `backend/`.
 - Apps Script stack traces refer to generated JavaScript while source maps are disabled.

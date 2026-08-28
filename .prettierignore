@@ -1,6 +1,6 @@
 node_modules/
 coverage/
 build/
-/*.js
+/backend/*.js
 .clasp.json
-appsscript.json
+backend/appsscript.json

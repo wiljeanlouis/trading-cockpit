@@ -29,12 +29,12 @@ Esbuild does not typecheck TypeScript, so `npm run typecheck` continues to run `
 
 ```text
 SOURCE
-  src/**/*.ts
+  backend/src/**/*.ts
        |
        | npm run build:cockpit
        v
 BUILD OUTPUT
-  build/Cockpit.js
+  backend/build/Cockpit.js
        |
        | clasp push (manual only)
        v
@@ -42,12 +42,12 @@ DEPLOYMENT
   Google Apps Script V8
 ```
 
-`src/` is versioned and excluded from clasp. `build/` is generated and ignored by Git, but it is
+`backend/src/` is versioned and excluded from clasp. `backend/build/` is generated and ignored by Git, but it is
 intentionally not excluded from clasp.
 
-The existing `.clasp.json` keeps `rootDir` at the repository root. This lets clasp deploy the 14
-hand-maintained legacy JavaScript files and the generated modular bundle together without copying
-files or changing their paths.
+The root `.clasp.json` points `rootDir` to `backend`. This confines clasp discovery to the Apps
+Script application. `.claspignore` excludes TypeScript, tests, scripts, configuration and transient
+tooling caches, while retaining the six maintained JavaScript files, generated bundle and manifest.
 
 ## Migrated slice module graph
 
@@ -139,9 +139,9 @@ separate manual command.
 
 The expected clasp runtime is:
 
-- 6 hand-maintained legacy JavaScript files at the repository root;
-- `build/Cockpit.js`;
-- `appsscript.json`.
+- 6 hand-maintained legacy JavaScript files under `backend/`;
+- `backend/build/Cockpit.js`;
+- `backend/appsscript.json`.
 
 ## Source maps
 

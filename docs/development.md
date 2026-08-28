@@ -8,6 +8,8 @@
 
 Google Apps Script remains the production runtime. TypeScript is the maintained source for migrated
 behavior; documented legacy JavaScript and the generated bundle share the Apps Script namespace.
+The repository root owns npm orchestration; the complete current application lives under
+`backend/`.
 
 ## Install
 
@@ -26,7 +28,7 @@ npm run check
 The command runs TypeScript checks, ESLint, the scoped Prettier check, Vitest, and Apps Script
 namespace/menu validation.
 
-The tests build `build/Cockpit.js` from the TypeScript module graph first. The bundle is generated
+The tests build `backend/build/Cockpit.js` from the TypeScript module graph first. The bundle is generated
 Apps Script runtime code and must not be edited directly.
 
 Individual commands are also available:
@@ -69,12 +71,17 @@ clasp push
 ```
 
 Always inspect the Git diff and `clasp status` before pushing. Tooling, tests, and documentation are
-excluded from Apps Script by `.claspignore`. Generated files under `build/` are ignored by Git but
+excluded from Apps Script by `.claspignore`. Generated files under `backend/build/` are ignored by Git but
 intentionally included by clasp.
 
-The deployed runtime is transitional: the root JavaScript files remain the legacy application,
-while `build/Cockpit.js` contains migrated modular slices. Stable top-level wrappers in the bundle
+The deployed runtime is transitional: JavaScript files at the `backend/` root own deferred features,
+while `backend/build/Cockpit.js` contains migrated modular slices. Stable top-level wrappers in the bundle
 keep menu and trigger names compatible with Apps Script. For the Watchlist slice, the menu still
 calls `addSelectedToWatchlist`; that wrapper delegates to the modular implementation.
+
+The root package remains a single npm package because only the backend exists today. Workspaces
+would add package boundaries and lockfile behavior without a second package to coordinate. A future
+React application can introduce `web/package.json` and npm workspaces when that package actually
+exists. No empty `web/` or `packages/contracts/` placeholder is required beforehand.
 
 Do not add `clasp push` to automated checks or CI/CD without a separate architectural decision.

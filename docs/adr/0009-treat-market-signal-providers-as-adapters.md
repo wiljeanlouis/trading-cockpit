@@ -37,5 +37,5 @@ Provider selection and generic credential abstractions are not introduced.
 - Replacing or adding a provider does not require changing domain or application contracts.
 - The physical `Finviz - Momentum` sheet, `Refresh Finviz` menu label, and public Finviz callbacks
   remain compatible.
-- Architecture checks reject provider names under `src/core` and `src/ports`.
+- Architecture checks reject provider names under `backend/src/core` and `backend/src/ports`.
 - Provider-specific integration tests remain alongside provider-neutral application tests.
