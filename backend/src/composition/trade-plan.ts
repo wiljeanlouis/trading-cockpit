@@ -1,6 +1,7 @@
 import type {
   CreateTradePlanRequest,
   CreateTradePlanResponse,
+  TradePlansDto,
   TradingAccountsDto
 } from '@trading-cockpit/contracts';
 import {
@@ -11,6 +12,7 @@ import { AppsScriptRuntime } from '../adapters/outbound/apps-script/apps-script-
 import { GoogleSheetsCapitalTransactionRepository } from '../adapters/outbound/google-sheets/capital-transaction/google-sheets-capital-transaction-repository';
 import { GoogleSheetsJournalRepository } from '../adapters/outbound/google-sheets/journal/google-sheets-journal-repository';
 import { GoogleSheetsTradePlanRepository } from '../adapters/outbound/google-sheets/trade-plan/google-sheets-trade-plan-repository';
+import { GoogleSheetsTradePlanReader } from '../adapters/outbound/google-sheets/trade-plan/google-sheets-trade-plan-reader';
 import { GoogleSheetsTradingAccountRepository } from '../adapters/outbound/google-sheets/trading-account/google-sheets-trading-account-repository';
 import { GoogleSheetsTradingAccountRiskPolicyRepository } from '../adapters/outbound/google-sheets/trading-account/google-sheets-trading-account-risk-policy-repository';
 import { GoogleSheetsStrategyRepository } from '../adapters/outbound/google-sheets/trading-strategy/google-sheets-strategy-repository';
@@ -21,6 +23,7 @@ import {
 } from '../core/application/trade-plan/create-trade-plan-from-watchlist';
 import { createGetAccountEquity } from '../core/application/trading-account/get-account-equity';
 import { createListTradingAccounts } from '../core/application/trading-account/list-trading-accounts';
+import { createGetTradePlans } from '../core/application/trade-plan/get-trade-plans';
 
 type Observe = (event: string, fields: Record<string, unknown>) => void;
 
@@ -52,4 +55,11 @@ export function runCreateTradePlanFromWeb(
   request: CreateTradePlanRequest
 ): CreateTradePlanResponse {
   return createTradePlanFromWeb(createTradePlanUseCase(), request);
+}
+
+export function runGetTradePlans(): TradePlansDto {
+  return createGetTradePlans({
+    reader: new GoogleSheetsTradePlanReader(),
+    now: () => new Date()
+  })();
 }

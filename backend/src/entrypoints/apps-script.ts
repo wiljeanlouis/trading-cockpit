@@ -32,6 +32,7 @@ import type {
   CreateTradePlanRequest,
   CreateTradePlanResponse,
   DashboardSummaryDto,
+  TradePlansDto,
   TradingAccountsDto,
   WatchlistDto
 } from '@trading-cockpit/contracts';
@@ -39,7 +40,11 @@ import { serveReactCockpit } from '../adapters/inbound/apps-script/serve-react-c
 import { runGetDashboardSummary } from '../composition/dashboard';
 import { rememberActiveTradingCockpitSpreadsheet } from '../adapters/outbound/google-sheets/trading-cockpit-spreadsheet';
 import { runGetWatchlist } from '../composition/watchlist';
-import { runCreateTradePlanFromWeb, runListTradingAccountsForWeb } from '../composition/trade-plan';
+import {
+  runCreateTradePlanFromWeb,
+  runGetTradePlans,
+  runListTradingAccountsForWeb
+} from '../composition/trade-plan';
 
 export function doGet(): GoogleAppsScript.HTML.HtmlOutput {
   return serveReactCockpit();
@@ -59,6 +64,10 @@ export function getTradingAccounts(): TradingAccountsDto {
 
 export function createTradePlan(request: CreateTradePlanRequest): CreateTradePlanResponse {
   return runCreateTradePlanFromWeb(request);
+}
+
+export function getTradePlans(): TradePlansDto {
+  return runGetTradePlans();
 }
 
 export function onOpen(): void {

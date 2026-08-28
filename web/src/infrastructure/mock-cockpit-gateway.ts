@@ -2,6 +2,8 @@ import type {
   CreateTradePlanRequest,
   CreateTradePlanResponse,
   DashboardSummaryDto,
+  TradePlanItemDto,
+  TradePlansDto,
   TradingAccountsDto,
   WatchlistDto
 } from '@trading-cockpit/contracts';
@@ -63,8 +65,76 @@ const DEVELOPMENT_WATCHLIST: WatchlistDto = {
   ]
 };
 
+const DEVELOPMENT_TRADE_PLANS: TradePlanItemDto[] = [
+  {
+    id: 'DEMO-TP-BOX',
+    watchlistId: 'W-BOX-20260827',
+    accountId: 'DEMO-CAD',
+    ticker: 'BOX',
+    strategyId: 'MOMENTUM_BREAKOUT',
+    strategyName: 'Momentum Breakout',
+    strategyVersion: '1.0',
+    signalDate: '2026-08-27T04:00:00.000Z',
+    signalPrice: 33.4,
+    referencePrice: 34.82,
+    momentumScore: 87,
+    setupStatus: 'CONFIRMED',
+    breakoutLevel: 34.5,
+    invalidationLevel: 32.8,
+    eventRisk: 'CLEAR',
+    createdAt: '2026-08-28T14:00:00.000Z',
+    entryType: 'BREAKOUT',
+    entryPrice: 35,
+    stopPrice: 32.8,
+    targetPrice: 40,
+    riskPerShare: 2.2,
+    rewardPerShare: 5,
+    riskReward: 2.27,
+    accountEquity: 10_000,
+    riskPercent: 0.01,
+    maxRisk: 100,
+    positionSize: 45,
+    positionValue: 1575,
+    status: 'READY',
+    notes: 'Development fixture'
+  },
+  {
+    id: 'DEMO-TP-URNB',
+    watchlistId: 'W-URNB-20260826',
+    accountId: 'DEMO-USD',
+    ticker: 'URNB',
+    strategyId: 'MOMENTUM_BREAKOUT',
+    strategyName: 'Momentum Breakout',
+    strategyVersion: '1.0',
+    signalDate: '2026-08-26T04:00:00.000Z',
+    signalPrice: 1.68,
+    referencePrice: 1.74,
+    momentumScore: 72,
+    setupStatus: null,
+    breakoutLevel: null,
+    invalidationLevel: 1.55,
+    eventRisk: null,
+    createdAt: '2026-08-28T15:00:00.000Z',
+    entryType: 'BREAKOUT',
+    entryPrice: null,
+    stopPrice: 1.55,
+    targetPrice: null,
+    riskPerShare: null,
+    rewardPerShare: null,
+    riskReward: null,
+    accountEquity: 20_000,
+    riskPercent: 0.005,
+    maxRisk: 100,
+    positionSize: null,
+    positionValue: null,
+    status: 'DRAFT',
+    notes: null
+  }
+];
+
 export class MockCockpitGateway implements CockpitGateway {
   private watchlistItems = DEVELOPMENT_WATCHLIST.items.map((item) => ({ ...item }));
+  private tradePlanItems = DEVELOPMENT_TRADE_PLANS.map((item) => ({ ...item }));
   async getDashboardSummary(): Promise<DashboardSummaryDto> {
     await new Promise((resolve) => setTimeout(resolve, 250));
     return { ...DEVELOPMENT_SUMMARY, generatedAt: new Date().toISOString() };
@@ -93,13 +163,22 @@ export class MockCockpitGateway implements CockpitGateway {
     const candidate = this.watchlistItems.find((item) => item.id === request.watchlistId);
     if (!candidate) throw new Error(`Development candidate not found: ${request.watchlistId}`);
     candidate.status = 'PLANNED';
+    const tradePlanId = `DEMO-TP-${candidate.ticker}-${request.accountId}`;
     return {
       kind: 'created',
-      tradePlanId: `DEMO-TP-${candidate.ticker}`,
+      tradePlanId,
       watchlistId: candidate.id,
       ticker: candidate.ticker,
       accountId: request.accountId,
       status: 'DRAFT'
+    };
+  }
+
+  async getTradePlans(): Promise<TradePlansDto> {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    return {
+      generatedAt: new Date().toISOString(),
+      items: this.tradePlanItems.map((item) => ({ ...item }))
     };
   }
 }

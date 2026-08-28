@@ -106,4 +106,21 @@ describe('AppsScriptCockpitGateway', () => {
     await expect(new AppsScriptCockpitGateway().createTradePlan(command)).resolves.toEqual(result);
     expect(runner.createTradePlan).toHaveBeenCalledWith(command);
   });
+
+  it('loads Trade Plans through the Apps Script callback bridge', async () => {
+    const tradePlans = { generatedAt: summary.generatedAt, items: [] };
+    let success: ((value: typeof tradePlans) => void) | undefined;
+    const runner = {
+      withSuccessHandler: vi.fn((handler) => {
+        success = handler;
+        return runner;
+      }),
+      withFailureHandler: vi.fn(() => runner),
+      getTradePlans: vi.fn(() => success?.(tradePlans))
+    };
+    vi.stubGlobal('google', { script: { run: runner } });
+
+    await expect(new AppsScriptCockpitGateway().getTradePlans()).resolves.toEqual(tradePlans);
+    expect(runner.getTradePlans).toHaveBeenCalledOnce();
+  });
 });

@@ -327,7 +327,8 @@ h2 {
   color: #bd8a90;
 }
 
-.watchlist-shell {
+.watchlist-shell,
+.trade-plans-shell {
   max-width: 1440px;
   margin: 0 auto;
   padding: 48px 48px 64px;
@@ -349,7 +350,8 @@ h2 {
   align-items: center;
   gap: 16px;
 }
-.watchlist-panel {
+.watchlist-panel,
+.trade-plans-panel {
   overflow: hidden;
   border: 1px solid #1d3045;
   border-radius: 14px;
@@ -381,6 +383,11 @@ h2 {
 }
 .watchlist-table {
   min-width: 960px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.trade-plans-table {
+  min-width: 1280px;
   border-collapse: collapse;
   font-variant-numeric: tabular-nums;
 }
@@ -496,6 +503,9 @@ h2 {
   color: #79e9b4;
   font-size: 19px;
   font-weight: 800;
+}
+.trade-plan-facts {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 .trade-plan-card {
   padding: 20px;
@@ -652,7 +662,8 @@ h2 {
     font-size: 20px;
   }
   .dashboard-shell,
-  .watchlist-shell {
+  .watchlist-shell,
+  .trade-plans-shell {
     padding: 36px 26px;
   }
   .metric-grid {

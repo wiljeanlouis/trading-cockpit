@@ -2,6 +2,7 @@ import type {
   CreateTradePlanRequest,
   CreateTradePlanResponse,
   DashboardSummaryDto,
+  TradePlansDto,
   TradingAccountsDto,
   WatchlistDto
 } from '@trading-cockpit/contracts';
@@ -49,6 +50,15 @@ export class AppsScriptCockpitGateway implements CockpitGateway {
         .withSuccessHandler(resolve)
         .withFailureHandler((error) => reject(new Error(failureMessage(error))))
         .createTradePlan(request);
+    });
+  }
+
+  getTradePlans(): Promise<TradePlansDto> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .getTradePlans();
     });
   }
 }

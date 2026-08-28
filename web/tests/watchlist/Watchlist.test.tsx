@@ -37,7 +37,8 @@ function gateway(getWatchlist: CockpitGateway['getWatchlist']): CockpitGateway {
     getTradingAccounts: vi.fn(async () => ({
       accounts: [{ id: 'A1', name: 'Primary', baseCurrency: 'CAD' }]
     })),
-    createTradePlan: vi.fn()
+    createTradePlan: vi.fn(),
+    getTradePlans: vi.fn()
   };
 }
 

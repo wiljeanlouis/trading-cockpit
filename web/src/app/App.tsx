@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { Navigate, NavLink, Route, Routes } from 'react-router-dom';
 import type { CockpitGateway } from '../infrastructure/cockpit-gateway';
 import { Dashboard } from '../features/dashboard/Dashboard';
 import { Watchlist } from '../features/watchlist/Watchlist';
+import { TradePlans } from '../features/trade-plans/TradePlans';
 
 interface AppProps {
   gateway: CockpitGateway;
@@ -9,8 +10,6 @@ interface AppProps {
 }
 
 export function App({ gateway, development = false }: AppProps) {
-  const [activePage, setActivePage] = useState<'dashboard' | 'watchlist'>('dashboard');
-
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -24,24 +23,24 @@ export function App({ gateway, development = false }: AppProps) {
 
         <nav aria-label="Primary navigation">
           <p>Trading</p>
-          <button
-            type="button"
-            className={`nav-item ${activePage === 'dashboard' ? 'active' : ''}`}
-            aria-current={activePage === 'dashboard' ? 'page' : undefined}
-            onClick={() => setActivePage('dashboard')}
-          >
+          <NavLink to="/" end className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             <span aria-hidden="true">⌁</span>
             Dashboard
-          </button>
-          <button
-            type="button"
-            className={`nav-item ${activePage === 'watchlist' ? 'active' : ''}`}
-            aria-current={activePage === 'watchlist' ? 'page' : undefined}
-            onClick={() => setActivePage('watchlist')}
+          </NavLink>
+          <NavLink
+            to="/watchlist"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
           >
             <span aria-hidden="true">◉</span>
             Watchlist
-          </button>
+          </NavLink>
+          <NavLink
+            to="/trade-plans"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+          >
+            <span aria-hidden="true">◇</span>
+            Trade Plans
+          </NavLink>
           <div className="nav-divider" />
           <p>Administration</p>
           <span className="nav-item disabled" aria-disabled="true">
@@ -59,11 +58,12 @@ export function App({ gateway, development = false }: AppProps) {
 
       <div className="app-content">
         {development && <div className="development-banner">Development mock data</div>}
-        {activePage === 'dashboard' ? (
-          <Dashboard gateway={gateway} />
-        ) : (
-          <Watchlist gateway={gateway} />
-        )}
+        <Routes>
+          <Route path="/" element={<Dashboard gateway={gateway} />} />
+          <Route path="/watchlist" element={<Watchlist gateway={gateway} />} />
+          <Route path="/trade-plans" element={<TradePlans gateway={gateway} />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </div>
     </div>
   );
