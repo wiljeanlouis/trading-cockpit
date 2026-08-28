@@ -47,4 +47,21 @@ describe('AppsScriptCockpitGateway', () => {
       'Backend failed'
     );
   });
+
+  it('loads the Watchlist through the Apps Script callback bridge', async () => {
+    const watchlist = { generatedAt: summary.generatedAt, items: [] };
+    let success: ((value: typeof watchlist) => void) | undefined;
+    const runner = {
+      withSuccessHandler: vi.fn((handler) => {
+        success = handler;
+        return runner;
+      }),
+      withFailureHandler: vi.fn(() => runner),
+      getWatchlist: vi.fn(() => success?.(watchlist))
+    };
+    vi.stubGlobal('google', { script: { run: runner } });
+
+    await expect(new AppsScriptCockpitGateway().getWatchlist()).resolves.toEqual(watchlist);
+    expect(runner.getWatchlist).toHaveBeenCalledOnce();
+  });
 });

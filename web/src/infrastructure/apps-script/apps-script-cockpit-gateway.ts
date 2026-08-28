@@ -1,4 +1,4 @@
-import type { DashboardSummaryDto } from '@trading-cockpit/contracts';
+import type { DashboardSummaryDto, WatchlistDto } from '@trading-cockpit/contracts';
 import type { CockpitGateway } from '../cockpit-gateway';
 
 function failureMessage(error: unknown): string {
@@ -16,6 +16,15 @@ export class AppsScriptCockpitGateway implements CockpitGateway {
         .withSuccessHandler(resolve)
         .withFailureHandler((error) => reject(new Error(failureMessage(error))))
         .getDashboardSummary();
+    });
+  }
+
+  getWatchlist(): Promise<WatchlistDto> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .getWatchlist();
     });
   }
 }

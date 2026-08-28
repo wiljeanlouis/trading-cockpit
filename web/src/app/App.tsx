@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import type { CockpitGateway } from '../infrastructure/cockpit-gateway';
 import { Dashboard } from '../features/dashboard/Dashboard';
+import { Watchlist } from '../features/watchlist/Watchlist';
 
 interface AppProps {
   gateway: CockpitGateway;
@@ -7,6 +9,8 @@ interface AppProps {
 }
 
 export function App({ gateway, development = false }: AppProps) {
+  const [activePage, setActivePage] = useState<'dashboard' | 'watchlist'>('dashboard');
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -20,10 +24,24 @@ export function App({ gateway, development = false }: AppProps) {
 
         <nav aria-label="Primary navigation">
           <p>Trading</p>
-          <a className="nav-item active" href="#dashboard" aria-current="page">
+          <button
+            type="button"
+            className={`nav-item ${activePage === 'dashboard' ? 'active' : ''}`}
+            aria-current={activePage === 'dashboard' ? 'page' : undefined}
+            onClick={() => setActivePage('dashboard')}
+          >
             <span aria-hidden="true">⌁</span>
             Dashboard
-          </a>
+          </button>
+          <button
+            type="button"
+            className={`nav-item ${activePage === 'watchlist' ? 'active' : ''}`}
+            aria-current={activePage === 'watchlist' ? 'page' : undefined}
+            onClick={() => setActivePage('watchlist')}
+          >
+            <span aria-hidden="true">◉</span>
+            Watchlist
+          </button>
           <div className="nav-divider" />
           <p>Administration</p>
           <span className="nav-item disabled" aria-disabled="true">
@@ -41,7 +59,11 @@ export function App({ gateway, development = false }: AppProps) {
 
       <div className="app-content">
         {development && <div className="development-banner">Development mock data</div>}
-        <Dashboard gateway={gateway} />
+        {activePage === 'dashboard' ? (
+          <Dashboard gateway={gateway} />
+        ) : (
+          <Watchlist gateway={gateway} />
+        )}
       </div>
     </div>
   );

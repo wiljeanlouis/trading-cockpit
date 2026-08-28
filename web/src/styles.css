@@ -1,3 +1,7 @@
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
 :root {
   color: #e8eef8;
   background: #07101d;
@@ -81,15 +85,25 @@ button {
   text-transform: uppercase;
 }
 .nav-item {
+  width: 100%;
   min-height: 44px;
+  border: 0;
   padding: 0 12px;
   display: flex;
   align-items: center;
   gap: 12px;
   border-radius: 9px;
   color: #93a2b8;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
   font-size: 14px;
+  text-align: left;
   text-decoration: none;
+}
+.nav-item:hover:not(.disabled) {
+  color: #d6e5f4;
+  background: rgba(78, 225, 160, 0.06);
 }
 .nav-item.active {
   color: #eafff5;
@@ -312,6 +326,109 @@ h2 {
   margin: 6px 0 0;
   color: #bd8a90;
 }
+
+.watchlist-shell {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 48px 48px 64px;
+}
+.page-header {
+  margin-bottom: 32px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+}
+.page-subtitle {
+  margin: 0;
+  color: #7f8fa6;
+  font-size: 14px;
+}
+.page-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.watchlist-panel {
+  overflow: hidden;
+  border: 1px solid #1d3045;
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(15, 29, 47, 0.94), rgba(9, 20, 34, 0.94));
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
+}
+.table-summary {
+  min-height: 50px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #1d3045;
+  color: #92a3b9;
+  font-size: 12px;
+}
+.table-summary small {
+  border: 1px solid #29443f;
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: #6fae91;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+.watchlist-table {
+  min-width: 960px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.ticker-cell {
+  display: block;
+  color: #f4f8fc;
+  font-size: 14px;
+  letter-spacing: 0.03em;
+}
+.cell-detail {
+  margin-top: 4px;
+  display: block;
+  color: #62748d;
+  font-size: 10px;
+}
+.numeric-cell {
+  text-align: right;
+}
+.score-cell {
+  color: #79e9b4;
+  font-weight: 800;
+}
+.empty-panel {
+  min-height: 300px;
+  padding: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  border: 1px solid #1c3045;
+  border-radius: 14px;
+  color: #71839b;
+  text-align: center;
+  background: rgba(11, 23, 38, 0.75);
+}
+.empty-panel > span {
+  margin-bottom: 18px;
+  color: #4ee1a0;
+  font-size: 34px;
+}
+.empty-panel h2 {
+  margin-bottom: 8px;
+  color: #dce6f3;
+}
+.empty-panel p {
+  margin: 0;
+  font-size: 13px;
+}
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -331,19 +448,19 @@ h2 {
   }
   .brand div,
   .sidebar nav > p,
-  .nav-item:not(.active),
   .sidebar-footer {
     display: none;
   }
-  .nav-item.active {
+  .nav-item {
     justify-content: center;
     padding: 0;
     font-size: 0;
   }
-  .nav-item.active span {
+  .nav-item span {
     font-size: 20px;
   }
-  .dashboard-shell {
+  .dashboard-shell,
+  .watchlist-shell {
     padding: 36px 26px;
   }
   .metric-grid {
@@ -373,9 +490,20 @@ h2 {
     margin-left: auto;
   }
   .dashboard-header,
-  .dashboard-actions {
+  .dashboard-actions,
+  .page-header,
+  .page-actions {
     align-items: flex-start;
     flex-direction: column;
+  }
+  .sidebar nav {
+    display: flex;
+    gap: 8px;
+  }
+  .sidebar .nav-divider,
+  .sidebar nav > p,
+  .sidebar .nav-item.disabled {
+    display: none;
   }
   .metric-grid {
     grid-template-columns: 1fr;

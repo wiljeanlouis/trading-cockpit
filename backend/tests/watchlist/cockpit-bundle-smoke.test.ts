@@ -22,6 +22,7 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.CockpitBundle?.onOpen).toBeTypeOf('function');
     expect(context.CockpitBundle?.doGet).toBeTypeOf('function');
     expect(context.CockpitBundle?.getDashboardSummary).toBeTypeOf('function');
+    expect(context.CockpitBundle?.getWatchlist).toBeTypeOf('function');
     expect(context.CockpitBundle?.refreshFinviz).toBeTypeOf('function');
     expect(context.CockpitBundle?.refreshMomentumRanking).toBeTypeOf('function');
     expect(context.CockpitBundle?.setupMomentumRanking).toBeTypeOf('function');
@@ -55,6 +56,7 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.onOpen).toBeTypeOf('function');
     expect(context.doGet).toBeTypeOf('function');
     expect(context.getDashboardSummary).toBeTypeOf('function');
+    expect(context.getWatchlist).toBeTypeOf('function');
     expect(context.refreshFinviz).toBeTypeOf('function');
     expect(context.refreshMomentumRanking).toBeTypeOf('function');
     expect(context.setupMomentumRanking).toBeTypeOf('function');

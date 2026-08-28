@@ -1,15 +1,17 @@
-import type { DashboardSummaryDto } from '@trading-cockpit/contracts';
+import type { DashboardSummaryDto, WatchlistDto } from '@trading-cockpit/contracts';
 
-interface DashboardScriptRunner {
-  withSuccessHandler(handler: (value: DashboardSummaryDto) => void): DashboardScriptRunner;
-  withFailureHandler(handler: (error: unknown) => void): DashboardScriptRunner;
+interface CockpitScriptRunner {
+  withSuccessHandler(handler: (value: DashboardSummaryDto) => void): CockpitScriptRunner;
+  withSuccessHandler(handler: (value: WatchlistDto) => void): CockpitScriptRunner;
+  withFailureHandler(handler: (error: unknown) => void): CockpitScriptRunner;
   getDashboardSummary(): void;
+  getWatchlist(): void;
 }
 
 declare global {
   const google: {
     script: {
-      run: DashboardScriptRunner;
+      run: CockpitScriptRunner;
     };
   };
 }
