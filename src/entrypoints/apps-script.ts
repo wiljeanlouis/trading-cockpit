@@ -12,6 +12,15 @@ import {
 import { installCockpitMenu } from '../adapters/inbound/google-sheets/install-cockpit-menu';
 import { runRefreshMomentumRanking } from '../composition/momentum';
 import {
+  runSetupMomentumRanking,
+  runSetupStrategies,
+  runValidateStrategies
+} from '../composition/legacy-setup';
+import {
+  runGetLegacyTradingConfiguration,
+  runSetupCockpitConfiguration
+} from '../composition/configuration';
+import {
   runCheckFinvizAuth,
   runConfigureFinvizToken,
   runDeleteFinvizToken,
@@ -26,6 +35,26 @@ export function onOpen(): void {
 
 export function refreshMomentumRanking(): void {
   runRefreshMomentumRanking();
+}
+
+export function setupMomentumRanking(): void {
+  runSetupMomentumRanking();
+}
+
+export function setupStrategies(): void {
+  runSetupStrategies();
+}
+
+export function validateStrategies(): true {
+  return runValidateStrategies();
+}
+
+export function setupCockpitConfig(): void {
+  runSetupCockpitConfiguration();
+}
+
+export function getTradingConfig() {
+  return runGetLegacyTradingConfiguration();
 }
 
 export function refreshFinviz(): void {

@@ -26,6 +26,7 @@ export interface ReconcileClosedPositionDependencies {
   journalRepository: JournalRepository;
   watchlistRepository: WatchlistRepository;
   runtime: RuntimePort;
+  observe?: (event: string, fields: Record<string, unknown>) => void;
 }
 
 export type ReconcileClosedPosition = (
@@ -75,7 +76,8 @@ export function createReconcileClosedPosition({
   positionRepository,
   journalRepository,
   watchlistRepository,
-  runtime
+  runtime,
+  observe
 }: ReconcileClosedPositionDependencies): ReconcileClosedPosition {
   return ({ positionId }) => {
     const normalizedPositionId = String(positionId || '').trim();
@@ -90,6 +92,11 @@ export function createReconcileClosedPosition({
     const normalizedStatus = String(position.status || '')
       .trim()
       .toUpperCase();
+    observe?.('POSITION_LOADED', {
+      positionId: normalizedPositionId,
+      accountId: position.accountId,
+      status: normalizedStatus
+    });
     if (normalizedStatus !== 'CLOSED') {
       return blocked(normalizedPositionId, `${position.ticker} n'est pas une position CLOSED.`);
     }
@@ -103,6 +110,7 @@ export function createReconcileClosedPosition({
     }
 
     const journals = journalRepository.findAllByPositionId(normalizedPositionId);
+    observe?.('JOURNAL_CARDINALITY', { count: journals.length });
     if (journals.length > 1) {
       return blocked(
         normalizedPositionId,
@@ -114,9 +122,19 @@ export function createReconcileClosedPosition({
     let journal: JournalReconciliation = 'ALREADY_PRESENT';
     if (journals.length === 0) {
       const entry = createJournalEntryFromClosedPosition(position, runtime.newId());
-      journalRepository.save(entry);
+      try {
+        journalRepository.save(entry);
+      } catch (error) {
+        observe?.('TECHNICAL_FAILURE', {
+          stage: 'JOURNAL_SAVE',
+          positionId: normalizedPositionId,
+          errorMessage: error instanceof Error ? error.message : String(error)
+        });
+        throw error;
+      }
       journal = 'CREATED';
     }
+    observe?.('JOURNAL_ACTION', { action: journal });
 
     const watchlist = watchlistRepository.findById(position.watchlistId);
     if (!watchlist) {
@@ -132,22 +150,49 @@ export function createReconcileClosedPosition({
         .trim()
         .toUpperCase() === 'CLOSED';
     if (watchlistAlreadyClosed) {
-      return {
+      const result: ReconcileClosedPositionResult = {
         positionId: normalizedPositionId,
         journal,
         watchlist: 'ALREADY_CLOSED',
         status: journal === 'CREATED' ? 'RECONCILED' : 'NO_ACTION',
         diagnostics: []
       };
+      observe?.('WATCHLIST_ACTION', { action: result.watchlist });
+      observe?.('RESULT', {
+        positionId: result.positionId,
+        journal: result.journal,
+        watchlist: result.watchlist,
+        overall: result.status,
+        diagnostics: result.diagnostics.length
+      });
+      return result;
     }
 
-    watchlistRepository.updateStatus(position.watchlistId, 'CLOSED');
-    return {
+    try {
+      watchlistRepository.updateStatus(position.watchlistId, 'CLOSED');
+    } catch (error) {
+      observe?.('TECHNICAL_FAILURE', {
+        stage: 'WATCHLIST_STATUS_UPDATE',
+        positionId: normalizedPositionId,
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
+    }
+    const result: ReconcileClosedPositionResult = {
       positionId: normalizedPositionId,
       journal,
       watchlist: 'UPDATED',
       status: 'RECONCILED',
       diagnostics: []
     };
+    observe?.('WATCHLIST_ACTION', { action: result.watchlist });
+    observe?.('RESULT', {
+      positionId: result.positionId,
+      journal: result.journal,
+      watchlist: result.watchlist,
+      overall: result.status,
+      diagnostics: result.diagnostics.length
+    });
+    return result;
   };
 }

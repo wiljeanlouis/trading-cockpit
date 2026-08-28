@@ -1,6 +1,7 @@
 import { buildSignalKey } from '../../../core/domain/market-signal';
 import type { SignalSnapshot } from '../../../core/domain/market-signal';
 import type { SignalHistoryRepository } from '../../../ports/outbound/signal-history-repository';
+import { readSheetHeaders, requireColumn } from './sheet-headers';
 
 const SHEET_NAME = 'Signals History';
 const REQUIRED_HEADERS = [
@@ -16,20 +17,6 @@ declare function themeTechnicalSheet(
   spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet,
   sheetName: string
 ): void;
-
-function headersOf(sheet: GoogleAppsScript.Spreadsheet.Sheet): string[] {
-  return sheet
-    .getRange(1, 1, 1, sheet.getLastColumn())
-    .getValues()[0]
-    .map((value) => String(value).trim());
-}
-
-function requireColumn(headers: string[], name: string): number {
-  const expected = name.trim().toLowerCase();
-  const index = headers.findIndex((header) => header.trim().toLowerCase() === expected);
-  if (index === -1) throw new Error(`Colonne absente : ${name}`);
-  return index;
-}
 
 function formatDate(value: unknown): string {
   if (!value) return '';
@@ -52,7 +39,7 @@ export class GoogleSheetsSignalHistoryRepository implements SignalHistoryReposit
       themeTechnicalSheet(spreadsheet, SHEET_NAME);
       return;
     }
-    const headers = headersOf(sheet);
+    const headers = readSheetHeaders(sheet);
     REQUIRED_HEADERS.forEach((header) => {
       if (!headers.includes(header)) {
         throw new Error(`Signals History utilise un ancien schéma. Colonne absente : ${header}`);
@@ -65,7 +52,7 @@ export class GoogleSheetsSignalHistoryRepository implements SignalHistoryReposit
     const keys = new Set<string>();
     const lastRow = sheet.getLastRow();
     if (lastRow <= 1) return keys;
-    const headers = headersOf(sheet);
+    const headers = readSheetHeaders(sheet);
     const signalDateIndex = requireColumn(headers, 'Signal Date');
     const strategyIdIndex = requireColumn(headers, 'Strategy ID');
     const versionIndex = requireColumn(headers, 'Strategy Version');

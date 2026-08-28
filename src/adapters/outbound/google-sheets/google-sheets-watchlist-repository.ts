@@ -8,11 +8,13 @@ import {
 import type { WatchlistRepository } from '../../../ports/outbound/watchlist-repository';
 import { watchlistEntryFromRow, watchlistEntryToRow } from './watchlist-mapper';
 import { updateWatchlistStatusInSheet } from './watchlist-status-writer';
-
-declare function getOrCreateWatchlistSheet(): GoogleAppsScript.Spreadsheet.Sheet;
-declare function validateWatchlistSchema(sheet: GoogleAppsScript.Spreadsheet.Sheet): boolean;
-declare function addWatchlistFormulas(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number): void;
-declare function formatWatchlistRow(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number): void;
+import {
+  addWatchlistFormulas,
+  formatWatchlistRow,
+  getOrCreateWatchlistSheet,
+  validateWatchlistSchema
+} from './watchlist-sheet';
+import { readSheetHeaders, requireColumn } from './sheet-headers';
 declare function themeWatchlist(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet): void;
 
 const WATCHLIST_SHEET_NAME = 'Watchlist';
@@ -29,8 +31,8 @@ export class GoogleSheetsWatchlistRepository implements WatchlistRepository {
       return null;
     }
 
-    const headers = this.getHeaders(sheet);
-    const idIndex = this.requireColumn(headers, 'Watchlist ID');
+    const headers = readSheetHeaders(sheet);
+    const idIndex = requireColumn(headers, 'Watchlist ID');
     const rows: unknown[][] = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
     const normalizedId = String(id || '').trim();
 
@@ -51,10 +53,7 @@ export class GoogleSheetsWatchlistRepository implements WatchlistRepository {
       return null;
     }
 
-    const headers = sheet
-      .getRange(1, 1, 1, sheet.getLastColumn())
-      .getValues()[0]
-      .map((value) => String(value).trim());
+    const headers = readSheetHeaders(sheet);
     const rows: unknown[][] = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
 
     for (const row of rows) {
@@ -91,24 +90,6 @@ export class GoogleSheetsWatchlistRepository implements WatchlistRepository {
     }
 
     updateWatchlistStatusInSheet(sheet, id, status);
-  }
-
-  private getHeaders(sheet: GoogleAppsScript.Spreadsheet.Sheet): string[] {
-    return sheet
-      .getRange(1, 1, 1, sheet.getLastColumn())
-      .getValues()[0]
-      .map((value) => String(value).trim());
-  }
-
-  private requireColumn(headers: string[], name: string): number {
-    const expected = name.trim().toLowerCase();
-    const index = headers.findIndex((header) => header.trim().toLowerCase() === expected);
-
-    if (index === -1) {
-      throw new Error(`Colonne absente : ${name}`);
-    }
-
-    return index;
   }
 
   private getValidatedSheet(): GoogleAppsScript.Spreadsheet.Sheet {

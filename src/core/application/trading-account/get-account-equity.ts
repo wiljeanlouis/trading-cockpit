@@ -8,6 +8,7 @@ export interface GetAccountEquityDependencies {
   tradingAccountRepository: TradingAccountRepository;
   capitalTransactionRepository: CapitalTransactionRepository;
   journalRepository: JournalRepository;
+  observe?: (event: string, fields: Record<string, unknown>) => void;
 }
 
 export type GetAccountEquity = (accountId: string) => AccountEquitySummary;
@@ -15,7 +16,8 @@ export type GetAccountEquity = (accountId: string) => AccountEquitySummary;
 export function createGetAccountEquity({
   tradingAccountRepository,
   capitalTransactionRepository,
-  journalRepository
+  journalRepository,
+  observe
 }: GetAccountEquityDependencies): GetAccountEquity {
   return (accountId) => {
     const normalizedAccountId = String(accountId || '')
@@ -33,9 +35,20 @@ export function createGetAccountEquity({
       account.baseCurrency,
       transactions
     );
-    return createAccountEquitySummary(
+    const equity = createAccountEquitySummary(
       capital,
       journalRepository.findClosedByAccountId(normalizedAccountId)
     );
+    observe?.('ACCOUNT_EQUITY_CALCULATED', {
+      accountId: normalizedAccountId,
+      initialFunding: capital.initialFunding,
+      deposits: capital.totalDeposits,
+      withdrawals: capital.totalWithdrawals,
+      netExternalCapital: equity.netExternalCapital,
+      realizedPnl: equity.realizedPnl,
+      realizedEquity: equity.realizedEquity,
+      basis: equity.basis
+    });
+    return equity;
   };
 }

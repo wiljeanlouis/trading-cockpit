@@ -1,5 +1,6 @@
 import type { JournalEntry } from '../../../core/domain/journal-entry';
 import type { PositionSnapshotValue } from '../../../core/domain/position';
+import { requireColumn } from './sheet-headers';
 
 export const JOURNAL_HEADERS = [
   'Journal ID',
@@ -30,13 +31,6 @@ export const JOURNAL_HEADERS = [
   'Followed Plan?',
   'Account ID'
 ] as const;
-
-function requireColumn(headers: string[], name: string): number {
-  const expected = name.trim().toLowerCase();
-  const index = headers.findIndex((header) => String(header).trim().toLowerCase() === expected);
-  if (index === -1) throw new Error(`Colonne absente : ${name}`);
-  return index;
-}
 
 function value(headers: string[], row: unknown[], name: string): unknown {
   return row[requireColumn(headers, name)];

@@ -1,4 +1,5 @@
 import type { TradePlan, TradePlanSnapshotValue } from '../../../core/domain/trade-plan';
+import { requireColumn } from './sheet-headers';
 
 export const TRADE_PLAN_HEADERS = [
   'Trade Plan ID',
@@ -32,17 +33,6 @@ export const TRADE_PLAN_HEADERS = [
   'Notes',
   'Account ID'
 ] as const;
-
-function requireColumn(headers: string[], name: string): number {
-  const expected = name.trim().toLowerCase();
-  const index = headers.findIndex((header) => String(header).trim().toLowerCase() === expected);
-
-  if (index === -1) {
-    throw new Error(`Colonne absente : ${name}`);
-  }
-
-  return index;
-}
 
 function valueByHeader(headers: string[], row: unknown[], name: string): unknown {
   return row[requireColumn(headers, name)];

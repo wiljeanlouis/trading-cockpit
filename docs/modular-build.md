@@ -139,7 +139,7 @@ separate manual command.
 
 The expected clasp runtime is:
 
-- 14 hand-maintained legacy JavaScript files at the repository root;
+- 6 hand-maintained legacy JavaScript files at the repository root;
 - `build/Cockpit.js`;
 - `appsscript.json`.
 
@@ -151,9 +151,10 @@ error-reporting workflow maps generated stack traces back to TypeScript.
 
 ## Future migration
 
-Watchlist, Trade Plan, Position, Journal, account capital/equity, Momentum, and Finviz/Signals
-workflows are migrated under `core/`, `ports/`, and `adapters/`. Remaining workflows must be migrated
-independently behind characterization tests.
+Watchlist, Trade Plan, Position, Journal, Strategy/setup, account capital/equity, Momentum, and
+market-signal workflows are migrated under `core/`, `ports/`, and `adapters/`. Their physical Sheets
+schemas and formulas are adapter-owned. Analytics, Dashboard, Theme, and Documentation remain
+independent future migrations behind characterization tests.
 
 Each future slice should keep its stable Apps Script menu or trigger wrapper, introduce only the
 ports required by its use case, and preserve spreadsheet schemas and observable behavior during the

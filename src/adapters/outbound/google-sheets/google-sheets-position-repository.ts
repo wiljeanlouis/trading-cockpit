@@ -1,11 +1,14 @@
 import { isOpenPositionStatus, type Position } from '../../../core/domain/position';
 import type { PositionRepository } from '../../../ports/outbound/position-repository';
 import { positionFromRow, positionToRow } from './position-mapper';
-
-declare function getOrCreatePositionsSheet(): GoogleAppsScript.Spreadsheet.Sheet;
-declare function validatePositionsSchema(sheet: GoogleAppsScript.Spreadsheet.Sheet): boolean;
-declare function addPositionFormulas(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number): void;
-declare function formatPositionRow(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number): void;
+import {
+  addPositionFormulas,
+  ensurePositionAccountColumn,
+  formatPositionRow,
+  getOrCreatePositionsSheet,
+  validatePositionsSchema
+} from './position-sheet';
+import { readSheetHeaders, requireColumn } from './sheet-headers';
 
 export class GoogleSheetsPositionRepository implements PositionRepository {
   private sheet: GoogleAppsScript.Spreadsheet.Sheet | null = null;
@@ -17,7 +20,7 @@ export class GoogleSheetsPositionRepository implements PositionRepository {
 
     if (lastRow <= 1) return null;
 
-    const headers = this.getHeaders(sheet);
+    const headers = readSheetHeaders(sheet);
     const rows: unknown[][] = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
     const normalizedId = String(id || '').trim();
 
@@ -37,10 +40,7 @@ export class GoogleSheetsPositionRepository implements PositionRepository {
       return null;
     }
 
-    const headers = sheet
-      .getRange(1, 1, 1, sheet.getLastColumn())
-      .getValues()[0]
-      .map((value) => String(value).trim());
+    const headers = readSheetHeaders(sheet);
     const rows: unknown[][] = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
     const normalizedTradePlanId = String(tradePlanId || '').trim();
 
@@ -68,8 +68,8 @@ export class GoogleSheetsPositionRepository implements PositionRepository {
 
   close(position: Position): void {
     const sheet = this.getValidatedSheet();
-    const headers = this.getHeaders(sheet);
-    const idIndex = this.requireColumn(headers, 'Position ID');
+    const headers = readSheetHeaders(sheet);
+    const idIndex = requireColumn(headers, 'Position ID');
     const lastRow = sheet.getLastRow();
 
     if (lastRow <= 1) throw new Error(`Position ID introuvable : ${position.id}`);
@@ -86,20 +86,6 @@ export class GoogleSheetsPositionRepository implements PositionRepository {
     this.setValue(sheet, headers, row, 'Status', position.status);
   }
 
-  private getHeaders(sheet: GoogleAppsScript.Spreadsheet.Sheet): string[] {
-    return sheet
-      .getRange(1, 1, 1, sheet.getLastColumn())
-      .getValues()[0]
-      .map((value) => String(value).trim());
-  }
-
-  private requireColumn(headers: string[], name: string): number {
-    const expected = name.trim().toLowerCase();
-    const index = headers.findIndex((header) => header.trim().toLowerCase() === expected);
-    if (index === -1) throw new Error(`Colonne absente : ${name}`);
-    return index;
-  }
-
   private setValue(
     sheet: GoogleAppsScript.Spreadsheet.Sheet,
     headers: string[],
@@ -107,7 +93,7 @@ export class GoogleSheetsPositionRepository implements PositionRepository {
     name: string,
     value: unknown
   ): void {
-    sheet.getRange(row, this.requireColumn(headers, name) + 1).setValue(value);
+    sheet.getRange(row, requireColumn(headers, name) + 1).setValue(value);
   }
 
   private getValidatedSheet(): GoogleAppsScript.Spreadsheet.Sheet {
@@ -117,20 +103,10 @@ export class GoogleSheetsPositionRepository implements PositionRepository {
 
     if (!this.schemaValidated) {
       validatePositionsSchema(this.sheet);
-      this.ensureAccountColumn(this.sheet);
+      ensurePositionAccountColumn(this.sheet);
       this.schemaValidated = true;
     }
 
     return this.sheet;
-  }
-
-  private ensureAccountColumn(sheet: GoogleAppsScript.Spreadsheet.Sheet): void {
-    const headers = this.getHeaders(sheet);
-    if (!headers.includes('Account ID')) {
-      sheet
-        .getRange(1, sheet.getLastColumn() + 1)
-        .setValue('Account ID')
-        .setFontWeight('bold');
-    }
   }
 }

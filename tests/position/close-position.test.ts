@@ -125,6 +125,8 @@ describe('close Position', () => {
   });
   it('exposes terminal Position without Journal when Journal save fails; retry cannot duplicate', () => {
     const c = context();
+    const events: Array<{ event: string; fields: Record<string, unknown> }> = [];
+    c.dependencies.observe = (event, fields) => events.push({ event, fields });
     c.dependencies.journalRepository.save = () => {
       throw new Error('journal failed');
     };
@@ -136,6 +138,14 @@ describe('close Position', () => {
       createClosePosition(retry.dependencies)({ positionId: 'P-1', exitPrice: 12 })
     ).toThrow("URNB n'est pas une position OPEN.");
     expect(retry.calls).not.toContain('journal.save');
+    expect(events).toContainEqual({
+      event: 'PARTIAL_FAILURE',
+      fields: {
+        stage: 'JOURNAL_CREATION',
+        positionId: 'P-1',
+        errorMessage: 'journal failed'
+      }
+    });
   });
   it('exposes Position and Journal if Watchlist update fails', () => {
     const c = context();

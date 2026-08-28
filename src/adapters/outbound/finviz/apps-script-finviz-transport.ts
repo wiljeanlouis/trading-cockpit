@@ -7,7 +7,15 @@ export class AppsScriptFinvizTransport implements FinvizTransport {
       followRedirects: true,
       muteHttpExceptions: true
     });
-    return { status: response.getResponseCode(), content: response.getContentText() };
+    const headers = response.getAllHeaders();
+    const contentTypeEntry = Object.entries(headers).find(
+      ([name]) => name.toLowerCase() === 'content-type'
+    );
+    return {
+      status: response.getResponseCode(),
+      content: response.getContentText(),
+      contentType: contentTypeEntry ? String(contentTypeEntry[1]) : undefined
+    };
   }
 
   parseCsv(csv: string): unknown[][] {

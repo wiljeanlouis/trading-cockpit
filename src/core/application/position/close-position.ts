@@ -24,6 +24,7 @@ export interface ClosePositionDependencies {
   journalRepository: JournalRepository;
   watchlistRepository: WatchlistRepository;
   runtime: RuntimePort;
+  observe?: (event: string, fields: Record<string, unknown>) => void;
 }
 
 export type ClosePosition = (command: ClosePositionCommand) => ClosePositionResult;
@@ -32,7 +33,8 @@ export function createClosePosition({
   positionRepository,
   journalRepository,
   watchlistRepository,
-  runtime
+  runtime,
+  observe
 }: ClosePositionDependencies): ClosePosition {
   return ({ positionId, exitPrice }) => {
     const normalizedPositionId = String(positionId || '').trim();
@@ -63,20 +65,72 @@ export function createClosePosition({
       throw new Error('Strategy ID absent.');
     }
 
-    const closed = closePosition(current, exitPrice, runtime.now());
-    positionRepository.close(closed);
+    observe?.('POSITION_LOADED', {
+      positionId: current.id,
+      accountId: current.accountId,
+      ticker: current.ticker,
+      exitPrice
+    });
 
-    const existingJournal = journalRepository.findByPositionId(closed.id);
+    const closed = closePosition(current, exitPrice, runtime.now());
+    try {
+      positionRepository.close(closed);
+      observe?.('POSITION_CLOSE_PERSISTED', {
+        positionId: closed.id,
+        realizedPnl: closed.realizedPnl
+      });
+    } catch (error) {
+      observe?.('TECHNICAL_FAILURE', {
+        stage: 'POSITION_SAVE',
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
+    }
+
+    let existingJournal: JournalEntry | null;
+    try {
+      existingJournal = journalRepository.findByPositionId(closed.id);
+      observe?.('JOURNAL_LOOKUP', { found: Boolean(existingJournal) });
+    } catch (error) {
+      observe?.('PARTIAL_FAILURE', {
+        stage: 'JOURNAL_LOOKUP',
+        positionId: closed.id,
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
+    }
     let journalEntry = existingJournal;
     let journalCreated = false;
 
     if (!existingJournal) {
       journalEntry = createJournalEntryFromClosedPosition(closed, runtime.newId());
-      journalRepository.save(journalEntry);
+      try {
+        journalRepository.save(journalEntry);
+      } catch (error) {
+        observe?.('PARTIAL_FAILURE', {
+          stage: 'JOURNAL_CREATION',
+          positionId: closed.id,
+          errorMessage: error instanceof Error ? error.message : String(error)
+        });
+        throw error;
+      }
       journalCreated = true;
     }
+    observe?.(journalCreated ? 'JOURNAL_CREATED' : 'JOURNAL_ALREADY_PRESENT', {
+      positionId: closed.id
+    });
 
-    watchlistRepository.updateStatus(closed.watchlistId, 'CLOSED');
+    try {
+      watchlistRepository.updateStatus(closed.watchlistId, 'CLOSED');
+      observe?.('WATCHLIST_STATUS_UPDATED', { watchlistId: closed.watchlistId, status: 'CLOSED' });
+    } catch (error) {
+      observe?.('PARTIAL_FAILURE', {
+        stage: 'WATCHLIST_UPDATE',
+        positionId: closed.id,
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
+      throw error;
+    }
 
     return { position: closed, journalEntry, journalCreated };
   };

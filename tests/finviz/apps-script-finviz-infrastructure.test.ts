@@ -12,7 +12,8 @@ describe('Apps Script Finviz infrastructure', () => {
   it('preserves UrlFetchApp options and CSV parsing', () => {
     const response = {
       getResponseCode: vi.fn(() => 200),
-      getContentText: vi.fn(() => 'Ticker\nBOX')
+      getContentText: vi.fn(() => 'Ticker\nBOX'),
+      getAllHeaders: vi.fn(() => ({ 'Content-Type': 'text/csv; charset=utf-8' }))
     };
     const fetch = vi.fn(() => response);
     const parseCsv = vi.fn(() => [['Ticker'], ['BOX']]);
@@ -22,7 +23,8 @@ describe('Apps Script Finviz infrastructure', () => {
     const transport = new AppsScriptFinvizTransport();
     expect(transport.fetch('https://example.test')).toEqual({
       status: 200,
-      content: 'Ticker\nBOX'
+      content: 'Ticker\nBOX',
+      contentType: 'text/csv; charset=utf-8'
     });
     expect(fetch).toHaveBeenCalledWith('https://example.test', {
       method: 'get',

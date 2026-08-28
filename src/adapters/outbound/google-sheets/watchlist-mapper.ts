@@ -1,4 +1,5 @@
 import type { WatchlistEntry, WatchlistSnapshotValue } from '../../../core/domain/watchlist';
+import { requireColumn } from './sheet-headers';
 
 export const WATCHLIST_HEADERS = [
   'Watchlist ID',
@@ -24,17 +25,6 @@ export const WATCHLIST_HEADERS = [
   'Notes',
   'Closed At'
 ] as const;
-
-function requireColumn(headers: string[], name: string): number {
-  const expected = name.trim().toLowerCase();
-  const index = headers.findIndex((header) => String(header).trim().toLowerCase() === expected);
-
-  if (index === -1) {
-    throw new Error(`Colonne absente : ${name}`);
-  }
-
-  return index;
-}
 
 function valueByHeader(headers: string[], row: unknown[], name: string): unknown {
   return row[requireColumn(headers, name)];

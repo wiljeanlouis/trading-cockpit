@@ -3,6 +3,7 @@ import {
   createTradingAccountRiskPolicy,
   type TradingAccountRiskPolicy
 } from '../../../core/domain/trading-account-risk-policy';
+import { requireColumn } from './sheet-headers';
 
 export const TRADING_ACCOUNT_HEADERS = [
   'Account ID',
@@ -10,13 +11,6 @@ export const TRADING_ACCOUNT_HEADERS = [
   'Base Currency',
   'Risk % Per Trade'
 ] as const;
-
-function requireColumn(headers: string[], name: string): number {
-  const expected = name.trim().toLowerCase();
-  const index = headers.findIndex((header) => String(header).trim().toLowerCase() === expected);
-  if (index === -1) throw new Error(`Colonne absente : ${name}`);
-  return index;
-}
 
 export function tradingAccountFromRow(headers: string[], row: unknown[]): TradingAccount {
   return normalizeTradingAccount({

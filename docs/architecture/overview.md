@@ -86,9 +86,10 @@ adapter types. See ADR 0009.
 `npm run build:cockpit` bundles TypeScript modules into the Apps Script-compatible IIFE
 `build/Cockpit.js`. The build appends stable global functions for migrated menu actions and `onOpen`.
 The menu definition itself is maintained in a TypeScript inbound adapter. The Sheets menu therefore
-keeps its existing labels and callback names while implementations change behind them. Superseded
-legacy Watchlist, Trade Plan, Position execution/close, and Journal creation implementations have
-been removed; their active schema/formula/formatting helpers remain temporarily in JavaScript.
+keeps its existing labels and callback names while implementations change behind them. Watchlist,
+Trade Plan, Position, Journal, Strategy, setup, and Cockpit Config physical infrastructure are now
+TypeScript-owned Google Sheets adapters. Theme remains the only intentional JavaScript dependency
+from those adapters.
 
 ## Watchlist contract preserved by the slice
 
@@ -97,10 +98,9 @@ and normalizes the candidate, confirms that its Strategy ID exists, detects an a
 then creates an entry. The outbound adapter preserves the existing Watchlist creation, schema
 validation, formula, formatting, dropdown, and theme helpers.
 
-During this transitional slice, outbound adapters deliberately delegate to the existing
-`getStrategy`, Watchlist lifecycle, formula, formatting, and theme helpers. This keeps their current
-schema validation and side effects intact, but remains an explicit legacy dependency to remove only
-when those capabilities receive their own characterized migrations.
+The outbound adapter owns Watchlist lifecycle, schema validation, formulas, validation dropdowns,
+and row formatting. Strategy lookup uses a shared Google Sheets strategy reader. Presentation still
+delegates to Theme as an explicit deferred adapter boundary.
 
 The duplicate key remains Strategy ID plus Strategy Version plus Ticker. Strategy ID and Ticker are
 trimmed and case-insensitive; Strategy Version is trimmed and case-sensitive. `CLOSED` and
@@ -134,9 +134,10 @@ Invalidation Level, detects an active Trade Plan, creates the plan, saves it, th
 `PLANNED`. The legacy has no Watchlist-status eligibility rule, so the Core deliberately does not
 invent one.
 
-`Cockpit Config` remains static configuration. Its account equity and default risk percentage are
-copied into each Trade Plan as a historical snapshot. A future dynamic account or portfolio balance
-is a separate boundary and is not represented by `TradingConfigurationPort` in this slice.
+New Trade Plans derive realized equity and Risk % from their selected Trading Account and freeze
+those values as snapshots. `Cockpit Config` Account Equity and Default Risk % remain compatibility
+data for Dashboard and historical interpretation only; there is no fallback from account-owned
+Trade Plan creation to these global values.
 
 ## Core calculations and Google Sheets formulas
 
@@ -147,7 +148,7 @@ Google Sheets adapter installs the same formulas after insertion.
 
 This coexistence enables parity validation. Formula removal requires representative production
 comparison and a separate decision; it is not part of the Create Trade Plan cutover. The complete
-29-column contract is documented in [Trade Plan schema](trade-plan-schema.md).
+30-column append-only contract is documented in [Trade Plan schema](trade-plan-schema.md).
 
 The mutation order remains Trade Plan append/formulas/format, then Watchlist status update, then
 Trade Plan theme. If the Watchlist update fails after append, a DRAFT plan can exist while the
@@ -254,8 +255,9 @@ exists, but a normal retry cannot repair a terminal Position because non-`OPEN` 
 preserve legacy behavior. These states can be detected later by Position ID and Watchlist ID and are
 candidates for a future reconciliation command.
 
-Position and Journal sheet/formula/formatting helpers stay legacy and are used by the TypeScript
-outbound adapters. The competing legacy close and Journal creation workflows have been removed.
+Position and Journal sheet lifecycle, historical schema validation, formulas, dropdowns, formatting,
+and append-only Account ID columns are owned by TypeScript outbound adapters. Their presentation
+continues to call the deferred Theme boundary.
 
 ## Closed Position reconciliation
 
@@ -296,6 +298,28 @@ selected Positions row.
 The greeting-based `src/poc` demonstration and its tests were removed after three real Cockpit
 slices validated the modular runtime. No build, runtime, or architectural check depended on them.
 The bundle smoke test still asserts that the obsolete `runArchitecturePoc` global is absent.
+
+## Runtime observability
+
+Critical user-triggered workflows emit concise V8 console events with a shared six-character run ID:
+market-signal and Momentum refresh, Watchlist insertion, Trade Plan creation, Position opening and
+closing, closed-Position reconciliation, and capital transactions. Account equity components are
+reported at the application boundary when Trade Plan sizing invokes the calculation. Pure domain
+calculations remain log-free.
+
+The log shape is `[TradingCockpit][workflow][runId] EVENT key=value`. Normal milestones use
+`console.info`; duplicate, blocked, no-action, inconsistent, and valid-empty outcomes use
+`console.warn`; unexpected adapter/runtime failures use `console.error` with an explicit stage. A
+close failure after Position persistence is marked `PARTIAL_FAILURE` at `JOURNAL_LOOKUP`,
+`JOURNAL_CREATION`, or `WATCHLIST_UPDATE`, so operators can determine whether reconciliation is
+required. Logs are not persisted in Sheets and never include Finviz tokens, authenticated URLs, or
+Script Properties.
+
+For market-signal refresh, the permanent sequence exposes strategy identity, HTTP status and response
+size, CSV header/data-row counts, mapped signal/attribute counts, projected rows and physical
+`setValues` dimensions, prepared/appended Signal snapshots, and total archived signals. A valid
+header-only provider response is explicitly warned as `VALID_EMPTY_RESULT`; malformed, non-CSV, or
+failed responses retain their exceptions and report the failing adapter stage.
 
 ## Migration rule
 

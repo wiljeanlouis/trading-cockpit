@@ -1,11 +1,13 @@
 import { isActiveTradePlanStatus, type TradePlan } from '../../../core/domain/trade-plan';
 import type { TradePlanRepository } from '../../../ports/outbound/trade-plan-repository';
 import { tradePlanFromRow, tradePlanToRow } from './trade-plan-mapper';
-
-declare function getOrCreateTradePlansSheet(): GoogleAppsScript.Spreadsheet.Sheet;
-declare function validateTradePlansSchema(sheet: GoogleAppsScript.Spreadsheet.Sheet): boolean;
-declare function addTradePlanFormulas(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number): void;
-declare function formatTradePlanRow(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number): void;
+import {
+  addTradePlanFormulas,
+  formatTradePlanRow,
+  getOrCreateTradePlansSheet,
+  validateTradePlansSchema
+} from './trade-plan-sheet';
+import { readSheetHeaders, requireColumn } from './sheet-headers';
 
 export class GoogleSheetsTradePlanRepository implements TradePlanRepository {
   private sheet: GoogleAppsScript.Spreadsheet.Sheet | null = null;
@@ -19,8 +21,8 @@ export class GoogleSheetsTradePlanRepository implements TradePlanRepository {
       return null;
     }
 
-    const headers = this.getHeaders(sheet);
-    const idIndex = this.requireColumn(headers, 'Trade Plan ID');
+    const headers = readSheetHeaders(sheet);
+    const idIndex = requireColumn(headers, 'Trade Plan ID');
     const rows: unknown[][] = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
     const normalizedId = String(id || '').trim();
 
@@ -41,10 +43,7 @@ export class GoogleSheetsTradePlanRepository implements TradePlanRepository {
       return null;
     }
 
-    const headers = sheet
-      .getRange(1, 1, 1, sheet.getLastColumn())
-      .getValues()[0]
-      .map((value) => String(value).trim());
+    const headers = readSheetHeaders(sheet);
     const rows: unknown[][] = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
     const normalizedWatchlistId = String(watchlistId).trim();
     const normalizedAccountId = String(accountId).trim().toUpperCase();
@@ -83,9 +82,9 @@ export class GoogleSheetsTradePlanRepository implements TradePlanRepository {
       throw new Error(`Trade Plan ID introuvable : ${id}`);
     }
 
-    const headers = this.getHeaders(sheet);
-    const idIndex = this.requireColumn(headers, 'Trade Plan ID');
-    const statusIndex = this.requireColumn(headers, 'Status');
+    const headers = readSheetHeaders(sheet);
+    const idIndex = requireColumn(headers, 'Trade Plan ID');
+    const statusIndex = requireColumn(headers, 'Status');
     const rows: unknown[][] = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
     const normalizedId = String(id || '').trim();
 
@@ -97,24 +96,6 @@ export class GoogleSheetsTradePlanRepository implements TradePlanRepository {
     }
 
     throw new Error(`Trade Plan ID introuvable : ${id}`);
-  }
-
-  private getHeaders(sheet: GoogleAppsScript.Spreadsheet.Sheet): string[] {
-    return sheet
-      .getRange(1, 1, 1, sheet.getLastColumn())
-      .getValues()[0]
-      .map((value) => String(value).trim());
-  }
-
-  private requireColumn(headers: string[], name: string): number {
-    const expected = name.trim().toLowerCase();
-    const index = headers.findIndex((header) => header.trim().toLowerCase() === expected);
-
-    if (index === -1) {
-      throw new Error(`Colonne absente : ${name}`);
-    }
-
-    return index;
   }
 
   private getValidatedSheet(): GoogleAppsScript.Spreadsheet.Sheet {
@@ -132,7 +113,7 @@ export class GoogleSheetsTradePlanRepository implements TradePlanRepository {
   }
 
   private ensureAccountColumn(sheet: GoogleAppsScript.Spreadsheet.Sheet): void {
-    const headers = this.getHeaders(sheet);
+    const headers = readSheetHeaders(sheet);
     if (!headers.includes('Account ID')) {
       sheet
         .getRange(1, sheet.getLastColumn() + 1)

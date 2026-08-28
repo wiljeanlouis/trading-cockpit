@@ -5,6 +5,7 @@ import {
 } from '../adapters/inbound/google-sheets/manage-finviz-token';
 import { refreshFinvizFromSheets } from '../adapters/inbound/google-sheets/refresh-finviz';
 import { AppsScriptRuntime } from '../adapters/outbound/apps-script/apps-script-runtime';
+import { RuntimeLogger } from '../adapters/outbound/apps-script/runtime-logger';
 import { formatAppsScriptSignalDate } from '../adapters/outbound/apps-script/apps-script-signal-date-formatter';
 import { AppsScriptFinvizTokenStorage } from '../adapters/outbound/finviz/apps-script-finviz-token-storage';
 import { AppsScriptFinvizTransport } from '../adapters/outbound/finviz/apps-script-finviz-transport';
@@ -42,29 +43,57 @@ function tokenService(): FinvizTokenService {
 }
 
 export function runRefreshFinviz(): void {
+  const logger = new RuntimeLogger('refresh-market-signals');
+  logger.start();
   const runtime = new AppsScriptRuntime();
+  const diagnostics = {
+    info: (event: string, fields: Record<string, unknown>) => logger.info(event, fields),
+    error: (stage: string, error: unknown) => logger.error(stage, error)
+  };
+  const observe = (event: string, fields: Record<string, unknown>) => {
+    if (event === 'TECHNICAL_FAILURE') {
+      logger.error(
+        String(fields.stage),
+        new Error(String(fields.errorMessage || 'Runtime failure')),
+        fields
+      );
+    } else if (event === 'VALID_EMPTY_RESULT') logger.warn(event, fields);
+    else logger.info(event, fields);
+  };
   const source = new FinvizMarketSignalSource(
     FINVIZ_BASE_URL,
     FINVIZ_FEEDS,
     tokenService(),
-    new AppsScriptFinvizTransport()
+    new AppsScriptFinvizTransport(),
+    diagnostics
   );
   const archiveSignals = createArchiveMarketSignals({
     repository: new GoogleSheetsSignalHistoryRepository(),
     now: () => runtime.now(),
-    formatSignalDate: formatAppsScriptSignalDate
+    formatSignalDate: formatAppsScriptSignalDate,
+    observe
   });
-  refreshFinvizFromSheets(
-    createRefreshMarketSignals({
+  try {
+    const refresh = createRefreshMarketSignals({
       source,
       strategyCatalog: new GoogleSheetsTradingStrategyCatalog(),
-      projection: new GoogleSheetsFinvizSignalProjection({
-        [MOMENTUM_FEED_ID]: 'Finviz - Momentum'
-      }),
+      projection: new GoogleSheetsFinvizSignalProjection(
+        { [MOMENTUM_FEED_ID]: 'Finviz - Momentum' },
+        diagnostics
+      ),
       archiveSignals,
-      now: () => runtime.now()
-    })
-  );
+      now: () => runtime.now(),
+      observe
+    });
+    refreshFinvizFromSheets(() => {
+      const archived = refresh();
+      logger.success({ archived });
+      return archived;
+    });
+  } catch (error) {
+    logger.error('REFRESH_MARKET_SIGNALS', error);
+    throw error;
+  }
 }
 
 export function runConfigureFinvizToken(): void {

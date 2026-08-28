@@ -2,6 +2,7 @@ import {
   createCapitalTransaction,
   type CapitalTransaction
 } from '../../../core/domain/capital-transaction';
+import { requireColumn } from './sheet-headers';
 
 export const CAPITAL_LEDGER_HEADERS = [
   'Transaction ID',
@@ -11,13 +12,6 @@ export const CAPITAL_LEDGER_HEADERS = [
   'Occurred At',
   'Note'
 ] as const;
-
-function requireColumn(headers: string[], name: string): number {
-  const expected = name.trim().toLowerCase();
-  const index = headers.findIndex((header) => String(header).trim().toLowerCase() === expected);
-  if (index === -1) throw new Error(`Colonne absente : ${name}`);
-  return index;
-}
 
 export function capitalTransactionFromRow(headers: string[], row: unknown[]): CapitalTransaction {
   return createCapitalTransaction({

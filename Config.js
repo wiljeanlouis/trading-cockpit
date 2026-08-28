@@ -4,9 +4,6 @@
 const MOMENTUM_RANKING_SHEET =
   'Momentum Ranking';
 
-const MOMENTUM_SCORE_CONFIG_SHEET =
-  'Momentum Score Config';
-
 const WATCHLIST_SHEET =
   'Watchlist';  
 
@@ -22,22 +19,5 @@ const JOURNAL_SHEET =
 const DASHBOARD_SHEET =
   'Dashboard';  
 
-const COCKPIT_CONFIG_SHEET =
-  'Cockpit Config';
-
 const ANALYTICS_SHEET =
   'Analytics'; 
-
-const STRATEGIES_SHEET =
-  'Strategies';   
-
-const STRATEGY_HEADERS = [
-  'Strategy ID',
-  'Name',
-  'Version',
-  'Type',
-  'Enabled',
-  'Risk %',
-  'Max Positions',
-  'Description'
-];

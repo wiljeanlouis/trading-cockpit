@@ -34,6 +34,12 @@ for (const filePath of sourceFiles) {
   const isCore = repositoryPath.includes('/core/');
   const isPort = repositoryPath.includes('/ports/');
 
+  for (const match of source.matchAll(/\bdeclare\s+function\s+(\w+)/g)) {
+    if (!match[1].startsWith('theme')) {
+      violations.push(`${repositoryPath}: forbidden legacy global dependency ${match[1]}`);
+    }
+  }
+
   if (isCore || isPort) {
     for (const globalName of forbiddenAppsScriptGlobals) {
       if (new RegExp(`\\b${globalName}\\b`).test(source)) {
@@ -73,6 +79,7 @@ if (violations.length > 0) {
 } else {
   console.log(
     `Architecture check passed: ${sourceFiles.length} TypeScript modules, ` +
-      'no core/port dependency on adapters, Apps Script globals, or external provider names.'
+      'no core/port dependency on adapters, Apps Script globals, or external provider names; ' +
+      'no non-theme legacy global dependency.'
   );
 }

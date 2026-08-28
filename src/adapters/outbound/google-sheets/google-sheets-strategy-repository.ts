@@ -1,11 +1,11 @@
 import type { StrategyRepository } from '../../../ports/outbound/strategy-repository';
-
-declare function getStrategy(strategyId: string): unknown;
+import { GoogleSheetsTradingStrategyReader } from './google-sheets-trading-strategy-reader';
 
 export class GoogleSheetsStrategyRepository implements StrategyRepository {
+  constructor(private readonly reader = new GoogleSheetsTradingStrategyReader()) {}
+
   existsById(strategyId: string): boolean {
-    // Preserve the complete legacy registry validation, including its schema errors.
-    getStrategy(strategyId);
+    this.reader.getById(strategyId);
     return true;
   }
 }

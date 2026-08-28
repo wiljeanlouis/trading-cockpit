@@ -4,17 +4,10 @@ import type {
   MomentumStrategyRepository,
   MomentumStrategySnapshot
 } from '../../../ports/outbound/momentum-signal-repository';
-
-declare function getStrategy(strategyId: string): unknown;
+import { GoogleSheetsTradingStrategyReader } from './google-sheets-trading-strategy-reader';
+import { requireColumn } from './sheet-headers';
 
 const SIGNALS_HISTORY_SHEET_NAME = 'Signals History';
-
-function requireColumn(headers: string[], name: string): number {
-  const expected = name.trim().toLowerCase();
-  const index = headers.findIndex((header) => header.trim().toLowerCase() === expected);
-  if (index === -1) throw new Error(`Colonne absente : ${name}`);
-  return index;
-}
 
 function requireColumnAfter(headers: string[], name: string, afterIndex: number): number {
   const expected = name.trim().toLowerCase();
@@ -50,13 +43,15 @@ function normalizeSignalDate(value: unknown): string {
 }
 
 export class GoogleSheetsMomentumStrategyRepository implements MomentumStrategyRepository {
+  constructor(private readonly reader = new GoogleSheetsTradingStrategyReader()) {}
+
   getById(strategyId: string): MomentumStrategySnapshot {
-    const value = getStrategy(strategyId) as Partial<MomentumStrategySnapshot>;
+    const value = this.reader.getById(strategyId);
     return {
-      id: String(value.id ?? '').trim(),
-      name: String(value.name ?? '').trim(),
-      version: String(value.version ?? '').trim(),
-      enabled: value.enabled === true
+      id: value.id,
+      name: value.name,
+      version: value.version,
+      enabled: value.enabled
     };
   }
 }

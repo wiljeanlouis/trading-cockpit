@@ -1,0 +1,63 @@
+import { describe, expect, it } from 'vitest';
+import {
+  MOMENTUM_RANKING_SETUP_HEADERS,
+  MOMENTUM_SCORE_CONFIG_VALUES
+} from '../../src/adapters/inbound/google-sheets/setup-momentum-ranking';
+import {
+  STRATEGY_HEADERS,
+  STRATEGY_TYPE_VALUES
+} from '../../src/adapters/inbound/google-sheets/setup-strategies';
+
+describe('legacy setup data characterization', () => {
+  it('preserves the eight-column Strategies schema and type list', () => {
+    expect(STRATEGY_HEADERS).toEqual([
+      'Strategy ID',
+      'Name',
+      'Version',
+      'Type',
+      'Enabled',
+      'Risk %',
+      'Max Positions',
+      'Description'
+    ]);
+    expect(STRATEGY_TYPE_VALUES).toEqual([
+      'MOMENTUM',
+      'BREAKOUT',
+      'MEAN_REVERSION',
+      'TREND_FOLLOWING',
+      'EVENT_DRIVEN',
+      'OTHER'
+    ]);
+  });
+
+  it('preserves the descriptive score matrix exactly at its meaningful boundaries', () => {
+    expect(MOMENTUM_SCORE_CONFIG_VALUES).toHaveLength(29);
+    expect(MOMENTUM_SCORE_CONFIG_VALUES[0]).toEqual(['MOMENTUM BREAKOUT SCORE V1', '', '', '']);
+    expect(MOMENTUM_SCORE_CONFIG_VALUES[3]).toEqual(['52W High', '0% à -1%', 25, 25]);
+    expect(MOMENTUM_SCORE_CONFIG_VALUES[25]).toEqual(['SMA20 Extension', '2% à 8%', 15, 15]);
+    expect(MOMENTUM_SCORE_CONFIG_VALUES[28]).toEqual(['SMA20 Extension', '> 12%', 5, '']);
+  });
+
+  it('preserves the legacy 17-column setup schema rather than the 21-column refresh schema', () => {
+    expect(MOMENTUM_RANKING_SETUP_HEADERS).toHaveLength(17);
+    expect(MOMENTUM_RANKING_SETUP_HEADERS).toEqual([
+      'Rank',
+      'Ticker',
+      'Company',
+      'Sector',
+      'Price',
+      '52W High',
+      '52W Score',
+      'Relative Volume',
+      'RelVol Score',
+      'Performance Month',
+      'Performance Score',
+      'RSI',
+      'RSI Score',
+      'SMA20',
+      'SMA20 Score',
+      'Momentum Score',
+      'Review Status'
+    ]);
+  });
+});
