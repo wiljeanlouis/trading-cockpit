@@ -43,6 +43,10 @@ await build({
       '',
       'function reconcileSelectedPosition() {',
       '  return CockpitBundle.reconcileSelectedPosition();',
+      '}',
+      '',
+      'function setupTradingAccounts() {',
+      '  return CockpitBundle.setupTradingAccounts();',
       '}'
     ].join('\n')
   }

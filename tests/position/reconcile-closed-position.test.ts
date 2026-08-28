@@ -100,6 +100,7 @@ describe('reconcile CLOSED Position', () => {
     expect(c.savedJournals[0]).toMatchObject({
       id: 'J-NEW',
       positionId: 'P-1',
+      accountId: 'A1',
       closedAt: closedPosition.closedAt,
       realizedPnl: 10
     });

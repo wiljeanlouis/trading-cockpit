@@ -21,11 +21,12 @@ describe('Journal mapper', () => {
       'J-1'
     );
     const row = journalEntryToRow(entry);
-    expect(row).toHaveLength(26);
+    expect(row).toHaveLength(27);
     expect(row.slice(19, 22)).toEqual(['', '', '']);
     expect(journalEntryFromRow([...JOURNAL_HEADERS], row)).toMatchObject({
       id: 'J-1',
       positionId: 'P-1',
+      accountId: 'A1',
       realizedPnl: 10,
       returnPercent: null,
       rMultiple: null,

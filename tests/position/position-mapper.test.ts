@@ -10,6 +10,7 @@ import type { Position } from '../../src/core/domain/position';
 const openedAt = new Date('2026-08-27T14:00:00.000Z');
 const position: Position = {
   id: 'P-1',
+  accountId: 'A1',
   tradePlanId: 'TP-1',
   watchlistId: 'WL-1',
   strategyId: 'MOMENTUM_BREAKOUT',
@@ -45,7 +46,7 @@ describe('Position row mapper', () => {
     });
   });
 
-  it('writes the exact 25-column legacy row and leaves formula-owned cells empty', () => {
+  it('writes the migration-compatible 26-column row and leaves formula-owned cells empty', () => {
     expect(positionToRow(position)).toEqual([
       'P-1',
       'TP-1',
@@ -71,7 +72,8 @@ describe('Position row mapper', () => {
       '',
       '',
       '',
-      ''
+      '',
+      'A1'
     ]);
   });
 

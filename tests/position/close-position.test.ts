@@ -56,6 +56,13 @@ function context(options?: { position?: Position | null; journal?: JournalEntry 
 }
 
 describe('close Position', () => {
+  it('blocks a legacy Position without Account ID before closing it', () => {
+    const c = context({ position: { ...openPosition, accountId: '' } });
+    expect(() => createClosePosition(c.dependencies)({ positionId: 'P-1', exitPrice: 12 })).toThrow(
+      'Account ID absent.'
+    );
+    expect(c.calls).toEqual(['position.find']);
+  });
   it.each([
     [12, 10],
     [8, -10],

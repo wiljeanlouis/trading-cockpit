@@ -27,7 +27,8 @@ export const JOURNAL_HEADERS = [
   'Exit Reason',
   'Execution Notes',
   'Lessons Learned',
-  'Followed Plan?'
+  'Followed Plan?',
+  'Account ID'
 ] as const;
 
 function requireColumn(headers: string[], name: string): number {
@@ -64,6 +65,7 @@ export function journalEntryFromRow(headers: string[], row: unknown[]): JournalE
   return {
     id: text(value(headers, row, 'Journal ID')),
     positionId: text(value(headers, row, 'Position ID')),
+    accountId: text(value(headers, row, 'Account ID')).toUpperCase(),
     tradePlanId: text(value(headers, row, 'Trade Plan ID')),
     watchlistId: text(value(headers, row, 'Watchlist ID')),
     strategyId: text(value(headers, row, 'Strategy ID')),
@@ -129,6 +131,7 @@ export function journalEntryToRow(entry: JournalEntry): PositionSnapshotValue[] 
     entry.exitReason,
     entry.executionNotes,
     entry.lessonsLearned,
-    entry.followedPlan
+    entry.followedPlan,
+    entry.accountId
   ];
 }

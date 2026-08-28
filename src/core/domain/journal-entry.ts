@@ -6,6 +6,7 @@ export type JournalOutcome = 'WIN' | 'LOSS' | 'BREAKEVEN' | null;
 export interface JournalEntry {
   id: string;
   positionId: string;
+  accountId: string;
   tradePlanId: string;
   watchlistId: string;
   strategyId: string;
@@ -68,6 +69,7 @@ export function createJournalEntryFromClosedPosition(position: Position, id: str
   return {
     id,
     positionId: position.id,
+    accountId: position.accountId,
     tradePlanId: position.tradePlanId,
     watchlistId: position.watchlistId,
     strategyId: position.strategyId,

@@ -81,8 +81,9 @@ describe('Position domain', () => {
     const source = normalizePositionSource(tradePlan);
     const openedAt = new Date('2026-08-27T14:00:00.000Z');
 
-    expect(createOpenPosition(source, 'P-1', openedAt)).toEqual({
+    expect(createOpenPosition(source, 'P-1', openedAt, 'A1')).toEqual({
       id: 'P-1',
+      accountId: 'A1',
       tradePlanId: 'TP-1',
       watchlistId: 'WL-1',
       strategyId: 'MOMENTUM_BREAKOUT',
@@ -186,7 +187,7 @@ describe('Position domain', () => {
       entryPrice: 'not-a-price',
       positionSize: 'not-a-quantity'
     });
-    const position = createOpenPosition(source, 'P-1', new Date());
+    const position = createOpenPosition(source, 'P-1', new Date(), 'A1');
 
     expect(Number.isNaN(position.actualEntry)).toBe(true);
     expect(Number.isNaN(position.actualQuantity)).toBe(true);

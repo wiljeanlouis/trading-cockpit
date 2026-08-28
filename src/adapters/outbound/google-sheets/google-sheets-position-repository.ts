@@ -117,9 +117,20 @@ export class GoogleSheetsPositionRepository implements PositionRepository {
 
     if (!this.schemaValidated) {
       validatePositionsSchema(this.sheet);
+      this.ensureAccountColumn(this.sheet);
       this.schemaValidated = true;
     }
 
     return this.sheet;
+  }
+
+  private ensureAccountColumn(sheet: GoogleAppsScript.Spreadsheet.Sheet): void {
+    const headers = this.getHeaders(sheet);
+    if (!headers.includes('Account ID')) {
+      sheet
+        .getRange(1, sheet.getLastColumn() + 1)
+        .setValue('Account ID')
+        .setFontWeight('bold');
+    }
   }
 }

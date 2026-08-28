@@ -29,6 +29,7 @@ export interface NormalizedPositionSource {
 
 export interface Position {
   id: string;
+  accountId: string;
   tradePlanId: string;
   watchlistId: string;
   strategyId: string;
@@ -205,10 +206,12 @@ export function requirePositionExecutionData(source: NormalizedPositionSource): 
 export function createOpenPosition(
   source: NormalizedPositionSource,
   id: string,
-  openedAt: Date
+  openedAt: Date,
+  accountId: string
 ): Position {
   return {
     id,
+    accountId,
     tradePlanId: source.tradePlanId,
     watchlistId: source.watchlistId,
     strategyId: source.strategyId,

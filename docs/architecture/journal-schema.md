@@ -1,7 +1,7 @@
 # Journal Google Sheets schema
 
-Journal is one trade-result snapshot per Position ID, followed by calculated metrics and editable
-review annotations. All 26 headers are required. The sheet is not protected, so ownership below is
+Journal originally had 26 columns. Multi-account migration appends Account ID as AA so the historical
+T/U/V formulas remain at the same coordinates. The sheet is not protected, so ownership below is
 conceptual rather than an enforced permission.
 
 | Column | Header           | Source                   | Conceptual type | Responsibility           | Value/formula                                     | Editing    | Required              |
@@ -32,6 +32,7 @@ conceptual rather than an enforced permission.
 | X      | Execution Notes  | User after close         | String          | Review annotation        | Initially blank                                   | User       | Optional              |
 | Y      | Lessons Learned  | User after close         | String          | Review annotation        | Initially blank                                   | User       | Optional              |
 | Z      | Followed Plan?   | User after close         | Enum/text       | Review annotation        | Initially blank; YES/PARTIALLY/NO                 | User       | Optional              |
+| AA     | Account ID       | Position                 | String          | Account attribution      | Uppercase snapshot                                | System     | Required for new rows |
 
 Current Stop is not copied. Exit Reason is not derived from Position status, stop, target, or exit
 price. Analytics remains legacy and reads Position ID, Strategy ID, Strategy, Strategy Version,
@@ -50,3 +51,6 @@ matches. Zero can be repaired from a sufficiently complete persisted `CLOSED` Po
 already valid; multiple matches require manual review and are never deleted or merged automatically.
 Reconciled rows use the same mapper, formulas, formats, validations, and theme as normal close rows,
 so the Analytics contract remains identical.
+
+Existing Journal rows retain blank Account ID until explicitly attributed. No account is inferred
+from ticker, Trade Plan, row order, or the global Cockpit configuration.

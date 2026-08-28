@@ -25,7 +25,8 @@ export const POSITION_HEADERS = [
   'Closed At',
   'Exit Price',
   'Realized P&L',
-  'Notes'
+  'Notes',
+  'Account ID'
 ] as const;
 
 function requireColumn(headers: string[], name: string): number {
@@ -64,6 +65,7 @@ function textValue(value: unknown): string {
 export function positionFromRow(headers: string[], row: unknown[]): Position {
   return {
     id: textValue(valueByHeader(headers, row, 'Position ID')),
+    accountId: textValue(valueByHeader(headers, row, 'Account ID')).toUpperCase(),
     tradePlanId: textValue(valueByHeader(headers, row, 'Trade Plan ID')),
     watchlistId: textValue(valueByHeader(headers, row, 'Watchlist ID')),
     strategyId: textValue(valueByHeader(headers, row, 'Strategy ID')),
@@ -117,6 +119,7 @@ export function positionToRow(position: Position): PositionSnapshotValue[] {
     position.closedAt,
     position.exitPrice,
     position.realizedPnl,
-    position.notes
+    position.notes,
+    position.accountId
   ];
 }

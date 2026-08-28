@@ -55,6 +55,10 @@ export function createClosePosition({
       throw new Error('Watchlist ID absent.');
     }
 
+    if (!current.accountId) {
+      throw new Error('Account ID absent.');
+    }
+
     if (!current.strategyId) {
       throw new Error('Strategy ID absent.');
     }

@@ -6,6 +6,7 @@ Trading Cockpit is in a progressive migration from a global Google Apps Script a
 modular TypeScript application. Both forms run together in the same Apps Script project. Legacy
 root-level JavaScript continues to own all workflows except the migrated Watchlist add-candidate,
 Create Trade Plan, Open Position, and Close Position to Journal slices.
+The multi-account foundation adds explicit Trading Account identity to new Positions and Journals.
 
 ```text
 Google Sheets menu
@@ -131,6 +132,8 @@ transaction has been introduced.
 ```text
 Trade Plan selection
        |
+       +----> Account ID prompt and TradingAccountRepository validation
+       |
        v
 Inbound Google Sheets adapter
        |
@@ -170,6 +173,10 @@ Current Price remains an external `GOOGLEFINANCE` persistence formula. Unrealize
 Unrealized P&L % are derived business formulas with pure TypeScript equivalents and parity tests;
 their Sheet formulas remain in place under ADR 0004. See the complete
 [Position schema](position-schema.md).
+
+Trading Accounts are identity/configuration only; capital remains outside the model. Trade Plans
+stay single-execution, so the same ticker may be opened in several accounts through distinct plans.
+See [Trading Accounts foundation](trading-accounts.md) and ADR 0005.
 
 ## Close Position to Journal flow
 

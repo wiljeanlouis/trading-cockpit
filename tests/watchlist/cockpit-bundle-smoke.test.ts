@@ -24,11 +24,13 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.CockpitBundle?.executeSelectedTradePlan).toBeTypeOf('function');
     expect(context.CockpitBundle?.closeSelectedPosition).toBeTypeOf('function');
     expect(context.CockpitBundle?.reconcileSelectedPosition).toBeTypeOf('function');
+    expect(context.CockpitBundle?.setupTradingAccounts).toBeTypeOf('function');
     expect(context.addSelectedToWatchlist).toBeTypeOf('function');
     expect(context.createTradePlanFromSelectedWatchlist).toBeTypeOf('function');
     expect(context.executeSelectedTradePlan).toBeTypeOf('function');
     expect(context.closeSelectedPosition).toBeTypeOf('function');
     expect(context.reconcileSelectedPosition).toBeTypeOf('function');
+    expect(context.setupTradingAccounts).toBeTypeOf('function');
     expect(context.runArchitecturePoc).toBeUndefined();
   });
 });

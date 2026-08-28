@@ -56,6 +56,7 @@ describe('Journal Entry snapshot', () => {
     expect(entry).toMatchObject({
       id: 'J-1',
       positionId: 'P-1',
+      accountId: 'A1',
       tradePlanId: 'TP-1',
       watchlistId: 'WL-1',
       rMultiple: 1,

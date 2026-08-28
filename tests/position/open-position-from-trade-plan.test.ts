@@ -40,6 +40,7 @@ const tradePlan: TradePlan = {
 
 const existingPosition: Position = {
   id: 'P-OLD',
+  accountId: 'A1',
   tradePlanId: 'TP-1',
   watchlistId: 'WL-1',
   strategyId: 'MOMENTUM_BREAKOUT',
@@ -76,6 +77,13 @@ function createDependencies(options?: {
   const watchlistUpdates: Array<{ id: string; status: string }> = [];
 
   const dependencies: OpenPositionFromTradePlanDependencies = {
+    tradingAccountRepository: {
+      findById: (id) => {
+        calls.push(`account.find:${id}`);
+        return ['A1', 'A2'].includes(id) ? { id, name: id, baseCurrency: 'CAD' } : null;
+      },
+      findAll: () => []
+    },
     positionRepository: {
       findById: () => null,
       findOpenByTradePlanId: () => {
@@ -137,16 +145,57 @@ function createDependencies(options?: {
 }
 
 describe('open Position from Trade Plan', () => {
+  it('allows the same ticker in different accounts through distinct single-execution plans', () => {
+    const first = createDependencies();
+    const second = createDependencies({ tradePlan: { ...tradePlan, id: 'TP-2' } });
+
+    const firstResult = createOpenPositionFromTradePlan(first.dependencies)({
+      tradePlanId: 'TP-1',
+      accountId: 'A1'
+    });
+    const secondResult = createOpenPositionFromTradePlan(second.dependencies)({
+      tradePlanId: 'TP-2',
+      accountId: 'A2'
+    });
+
+    expect(firstResult.kind === 'opened' && firstResult.position).toMatchObject({
+      accountId: 'A1',
+      ticker: 'URNB'
+    });
+    expect(secondResult.kind === 'opened' && secondResult.position).toMatchObject({
+      accountId: 'A2',
+      ticker: 'URNB'
+    });
+  });
+  it('requires an Account ID before loading the Trade Plan', () => {
+    const context = createDependencies();
+    const openPosition = createOpenPositionFromTradePlan(context.dependencies);
+    expect(() => openPosition({ tradePlanId: 'TP-1', accountId: '' })).toThrow(
+      'Account ID absent.'
+    );
+    expect(context.calls).toEqual([]);
+  });
+
+  it('rejects an unknown Trading Account without creating Position', () => {
+    const context = createDependencies();
+    context.dependencies.tradingAccountRepository.findById = () => null;
+    const openPosition = createOpenPositionFromTradePlan(context.dependencies);
+    expect(() => openPosition({ tradePlanId: 'TP-1', accountId: 'A404' })).toThrow(
+      'Trading Account introuvable : A404'
+    );
+    expect(context.calls).not.toContain('position.save');
+  });
   it('opens Position then updates Trade Plan and Watchlist in exact legacy order', () => {
     const context = createDependencies();
     const openPosition = createOpenPositionFromTradePlan(context.dependencies);
 
-    const result = openPosition({ tradePlanId: ' TP-1 ' });
+    const result = openPosition({ tradePlanId: ' TP-1 ', accountId: 'A1' });
 
     expect(result.kind).toBe('opened');
     expect(context.calls).toEqual([
       'tradePlan.find:TP-1',
       'strategy.exists',
+      'account.find:A1',
       'position.find',
       'runtime.now',
       'runtime.newId',
@@ -173,7 +222,9 @@ describe('open Position from Trade Plan', () => {
     const context = createDependencies();
     const openPosition = createOpenPositionFromTradePlan(context.dependencies);
 
-    expect(() => openPosition({ tradePlanId: '' })).toThrow('Trade Plan ID absent.');
+    expect(() => openPosition({ tradePlanId: '', accountId: 'A1' })).toThrow(
+      'Trade Plan ID absent.'
+    );
     expect(context.calls).toEqual([]);
   });
 
@@ -181,7 +232,7 @@ describe('open Position from Trade Plan', () => {
     const context = createDependencies({ tradePlan: null });
     const openPosition = createOpenPositionFromTradePlan(context.dependencies);
 
-    expect(() => openPosition({ tradePlanId: 'TP-404' })).toThrow(
+    expect(() => openPosition({ tradePlanId: 'TP-404', accountId: 'A1' })).toThrow(
       'Trade Plan ID introuvable : TP-404'
     );
     expect(context.calls).toEqual(['tradePlan.find:TP-404']);
@@ -193,7 +244,7 @@ describe('open Position from Trade Plan', () => {
       const context = createDependencies({ tradePlan: { ...tradePlan, status } });
       const openPosition = createOpenPositionFromTradePlan(context.dependencies);
 
-      expect(() => openPosition({ tradePlanId: 'TP-1' })).toThrow();
+      expect(() => openPosition({ tradePlanId: 'TP-1', accountId: 'A1' })).toThrow();
       expect(context.calls).toEqual(['tradePlan.find:TP-1', 'strategy.exists']);
     }
   );
@@ -208,7 +259,7 @@ describe('open Position from Trade Plan', () => {
     const context = createDependencies({ tradePlan: { ...tradePlan, [field]: value } });
     const openPosition = createOpenPositionFromTradePlan(context.dependencies);
 
-    expect(() => openPosition({ tradePlanId: 'TP-1' })).toThrow();
+    expect(() => openPosition({ tradePlanId: 'TP-1', accountId: 'A1' })).toThrow();
     expect(context.calls).toEqual(['tradePlan.find:TP-1', 'strategy.exists']);
   });
 
@@ -216,7 +267,7 @@ describe('open Position from Trade Plan', () => {
     const context = createDependencies({ tradePlan: { ...tradePlan, entryPrice: 0 } });
     const openPosition = createOpenPositionFromTradePlan(context.dependencies);
 
-    expect(openPosition({ tradePlanId: 'TP-1' }).kind).toBe('opened');
+    expect(openPosition({ tradePlanId: 'TP-1', accountId: 'A1' }).kind).toBe('opened');
     expect(context.saved()).toMatchObject({ actualEntry: 0 });
   });
 
@@ -224,13 +275,18 @@ describe('open Position from Trade Plan', () => {
     const context = createDependencies({ existingPosition });
     const openPosition = createOpenPositionFromTradePlan(context.dependencies);
 
-    expect(openPosition({ tradePlanId: 'TP-1' })).toEqual({
+    expect(openPosition({ tradePlanId: 'TP-1', accountId: 'A1' })).toEqual({
       kind: 'duplicate',
       tradePlanId: 'TP-1',
       ticker: 'URNB',
       existing: existingPosition
     });
-    expect(context.calls).toEqual(['tradePlan.find:TP-1', 'strategy.exists', 'position.find']);
+    expect(context.calls).toEqual([
+      'tradePlan.find:TP-1',
+      'strategy.exists',
+      'account.find:A1',
+      'position.find'
+    ]);
     expect(context.tradePlanUpdates).toEqual([]);
     expect(context.watchlistUpdates).toEqual([]);
   });
@@ -242,7 +298,7 @@ describe('open Position from Trade Plan', () => {
     };
     const openPosition = createOpenPositionFromTradePlan(context.dependencies);
 
-    expect(() => openPosition({ tradePlanId: 'TP-1' })).toThrow('save failed');
+    expect(() => openPosition({ tradePlanId: 'TP-1', accountId: 'A1' })).toThrow('save failed');
     expect(context.tradePlanUpdates).toEqual([]);
     expect(context.watchlistUpdates).toEqual([]);
   });
@@ -254,7 +310,9 @@ describe('open Position from Trade Plan', () => {
     };
     const openPosition = createOpenPositionFromTradePlan(context.dependencies);
 
-    expect(() => openPosition({ tradePlanId: 'TP-1' })).toThrow('trade plan update failed');
+    expect(() => openPosition({ tradePlanId: 'TP-1', accountId: 'A1' })).toThrow(
+      'trade plan update failed'
+    );
     expect(context.saved()).not.toBeNull();
     expect(context.watchlistUpdates).toEqual([]);
   });
@@ -266,7 +324,9 @@ describe('open Position from Trade Plan', () => {
     };
     const openPosition = createOpenPositionFromTradePlan(context.dependencies);
 
-    expect(() => openPosition({ tradePlanId: 'TP-1' })).toThrow('watchlist update failed');
+    expect(() => openPosition({ tradePlanId: 'TP-1', accountId: 'A1' })).toThrow(
+      'watchlist update failed'
+    );
     expect(context.saved()).not.toBeNull();
     expect(context.tradePlanUpdates).toEqual([{ id: 'TP-1', status: 'EXECUTED' }]);
   });
@@ -274,12 +334,12 @@ describe('open Position from Trade Plan', () => {
   it('prevents double execution when retry sees the existing OPEN Position', () => {
     const first = createDependencies();
     const openFirst = createOpenPositionFromTradePlan(first.dependencies);
-    const firstResult = openFirst({ tradePlanId: 'TP-1' });
+    const firstResult = openFirst({ tradePlanId: 'TP-1', accountId: 'A1' });
     const opened = firstResult.kind === 'opened' ? firstResult.position : null;
     const retry = createDependencies({ existingPosition: opened });
     const openRetry = createOpenPositionFromTradePlan(retry.dependencies);
 
-    expect(openRetry({ tradePlanId: 'TP-1' }).kind).toBe('duplicate');
+    expect(openRetry({ tradePlanId: 'TP-1', accountId: 'A1' }).kind).toBe('duplicate');
     expect(retry.calls).not.toContain('position.save');
   });
 });

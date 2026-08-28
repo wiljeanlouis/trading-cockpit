@@ -2,6 +2,7 @@ import type { Position } from '../../src/core/domain/position';
 
 export const openPosition: Position = {
   id: 'P-1',
+  accountId: 'A1',
   tradePlanId: 'TP-1',
   watchlistId: 'WL-1',
   strategyId: 'S-1',

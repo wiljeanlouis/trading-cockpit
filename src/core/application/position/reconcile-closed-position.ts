@@ -33,6 +33,7 @@ export type ReconcileClosedPosition = (
 ) => ReconcileClosedPositionResult;
 
 const REQUIRED_TEXT_FIELDS: Array<[keyof Position, string]> = [
+  ['accountId', 'Account ID'],
   ['tradePlanId', 'Trade Plan ID'],
   ['watchlistId', 'Watchlist ID'],
   ['strategyId', 'Strategy ID'],

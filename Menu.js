@@ -59,6 +59,10 @@ function onOpen() {
       'setupCockpitConfig'
     )
     .addItem(
+      'Setup Trading Accounts',
+      'setupTradingAccounts'
+    )
+    .addItem(
       'Setup Strategies',
       'setupStrategies'
     )

@@ -37,8 +37,19 @@ export class GoogleSheetsJournalRepository implements JournalRepository {
     if (!this.sheet) {
       this.sheet = getOrCreateJournalSheet();
       validateJournalSchema(this.sheet);
+      this.ensureAccountColumn(this.sheet);
     }
     return this.sheet;
+  }
+
+  private ensureAccountColumn(sheet: GoogleAppsScript.Spreadsheet.Sheet): void {
+    const headers = this.headers(sheet);
+    if (!headers.includes('Account ID')) {
+      sheet
+        .getRange(1, sheet.getLastColumn() + 1)
+        .setValue('Account ID')
+        .setFontWeight('bold');
+    }
   }
 
   private headers(sheet: GoogleAppsScript.Spreadsheet.Sheet): string[] {
