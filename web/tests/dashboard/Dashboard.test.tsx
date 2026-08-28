@@ -20,7 +20,8 @@ function gateway(getDashboardSummary: CockpitGateway['getDashboardSummary']): Co
     getWatchlist: vi.fn(),
     getTradingAccounts: vi.fn(),
     createTradePlan: vi.fn(),
-    getTradePlans: vi.fn()
+    getTradePlans: vi.fn(),
+    executeTradePlan: vi.fn()
   };
 }
 

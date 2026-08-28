@@ -2,6 +2,8 @@ import type {
   CreateTradePlanRequest,
   CreateTradePlanResponse,
   DashboardSummaryDto,
+  ExecuteTradePlanRequest,
+  ExecuteTradePlanResponse,
   TradePlanItemDto,
   TradePlansDto,
   TradingAccountsDto,
@@ -179,6 +181,24 @@ export class MockCockpitGateway implements CockpitGateway {
     return {
       generatedAt: new Date().toISOString(),
       items: this.tradePlanItems.map((item) => ({ ...item }))
+    };
+  }
+
+  async executeTradePlan(request: ExecuteTradePlanRequest): Promise<ExecuteTradePlanResponse> {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const plan = this.tradePlanItems.find((item) => item.id === request.tradePlanId);
+    if (!plan) throw new Error(`Development Trade Plan not found: ${request.tradePlanId}`);
+    plan.status = 'EXECUTED';
+    return {
+      kind: 'opened',
+      positionId: `DEMO-P-${plan.ticker}-${plan.accountId}`,
+      tradePlanId: plan.id,
+      accountId: plan.accountId,
+      ticker: plan.ticker,
+      openedAt: new Date().toISOString(),
+      actualEntry: plan.entryPrice,
+      actualQuantity: plan.positionSize,
+      positionStatus: 'OPEN'
     };
   }
 }

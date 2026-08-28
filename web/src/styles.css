@@ -594,6 +594,40 @@ h2 {
 .candidate-notes p {
   margin: 6px 0 0;
 }
+.trade-plan-action-card {
+  margin-top: 18px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border: 1px solid #2b5146;
+  border-radius: 11px;
+  background: rgba(10, 31, 31, 0.86);
+}
+.trade-plan-action-card strong {
+  color: #dcf8ea;
+  font-size: 14px;
+}
+.trade-plan-action-card p {
+  margin: 5px 0 0;
+  color: #71869b;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.execution-confirmation {
+  width: 100%;
+  display: grid;
+  gap: 14px;
+}
+.confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.execution-result {
+  margin-top: 18px;
+}
 .visually-hidden {
   position: absolute;
   width: 1px;

@@ -152,7 +152,14 @@ export function TradePlans({ gateway }: TradePlansProps) {
         </section>
       )}
 
-      {selectedPlan && <TradePlanDetail plan={selectedPlan} onClose={() => setSelectedId(null)} />}
+      {selectedPlan && (
+        <TradePlanDetail
+          plan={selectedPlan}
+          gateway={gateway}
+          onClose={() => setSelectedId(null)}
+          onExecuted={load}
+        />
+      )}
 
       {state.data && state.data.items.length > 0 && (
         <section className="trade-plans-panel" aria-label="Trade Plans">

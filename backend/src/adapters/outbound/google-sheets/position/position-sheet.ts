@@ -1,5 +1,6 @@
 import { POSITION_HEADERS } from './position-mapper';
 import { readSheetHeaders, requireColumn } from '../sheet-headers';
+import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 
 const SHEET_NAME = 'Positions';
 const HISTORICAL_HEADERS = POSITION_HEADERS.slice(0, -1);
@@ -7,7 +8,7 @@ const HISTORICAL_HEADERS = POSITION_HEADERS.slice(0, -1);
 declare function themePositions(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet): void;
 
 export function getOrCreatePositionsSheet(): GoogleAppsScript.Spreadsheet.Sheet {
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const spreadsheet = getTradingCockpitSpreadsheet();
   const existing = spreadsheet.getSheetByName(SHEET_NAME);
   if (existing) return existing;
 

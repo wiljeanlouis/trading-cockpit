@@ -19,7 +19,8 @@ describe('App navigation', () => {
       getWatchlist: vi.fn(async () => ({ generatedAt: '2026-08-28T16:04:00.000Z', items: [] })),
       getTradingAccounts: vi.fn(async () => ({ accounts: [] })),
       createTradePlan: vi.fn(),
-      getTradePlans: vi.fn(async () => ({ generatedAt: '2026-08-28T16:04:00.000Z', items: [] }))
+      getTradePlans: vi.fn(async () => ({ generatedAt: '2026-08-28T16:04:00.000Z', items: [] })),
+      executeTradePlan: vi.fn()
     };
     render(
       <MemoryRouter>
@@ -42,7 +43,8 @@ describe('App navigation', () => {
       })),
       getTradingAccounts: vi.fn(async () => ({ accounts: [] })),
       createTradePlan: vi.fn(),
-      getTradePlans: vi.fn(async () => ({ generatedAt: '2026-08-28T16:04:00.000Z', items: [] }))
+      getTradePlans: vi.fn(async () => ({ generatedAt: '2026-08-28T16:04:00.000Z', items: [] })),
+      executeTradePlan: vi.fn()
     };
 
     render(
@@ -65,7 +67,8 @@ describe('App navigation', () => {
       getTradePlans: vi.fn(async () => ({
         generatedAt: '2026-08-28T16:04:00.000Z',
         items: []
-      }))
+      })),
+      executeTradePlan: vi.fn()
     };
     render(
       <MemoryRouter>

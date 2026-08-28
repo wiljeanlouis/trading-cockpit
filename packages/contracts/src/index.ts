@@ -3,6 +3,8 @@ export type { WatchlistDto, WatchlistItemDto } from './watchlist';
 export type {
   CreateTradePlanRequest,
   CreateTradePlanResponse,
+  ExecuteTradePlanRequest,
+  ExecuteTradePlanResponse,
   TradePlanItemDto,
   TradePlansDto,
   TradingAccountDto,

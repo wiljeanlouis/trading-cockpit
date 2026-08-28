@@ -2,6 +2,8 @@ import type {
   CreateTradePlanRequest,
   CreateTradePlanResponse,
   DashboardSummaryDto,
+  ExecuteTradePlanRequest,
+  ExecuteTradePlanResponse,
   TradePlansDto,
   TradingAccountsDto,
   WatchlistDto
@@ -13,4 +15,5 @@ export interface CockpitGateway {
   getTradingAccounts(): Promise<TradingAccountsDto>;
   createTradePlan(request: CreateTradePlanRequest): Promise<CreateTradePlanResponse>;
   getTradePlans(): Promise<TradePlansDto>;
+  executeTradePlan(request: ExecuteTradePlanRequest): Promise<ExecuteTradePlanResponse>;
 }

@@ -123,4 +123,32 @@ describe('AppsScriptCockpitGateway', () => {
     await expect(new AppsScriptCockpitGateway().getTradePlans()).resolves.toEqual(tradePlans);
     expect(runner.getTradePlans).toHaveBeenCalledOnce();
   });
+
+  it('sends an execute Trade Plan command through the Apps Script bridge', async () => {
+    const result = {
+      kind: 'opened' as const,
+      positionId: 'P-1',
+      tradePlanId: 'TP-1',
+      accountId: 'A1',
+      ticker: 'BOX',
+      openedAt: summary.generatedAt,
+      actualEntry: 35,
+      actualQuantity: 45,
+      positionStatus: 'OPEN'
+    };
+    let success: ((value: typeof result) => void) | undefined;
+    const runner = {
+      withSuccessHandler: vi.fn((handler) => {
+        success = handler;
+        return runner;
+      }),
+      withFailureHandler: vi.fn(() => runner),
+      executeTradePlan: vi.fn(() => success?.(result))
+    };
+    vi.stubGlobal('google', { script: { run: runner } });
+
+    const command = { tradePlanId: 'TP-1' };
+    await expect(new AppsScriptCockpitGateway().executeTradePlan(command)).resolves.toEqual(result);
+    expect(runner.executeTradePlan).toHaveBeenCalledWith(command);
+  });
 });

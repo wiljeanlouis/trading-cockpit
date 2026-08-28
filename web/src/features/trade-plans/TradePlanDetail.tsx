@@ -1,11 +1,14 @@
-import { useEffect, useRef } from 'react';
-import type { TradePlanItemDto } from '@trading-cockpit/contracts';
+import { useEffect, useRef, useState } from 'react';
+import type { ExecuteTradePlanResponse, TradePlanItemDto } from '@trading-cockpit/contracts';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import type { CockpitGateway } from '../../infrastructure/cockpit-gateway';
 
 interface TradePlanDetailProps {
   plan: TradePlanItemDto;
+  gateway: CockpitGateway;
   onClose: () => void;
+  onExecuted: () => Promise<void>;
 }
 
 function displayDate(value: string | null, includeTime = false): string {
@@ -39,8 +42,12 @@ function statusTone(status: string): 'positive' | 'muted' | 'planned' | 'watchin
   return 'watching';
 }
 
-export function TradePlanDetail({ plan, onClose }: TradePlanDetailProps) {
+export function TradePlanDetail({ plan, gateway, onClose, onExecuted }: TradePlanDetailProps) {
   const modalRef = useRef<HTMLElement>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<ExecuteTradePlanResponse | null>(null);
 
   useEffect(() => {
     const previouslyFocused =
@@ -58,6 +65,24 @@ export function TradePlanDetail({ plan, onClose }: TradePlanDetailProps) {
       previouslyFocused?.focus();
     };
   }, [onClose]);
+
+  const canExecute = ['DRAFT', 'READY'].includes(plan.status.trim().toUpperCase());
+
+  async function execute() {
+    if (submitting || result) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const response = await gateway.executeTradePlan({ tradePlanId: plan.id });
+      setResult(response);
+      setConfirming(false);
+      if (response.kind === 'opened') await onExecuted();
+    } catch (executionError) {
+      setError(executionError instanceof Error ? executionError.message : String(executionError));
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div
@@ -196,6 +221,66 @@ export function TradePlanDetail({ plan, onClose }: TradePlanDetailProps) {
           <div className="candidate-notes">
             <strong>Notes</strong>
             <p>{plan.notes}</p>
+          </div>
+        )}
+
+        {canExecute && !result && (
+          <div className="trade-plan-action-card">
+            {!confirming ? (
+              <>
+                <div>
+                  <strong>Open Position</strong>
+                  <p>Create a Position through the existing Trading Cockpit execution workflow.</p>
+                </div>
+                <Button onClick={() => setConfirming(true)}>Execute Trade Plan</Button>
+              </>
+            ) : (
+              <div className="execution-confirmation">
+                <div>
+                  <strong>Confirm Position creation</strong>
+                  <p>
+                    The existing workflow will use the persisted planned entry (
+                    {displayNumber(plan.entryPrice)}) and position size (
+                    {displayNumber(plan.positionSize, 0)}) as the Position execution values. No live
+                    quote or brokerage fill is being used.
+                  </p>
+                </div>
+                {error && (
+                  <div className="inline-error" role="alert">
+                    {error}
+                  </div>
+                )}
+                <div className="confirmation-actions">
+                  <Button
+                    onClick={() => {
+                      setConfirming(false);
+                      setError(null);
+                    }}
+                    disabled={submitting}
+                  >
+                    Back
+                  </Button>
+                  <Button onClick={() => void execute()} disabled={submitting}>
+                    {submitting ? 'Creating Position…' : 'Confirm & Create Position'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {result && (
+          <div
+            className={
+              result.kind === 'opened'
+                ? 'success-notice execution-result'
+                : 'inline-notice execution-result'
+            }
+            role="status"
+          >
+            {result.kind === 'opened'
+              ? `Position ${result.positionId} created for ${result.ticker}: ${displayNumber(result.actualQuantity, 0)} shares at ${displayNumber(result.actualEntry)}.`
+              : `Position ${result.positionId} already exists for this Trade Plan.`}
           </div>
         )}
       </section>

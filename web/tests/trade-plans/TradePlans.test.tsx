@@ -48,7 +48,8 @@ function gateway(getTradePlans: CockpitGateway['getTradePlans']): CockpitGateway
     getDashboardSummary: vi.fn(),
     getWatchlist: vi.fn(),
     getTradingAccounts: vi.fn(),
-    createTradePlan: vi.fn()
+    createTradePlan: vi.fn(),
+    executeTradePlan: vi.fn()
   };
 }
 
@@ -77,7 +78,7 @@ describe('Trade Plans', () => {
     expect(dialog).toHaveTextContent('2.27');
     expect(dialog).toHaveTextContent('1,575');
     expect(dialog).toHaveTextContent('Wait for volume');
-    expect(screen.queryByRole('button', { name: /execute/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Execute Trade Plan' })).toBeInTheDocument();
 
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -118,5 +119,75 @@ describe('Trade Plans', () => {
     expect(screen.getByRole('button', { name: 'Refreshing' })).toBeDisabled();
     resolveRefresh?.({ ...data, items: [{ ...data.items[0], status: 'EXECUTED' }] });
     await waitFor(() => expect(screen.getByText('EXECUTED')).toBeInTheDocument());
+  });
+
+  it('requires confirmation, executes through the gateway, and refreshes backend state', async () => {
+    const load = vi
+      .fn<CockpitGateway['getTradePlans']>()
+      .mockResolvedValueOnce(data)
+      .mockResolvedValueOnce({
+        ...data,
+        items: [{ ...data.items[0], status: 'EXECUTED' }]
+      });
+    const cockpit = gateway(load);
+    cockpit.executeTradePlan = vi.fn(async () => ({
+      kind: 'opened' as const,
+      positionId: 'P-1',
+      tradePlanId: 'TP-1',
+      accountId: 'A1',
+      ticker: 'BOX',
+      openedAt: '2026-08-28T18:00:00.000Z',
+      actualEntry: 35,
+      actualQuantity: 45,
+      positionStatus: 'OPEN'
+    }));
+    render(<TradePlans gateway={cockpit} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'View BOX Trade Plan' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Execute Trade Plan' }));
+    expect(screen.getByText('Confirm Position creation')).toBeInTheDocument();
+    expect(cockpit.executeTradePlan).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm & Create Position' }));
+
+    expect(
+      await screen.findByText('Position P-1 created for BOX: 45 shares at 35.')
+    ).toBeInTheDocument();
+    expect(cockpit.executeTradePlan).toHaveBeenCalledWith({ tradePlanId: 'TP-1' });
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(screen.getAllByText('EXECUTED')).toHaveLength(2);
+    expect(screen.queryByRole('button', { name: 'Execute Trade Plan' })).not.toBeInTheDocument();
+  });
+
+  it('shows backend validation errors without pretending execution succeeded', async () => {
+    const cockpit = gateway(vi.fn(async () => data));
+    cockpit.executeTradePlan = vi.fn(async () => {
+      throw new Error("BOX n'a pas d'Entry Price.");
+    });
+    render(<TradePlans gateway={cockpit} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'View BOX Trade Plan' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Execute Trade Plan' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm & Create Position' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent("BOX n'a pas d'Entry Price.");
+    expect(screen.queryByText(/Position .* created/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirm & Create Position' })).toBeEnabled();
+  });
+
+  it('does not expose execution, edit, or cancel actions for a terminal plan', async () => {
+    render(
+      <TradePlans
+        gateway={gateway(
+          vi.fn(async () => ({
+            ...data,
+            items: [{ ...data.items[0], status: 'CANCELLED' }]
+          }))
+        )}
+      />
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'View BOX Trade Plan' }));
+
+    expect(screen.queryByRole('button', { name: 'Execute Trade Plan' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /cancel/i })).not.toBeInTheDocument();
   });
 });

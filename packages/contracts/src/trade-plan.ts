@@ -68,3 +68,19 @@ export interface TradePlansDto {
   generatedAt: string;
   items: TradePlanItemDto[];
 }
+
+export interface ExecuteTradePlanRequest {
+  tradePlanId: string;
+}
+
+export type ExecuteTradePlanResponse = {
+  kind: 'opened' | 'duplicate';
+  positionId: string;
+  tradePlanId: string;
+  accountId: string;
+  ticker: string;
+  openedAt: string | null;
+  actualEntry: number | null;
+  actualQuantity: number | null;
+  positionStatus: string;
+};

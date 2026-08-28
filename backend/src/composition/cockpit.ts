@@ -14,12 +14,10 @@ import {
 import { GoogleSheetsStrategyRepository } from '../adapters/outbound/google-sheets/trading-strategy/google-sheets-strategy-repository';
 import { GoogleSheetsPositionRepository } from '../adapters/outbound/google-sheets/position/google-sheets-position-repository';
 import { GoogleSheetsJournalRepository } from '../adapters/outbound/google-sheets/journal/google-sheets-journal-repository';
-import { GoogleSheetsTradePlanRepository } from '../adapters/outbound/google-sheets/trade-plan/google-sheets-trade-plan-repository';
 import { GoogleSheetsTradingAccountRepository } from '../adapters/outbound/google-sheets/trading-account/google-sheets-trading-account-repository';
 import { GoogleSheetsCapitalTransactionRepository } from '../adapters/outbound/google-sheets/capital-transaction/google-sheets-capital-transaction-repository';
 import { GoogleSheetsTradingAccountRiskPolicyRepository } from '../adapters/outbound/google-sheets/trading-account/google-sheets-trading-account-risk-policy-repository';
 import { GoogleSheetsWatchlistRepository } from '../adapters/outbound/google-sheets/watchlist/google-sheets-watchlist-repository';
-import { createOpenPositionFromTradePlan } from '../core/application/position/open-position-from-trade-plan';
 import { createClosePosition } from '../core/application/position/close-position';
 import { createReconcileClosedPosition } from '../core/application/position/reconcile-closed-position';
 import { createAddCandidateToWatchlist } from '../core/application/watchlist/add-candidate-to-watchlist';
@@ -31,6 +29,7 @@ import {
   type RecordCapitalTransactionDependencies
 } from '../core/application/trading-account/record-capital-transaction';
 import { createTradePlanUseCase } from './trade-plan';
+import { createOpenPositionUseCase } from './position';
 
 function isExpectedBlock(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
@@ -195,13 +194,7 @@ export function runCreateTradePlanFromSelectedWatchlist(): void {
 export function runExecuteSelectedTradePlan(): void {
   const logger = new RuntimeLogger('open-position');
   logger.start();
-  const openPosition = createOpenPositionFromTradePlan({
-    positionRepository: new GoogleSheetsPositionRepository(),
-    tradePlanRepository: new GoogleSheetsTradePlanRepository(),
-    watchlistRepository: new GoogleSheetsWatchlistRepository(),
-    strategyRepository: new GoogleSheetsStrategyRepository(),
-    runtime: new AppsScriptRuntime()
-  });
+  const openPosition = createOpenPositionUseCase();
 
   try {
     executeSelectedTradePlanRow((command) => {

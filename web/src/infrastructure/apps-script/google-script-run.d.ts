@@ -2,6 +2,8 @@ import type {
   CreateTradePlanRequest,
   CreateTradePlanResponse,
   DashboardSummaryDto,
+  ExecuteTradePlanRequest,
+  ExecuteTradePlanResponse,
   TradePlansDto,
   TradingAccountsDto,
   WatchlistDto
@@ -13,12 +15,14 @@ interface CockpitScriptRunner {
   withSuccessHandler(handler: (value: TradingAccountsDto) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: CreateTradePlanResponse) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: TradePlansDto) => void): CockpitScriptRunner;
+  withSuccessHandler(handler: (value: ExecuteTradePlanResponse) => void): CockpitScriptRunner;
   withFailureHandler(handler: (error: unknown) => void): CockpitScriptRunner;
   getDashboardSummary(): void;
   getWatchlist(): void;
   getTradingAccounts(): void;
   createTradePlan(request: CreateTradePlanRequest): void;
   getTradePlans(): void;
+  executeTradePlan(request: ExecuteTradePlanRequest): void;
 }
 
 declare global {
