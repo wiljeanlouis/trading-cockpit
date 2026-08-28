@@ -1,6 +1,10 @@
 import type { JournalEntry } from '../../../core/domain/journal-entry';
 import type { JournalRepository } from '../../../ports/outbound/journal-repository';
-import { journalEntriesFromRowsForPosition, journalEntryToRow } from './journal-mapper';
+import {
+  journalEntriesFromRowsForAccount,
+  journalEntriesFromRowsForPosition,
+  journalEntryToRow
+} from './journal-mapper';
 
 declare function getOrCreateJournalSheet(): GoogleAppsScript.Spreadsheet.Sheet;
 declare function validateJournalSchema(sheet: GoogleAppsScript.Spreadsheet.Sheet): boolean;
@@ -22,6 +26,15 @@ export class GoogleSheetsJournalRepository implements JournalRepository {
     const headers = this.headers(sheet);
     const rows: unknown[][] = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
     return journalEntriesFromRowsForPosition(headers, rows, positionId);
+  }
+
+  findClosedByAccountId(accountId: string): JournalEntry[] {
+    const sheet = this.getSheet();
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return [];
+    const headers = this.headers(sheet);
+    const rows: unknown[][] = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+    return journalEntriesFromRowsForAccount(headers, rows, accountId);
   }
 
   save(entry: JournalEntry): void {

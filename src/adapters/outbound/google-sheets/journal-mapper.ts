@@ -104,6 +104,19 @@ export function journalEntriesFromRowsForPosition(
     .filter((entry) => entry.positionId === normalizedPositionId);
 }
 
+export function journalEntriesFromRowsForAccount(
+  headers: string[],
+  rows: unknown[][],
+  accountId: string
+): JournalEntry[] {
+  const normalizedAccountId = String(accountId || '')
+    .trim()
+    .toUpperCase();
+  return rows
+    .map((row) => journalEntryFromRow(headers, row))
+    .filter((entry) => entry.accountId === normalizedAccountId);
+}
+
 export function journalEntryToRow(entry: JournalEntry): PositionSnapshotValue[] {
   return [
     entry.id,

@@ -25,6 +25,7 @@ function context(options?: { position?: Position | null; journal?: JournalEntry 
       }
     },
     journalRepository: {
+      findClosedByAccountId: () => [],
       findByPositionId: () => {
         calls.push('journal.find');
         return options?.journal ?? null;

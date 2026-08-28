@@ -35,6 +35,7 @@ export interface NormalizedTradePlanSource {
 
 export interface TradePlan {
   id: string;
+  accountId: string;
   watchlistId: string;
   strategyId: string;
   strategyName: string;
@@ -193,13 +194,19 @@ export function validateTradingRiskConfiguration(config: TradingRiskConfiguratio
 export function createTradePlan(
   source: NormalizedTradePlanSource,
   configuration: TradingRiskConfiguration,
+  accountId: string,
   id: string,
   createdAt: Date
 ): TradePlan {
+  const normalizedAccountId = String(accountId || '')
+    .trim()
+    .toUpperCase();
+  if (!normalizedAccountId) throw new Error('Account ID absent.');
   validateTradingRiskConfiguration(configuration);
 
   return {
     id,
+    accountId: normalizedAccountId,
     watchlistId: source.watchlistId,
     strategyId: source.strategyId,
     strategyName: source.strategyName,

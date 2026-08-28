@@ -12,6 +12,7 @@ import type { TradePlan } from '../../src/core/domain/trade-plan';
 
 const tradePlan: TradePlan = {
   id: ' TP-1 ',
+  accountId: ' A1 ',
   watchlistId: ' WL-1 ',
   strategyId: ' momentum_breakout ',
   strategyName: ' Momentum Breakout ',
@@ -81,7 +82,7 @@ describe('Position domain', () => {
     const source = normalizePositionSource(tradePlan);
     const openedAt = new Date('2026-08-27T14:00:00.000Z');
 
-    expect(createOpenPosition(source, 'P-1', openedAt, 'A1')).toEqual({
+    expect(createOpenPosition(source, 'P-1', openedAt)).toEqual({
       id: 'P-1',
       accountId: 'A1',
       tradePlanId: 'TP-1',
@@ -187,7 +188,7 @@ describe('Position domain', () => {
       entryPrice: 'not-a-price',
       positionSize: 'not-a-quantity'
     });
-    const position = createOpenPosition(source, 'P-1', new Date(), 'A1');
+    const position = createOpenPosition(source, 'P-1', new Date());
 
     expect(Number.isNaN(position.actualEntry)).toBe(true);
     expect(Number.isNaN(position.actualQuantity)).toBe(true);

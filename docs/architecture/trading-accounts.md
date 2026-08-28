@@ -8,8 +8,8 @@ A Trading Account remains identity/configuration only: stable `id`, user-facing 
 creates headers but no sample or real accounts. `ALL` is rejected as an ID because consolidation is
 a `PortfolioScope`, not a persisted account.
 
-`Risk % Per Trade` is an optional account policy foundation with the existing system bound
-`0 < risk <= 1`. It is not yet consumed by Trade Plan creation. Cockpit Config Default Risk % remains
+`Risk % Per Trade` is required for new account-aware Trade Plans with the bound
+`0 < risk <= 1`. It is consumed by Trade Plan creation. Cockpit Config Default Risk % remains
 the sole runtime sizing source until Phase 11, so there is no unexplained fallback or dual precedence.
 
 External active-trading allocations live in the separate append-only
@@ -20,7 +20,7 @@ External active-trading allocations live in the separate append-only
 1. Position previously had no account attribution; Position ID remains global identity.
 2. Duplicate opening is one OPEN Position per Trade Plan ID.
 3. `EXECUTED` is terminal and written immediately after Position append.
-4. Trade Plan sizing snapshots one global Account Equity and Default Risk %.
+4. New Trade Plan sizing snapshots derived realized account equity and account Risk % Per Trade.
 5. Cockpit Config currency is global; accounts now make base currency explicit without conversion.
 6. Journal previously attributed results only to Position/plan/watchlist/strategy.
 7. Analytics reads Journal globally and has no account grouping.
@@ -49,7 +49,8 @@ Close obtains account from Position; reconciliation blocks missing attribution.
 
 ## Known semantic gaps
 
-Cockpit Config Account Equity and Default Risk % retain their existing global snapshot semantics.
+Cockpit Config Account Equity and Default Risk % retain only legacy/historical semantics. New plans
+do not fall back to them.
 They are neither total portfolio equity nor account-specific equity. Phase 10 must decide how each
 account supplies sizing inputs before account-aware capital is introduced.
 

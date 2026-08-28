@@ -10,11 +10,9 @@ import type { RuntimePort } from '../../../ports/outbound/runtime-port';
 import type { StrategyRepository } from '../../../ports/outbound/strategy-repository';
 import type { TradePlanRepository } from '../../../ports/outbound/trade-plan-repository';
 import type { WatchlistRepository } from '../../../ports/outbound/watchlist-repository';
-import type { TradingAccountRepository } from '../../../ports/outbound/trading-account-repository';
 
 export interface OpenPositionFromTradePlanCommand {
   tradePlanId: string;
-  accountId: string;
 }
 
 export type OpenPositionFromTradePlanResult =
@@ -35,7 +33,6 @@ export interface OpenPositionFromTradePlanDependencies {
   watchlistRepository: WatchlistRepository;
   strategyRepository: StrategyRepository;
   runtime: RuntimePort;
-  tradingAccountRepository: TradingAccountRepository;
 }
 
 export type OpenPositionFromTradePlan = (
@@ -47,20 +44,14 @@ export function createOpenPositionFromTradePlan({
   tradePlanRepository,
   watchlistRepository,
   strategyRepository,
-  tradingAccountRepository,
   runtime
 }: OpenPositionFromTradePlanDependencies): OpenPositionFromTradePlan {
-  return ({ tradePlanId, accountId }) => {
+  return ({ tradePlanId }) => {
     const normalizedTradePlanId = String(tradePlanId || '').trim();
 
     if (!normalizedTradePlanId) {
       throw new Error('Trade Plan ID absent.');
     }
-    const normalizedAccountId = String(accountId || '')
-      .trim()
-      .toUpperCase();
-    if (!normalizedAccountId) throw new Error('Account ID absent.');
-
     const tradePlan = tradePlanRepository.findById(normalizedTradePlanId);
 
     if (!tradePlan) {
@@ -76,10 +67,6 @@ export function createOpenPositionFromTradePlan({
     requireExecutableTradePlanStatus(source);
     requirePositionExecutionData(source);
 
-    if (!tradingAccountRepository.findById(normalizedAccountId)) {
-      throw new Error(`Trading Account introuvable : ${normalizedAccountId}`);
-    }
-
     const existing = positionRepository.findOpenByTradePlanId(source.tradePlanId);
 
     if (existing) {
@@ -94,7 +81,7 @@ export function createOpenPositionFromTradePlan({
     // Preserve the legacy order: timestamp before UUID.
     const openedAt = runtime.now();
     const id = runtime.newId();
-    const position = createOpenPosition(source, id, openedAt, normalizedAccountId);
+    const position = createOpenPosition(source, id, openedAt);
 
     positionRepository.save(position);
     tradePlanRepository.updateStatus(source.tradePlanId, 'EXECUTED');

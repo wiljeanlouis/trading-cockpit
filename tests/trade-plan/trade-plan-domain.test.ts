@@ -109,12 +109,24 @@ describe('Trade Plan formula parity calculations', () => {
 });
 
 describe('Trade Plan domain', () => {
+  it('requires account ownership for newly created Trade Plans', () => {
+    const source = normalizeTradePlanSource(watchlistEntry);
+    expect(() =>
+      createTradePlan(source, { accountEquity: 10_000, riskPercent: 0.01 }, '', 'TP-1', new Date())
+    ).toThrow('Account ID absent.');
+  });
   it('normalizes the source and creates the exact legacy defaults', () => {
     const source = normalizeTradePlanSource(watchlistEntry);
     const createdAt = new Date('2026-08-27T14:00:00.000Z');
 
     expect(
-      createTradePlan(source, { accountEquity: 10_000, riskPercent: 0.005 }, 'TP-1', createdAt)
+      createTradePlan(
+        source,
+        { accountEquity: 10_000, riskPercent: 0.005 },
+        'A1',
+        'TP-1',
+        createdAt
+      )
     ).toMatchObject({
       id: 'TP-1',
       watchlistId: 'WL-1',

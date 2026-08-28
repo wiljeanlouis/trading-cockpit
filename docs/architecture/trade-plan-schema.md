@@ -1,6 +1,7 @@
 # Trade Plan Google Sheets schema
 
-All 29 columns are physically editable because the sheet is not protected. “System” below describes
+The original 29 columns remain in place and Account ID is appended as column AD. All columns are
+physically editable because the sheet is not protected. “System” below describes
 the intended ownership, not a Google Sheets permission. “Required” means required by the Create Trade
 Plan legacy workflow; every header itself is required by schema validation.
 
@@ -28,14 +29,19 @@ Plan legacy workflow; every header itself is required by schema validation.
 | T      | Risk / Share       | Q, R                    | Number          | Derived business      | `IF(blank,"",Q-R)`          | Calculated       | Optional until Q/R     |
 | U      | Reward / Share     | Q, S                    | Number          | Derived business      | `IF(blank,"",S-Q)`          | Calculated       | Optional until Q/S     |
 | V      | Risk : Reward      | T, U                    | Number          | Derived business      | `IF(T blank or <=0,"",U/T)` | Calculated       | Optional               |
-| W      | Account Equity     | Cockpit Config snapshot | Number          | Business sizing input | Value                       | System/user      | Required, > 0          |
-| X      | Risk %             | Cockpit Config snapshot | Percentage      | Business sizing input | Value                       | System/user      | Required, > 0 and <= 1 |
+| W      | Account Equity     | Derived realized equity | Number          | Business sizing input | Frozen value                | System           | Required, > 0          |
+| X      | Risk %             | Account risk policy     | Percentage      | Business sizing input | Frozen value                | System           | Required, > 0 and <= 1 |
 | Y      | Max Risk $         | W, X                    | Number          | Derived business      | `IF(blank,"",W*X)`          | Calculated       | Calculated             |
 | Z      | Position Size      | Y, T                    | Integer         | Derived business      | `IF(T<=0,"",FLOOR(Y/T,1))`  | Calculated       | Optional               |
 | AA     | Position Value     | Z, Q                    | Number          | Derived business      | `IF(blank,"",Z*Q)`          | Calculated       | Optional               |
 | AB     | Status             | Default                 | Enum            | Business workflow     | `DRAFT`                     | User dropdown    | Required/defaulted     |
 | AC     | Notes              | User                    | String          | Business annotation   | Value                       | User             | Optional               |
+| AD     | Account ID         | Selected account        | String          | Account ownership     | Uppercase frozen value      | System           | Required for new plans |
 
 Formatting and dropdown rules are presentation/persistence concerns. The six formulas in T, U, V,
 Y, Z, and AA implement derived business rules, although their formula strings remain an adapter
 concern.
+
+Existing 29-column sheets are migrated by appending `Account ID`; no formula column moves. Existing
+rows remain blank and readable but cannot be executed until explicitly attributed. No account is
+invented. Historical W/X snapshots retain their original Cockpit Config semantics.

@@ -14,7 +14,6 @@ import { GoogleSheetsStrategyRepository } from '../adapters/outbound/google-shee
 import { GoogleSheetsPositionRepository } from '../adapters/outbound/google-sheets/google-sheets-position-repository';
 import { GoogleSheetsJournalRepository } from '../adapters/outbound/google-sheets/google-sheets-journal-repository';
 import { GoogleSheetsTradePlanRepository } from '../adapters/outbound/google-sheets/google-sheets-trade-plan-repository';
-import { GoogleSheetsTradingConfiguration } from '../adapters/outbound/google-sheets/google-sheets-trading-configuration';
 import { GoogleSheetsTradingAccountRepository } from '../adapters/outbound/google-sheets/google-sheets-trading-account-repository';
 import { GoogleSheetsCapitalTransactionRepository } from '../adapters/outbound/google-sheets/google-sheets-capital-transaction-repository';
 import { GoogleSheetsTradingAccountRiskPolicyRepository } from '../adapters/outbound/google-sheets/google-sheets-trading-account-risk-policy-repository';
@@ -31,6 +30,7 @@ import {
   createRecordWithdrawal,
   type RecordCapitalTransactionDependencies
 } from '../core/application/trading-account/record-capital-transaction';
+import { createGetAccountEquity } from '../core/application/trading-account/get-account-equity';
 
 export function runAddSelectedToWatchlist(): void {
   const addCandidateToWatchlist = createAddCandidateToWatchlist({
@@ -74,11 +74,20 @@ export function runRecordWithdrawal(): void {
 
 export function runCreateTradePlanFromSelectedWatchlist(): void {
   const watchlistRepository = new GoogleSheetsWatchlistRepository();
+  const tradingAccountRepository = new GoogleSheetsTradingAccountRepository();
+  const capitalTransactionRepository = new GoogleSheetsCapitalTransactionRepository();
+  const journalRepository = new GoogleSheetsJournalRepository();
   const createTradePlan = createCreateTradePlanFromWatchlist({
     watchlistRepository,
     tradePlanRepository: new GoogleSheetsTradePlanRepository(),
     strategyRepository: new GoogleSheetsStrategyRepository(),
-    tradingConfiguration: new GoogleSheetsTradingConfiguration(),
+    tradingAccountRepository,
+    tradingAccountRiskPolicyRepository: new GoogleSheetsTradingAccountRiskPolicyRepository(),
+    getAccountEquity: createGetAccountEquity({
+      tradingAccountRepository,
+      capitalTransactionRepository,
+      journalRepository
+    }),
     runtime: new AppsScriptRuntime()
   });
 
@@ -91,8 +100,7 @@ export function runExecuteSelectedTradePlan(): void {
     tradePlanRepository: new GoogleSheetsTradePlanRepository(),
     watchlistRepository: new GoogleSheetsWatchlistRepository(),
     strategyRepository: new GoogleSheetsStrategyRepository(),
-    runtime: new AppsScriptRuntime(),
-    tradingAccountRepository: new GoogleSheetsTradingAccountRepository()
+    runtime: new AppsScriptRuntime()
   });
 
   executeSelectedTradePlanRow(openPosition);

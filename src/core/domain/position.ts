@@ -12,6 +12,7 @@ export const CLOSED_POSITION_STATUS = 'CLOSED' as const;
 export const TERMINAL_POSITION_STATUSES = ['CLOSED', 'STOPPED', 'TARGET HIT'] as const;
 
 export interface NormalizedPositionSource {
+  accountId: string;
   tradePlanId: string;
   watchlistId: string;
   strategyId: string;
@@ -118,6 +119,9 @@ export function closePosition(position: Position, exitPrice: number, closedAt: D
 }
 
 export function normalizePositionSource(tradePlan: TradePlan): NormalizedPositionSource {
+  const accountId = String(tradePlan.accountId || '')
+    .trim()
+    .toUpperCase();
   const tradePlanId = String(tradePlan.id || '').trim();
   const watchlistId = String(tradePlan.watchlistId || '').trim();
   const strategyId = normalizeStrategyId(tradePlan.strategyId);
@@ -128,6 +132,7 @@ export function normalizePositionSource(tradePlan: TradePlan): NormalizedPositio
   if (!tradePlanId) {
     throw new Error('Trade Plan ID absent.');
   }
+  if (!accountId) throw new Error('Account ID absent sur le Trade Plan.');
 
   if (!watchlistId) {
     throw new Error('Watchlist ID absent.');
@@ -150,6 +155,7 @@ export function normalizePositionSource(tradePlan: TradePlan): NormalizedPositio
   }
 
   return {
+    accountId,
     tradePlanId,
     watchlistId,
     strategyId,
@@ -206,12 +212,11 @@ export function requirePositionExecutionData(source: NormalizedPositionSource): 
 export function createOpenPosition(
   source: NormalizedPositionSource,
   id: string,
-  openedAt: Date,
-  accountId: string
+  openedAt: Date
 ): Position {
   return {
     id,
-    accountId,
+    accountId: source.accountId,
     tradePlanId: source.tradePlanId,
     watchlistId: source.watchlistId,
     strategyId: source.strategyId,

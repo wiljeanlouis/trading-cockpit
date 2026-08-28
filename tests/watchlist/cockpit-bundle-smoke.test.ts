@@ -19,6 +19,7 @@ describe('Cockpit Apps Script bundle', () => {
 
     new Script(bundleSource, { filename: 'Cockpit.js' }).runInContext(context);
 
+    expect(context.CockpitBundle?.onOpen).toBeTypeOf('function');
     expect(context.CockpitBundle?.addSelectedToWatchlist).toBeTypeOf('function');
     expect(context.CockpitBundle?.createTradePlanFromSelectedWatchlist).toBeTypeOf('function');
     expect(context.CockpitBundle?.executeSelectedTradePlan).toBeTypeOf('function');
@@ -37,6 +38,38 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.recordInitialFunding).toBeTypeOf('function');
     expect(context.recordDeposit).toBeTypeOf('function');
     expect(context.recordWithdrawal).toBeTypeOf('function');
+    expect(context.onOpen).toBeTypeOf('function');
     expect(context.runArchitecturePoc).toBeUndefined();
+  });
+
+  it('bundles all 20 menu callbacks with their existing labels', () => {
+    const targets = [...bundleSource.matchAll(/\.addItem\(\s*"[^"]+"\s*,\s*"([^"]+)"/gs)].map(
+      (match) => match[1]
+    );
+    expect(targets).toHaveLength(20);
+    expect(targets).toEqual(
+      expect.arrayContaining([
+        'refreshFinviz',
+        'refreshMomentumRanking',
+        'refreshDashboard',
+        'refreshAnalytics',
+        'addSelectedToWatchlist',
+        'createTradePlanFromSelectedWatchlist',
+        'executeSelectedTradePlan',
+        'closeSelectedPosition',
+        'reconcileSelectedPosition',
+        'setupMomentumRanking',
+        'setupCockpitConfig',
+        'setupTradingAccounts',
+        'recordInitialFunding',
+        'recordDeposit',
+        'recordWithdrawal',
+        'setupStrategies',
+        'validateStrategies',
+        'configureFinvizToken',
+        'applyCockpitTheme',
+        'refreshDocumentation'
+      ])
+    );
   });
 });

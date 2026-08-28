@@ -49,23 +49,35 @@ for (const [fileName, source] of sources) {
 }
 
 const collisions = [...definitions.entries()].filter(([, locations]) => locations.length > 1);
+const supersededWorkflowFunctions = [
+  'legacyAddSelectedToWatchlist_',
+  'legacyCreateTradePlanFromSelectedWatchlist_',
+  'legacyExecuteSelectedTradePlan_',
+  'legacyCloseSelectedPosition_',
+  'createJournalEntryFromPosition'
+];
+const reintroducedWorkflowFunctions = supersededWorkflowFunctions.filter((name) =>
+  definitions.has(name)
+);
 
-if (collisions.length > 0) {
+if (collisions.length > 0 || reintroducedWorkflowFunctions.length > 0) {
   for (const [functionName, locations] of collisions) {
     console.error(`Duplicate global function ${functionName}: ${locations.join(', ')}`);
+  }
+  for (const functionName of reintroducedWorkflowFunctions) {
+    console.error(`Superseded legacy workflow function reintroduced: ${functionName}`);
   }
 
   process.exitCode = 1;
 } else {
-  const menuSource = sources.get('Menu.js');
+  const runtimeSource = [...sources.values()].join('\n');
+  const menuTargets = [
+    ...runtimeSource.matchAll(/\.addItem\(\s*['"][^'"]+['"]\s*,\s*['"]([^'"]+)['"]/gs)
+  ].map((match) => match[1]);
 
-  if (!menuSource) {
-    throw new Error('Menu.js is missing.');
+  if (menuTargets.length === 0) {
+    throw new Error('No generated Apps Script menu targets found.');
   }
-
-  const menuTargets = [...menuSource.matchAll(/\.addItem\(\s*'[^']+'\s*,\s*'([^']+)'/gs)].map(
-    (match) => match[1]
-  );
 
   const missingMenuTargets = menuTargets.filter((functionName) => !definitions.has(functionName));
 

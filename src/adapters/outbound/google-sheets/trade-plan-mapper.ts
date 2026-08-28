@@ -29,7 +29,8 @@ export const TRADE_PLAN_HEADERS = [
   'Position Size',
   'Position Value',
   'Status',
-  'Notes'
+  'Notes',
+  'Account ID'
 ] as const;
 
 function requireColumn(headers: string[], name: string): number {
@@ -72,6 +73,7 @@ function numberValue(value: unknown): number {
 export function tradePlanFromRow(headers: string[], row: unknown[]): TradePlan {
   return {
     id: textValue(valueByHeader(headers, row, 'Trade Plan ID')),
+    accountId: textValue(valueByHeader(headers, row, 'Account ID')).toUpperCase(),
     watchlistId: textValue(valueByHeader(headers, row, 'Watchlist ID')),
     strategyId: textValue(valueByHeader(headers, row, 'Strategy ID')),
     strategyName: textValue(valueByHeader(headers, row, 'Strategy')),
@@ -133,6 +135,7 @@ export function tradePlanToRow(tradePlan: TradePlan): TradePlanSnapshotValue[] {
     '',
     '',
     tradePlan.status,
-    tradePlan.notes
+    tradePlan.notes,
+    tradePlan.accountId
   ];
 }

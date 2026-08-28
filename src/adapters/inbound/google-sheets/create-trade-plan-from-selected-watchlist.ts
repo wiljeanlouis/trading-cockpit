@@ -33,7 +33,14 @@ export function createTradePlanFromSelectedWatchlistRow(
     .getValues()[0]
     .map((value) => String(value).trim());
   const row: unknown[] = sourceSheet.getRange(rowNumber, 1, 1, lastColumn).getValues()[0];
-  const result = createTradePlan(selectedWatchlistRowToCommand(headers, row));
+  const ui = SpreadsheetApp.getUi();
+  const response = ui.prompt('Choisir le Trading Account', 'Account ID :', ui.ButtonSet.OK_CANCEL);
+  if (response.getSelectedButton() !== ui.Button.OK) return;
+  const selected = selectedWatchlistRowToCommand(headers, row);
+  const result = createTradePlan({
+    watchlistId: selected.watchlistId,
+    accountId: response.getResponseText()
+  });
 
   if (result.kind === 'duplicate') {
     spreadsheet.toast(`${result.ticker} possède déjà un Trade Plan actif.`, 'Trading Cockpit', 5);
@@ -41,5 +48,9 @@ export function createTradePlanFromSelectedWatchlistRow(
   }
 
   themeTradePlans(spreadsheet);
-  spreadsheet.toast(`Trade Plan créé pour ${result.tradePlan.ticker}.`, 'Trading Cockpit', 5);
+  spreadsheet.toast(
+    `Trade Plan créé pour ${result.tradePlan.ticker} — ${result.tradePlan.accountId}.`,
+    'Trading Cockpit',
+    5
+  );
 }

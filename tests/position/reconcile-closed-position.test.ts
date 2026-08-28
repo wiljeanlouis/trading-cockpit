@@ -40,6 +40,7 @@ function context(options?: {
       close: () => undefined
     },
     journalRepository: {
+      findClosedByAccountId: () => [],
       findByPositionId: () => null,
       findAllByPositionId: () => {
         calls.push('journal.findAll');

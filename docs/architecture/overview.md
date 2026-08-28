@@ -51,17 +51,11 @@ build/Cockpit.js
 ## Build and runtime boundary
 
 `npm run build:cockpit` bundles TypeScript modules into the Apps Script-compatible IIFE
-`build/Cockpit.js`. The build appends stable global functions for the four migrated menu actions,
-including `closeSelectedPosition`. The Sheets menu therefore keeps its existing function names while
-implementations change behind them.
-
-The old implementation remains temporarily in `Watchlist.js` as
-`legacyAddSelectedToWatchlist_`. It is not the active menu target and exists only as a rollback aid
-during stabilization.
-
-The old Create Trade Plan implementation similarly remains in `TradePlan.js` as
-`legacyCreateTradePlanFromSelectedWatchlist_`. Execution and the remaining Trade Plan helpers remain
-legacy.
+`build/Cockpit.js`. The build appends stable global functions for migrated menu actions and `onOpen`.
+The menu definition itself is maintained in a TypeScript inbound adapter. The Sheets menu therefore
+keeps its existing labels and callback names while implementations change behind them. Superseded
+legacy Watchlist, Trade Plan, Position execution/close, and Journal creation implementations have
+been removed; their active schema/formula/formatting helpers remain temporarily in JavaScript.
 
 ## Watchlist contract preserved by the slice
 
@@ -174,17 +168,19 @@ Unrealized P&L % are derived business formulas with pure TypeScript equivalents 
 their Sheet formulas remain in place under ADR 0004. See the complete
 [Position schema](position-schema.md).
 
-Trading Accounts are identity/configuration only; capital remains outside the model. Trade Plans
-stay single-execution, so the same ticker may be opened in several accounts through distinct plans.
+Trading Accounts own external capital history and risk policy without storing mutable equity. Trade
+Plans stay single-execution, so the same ticker may be opened in several accounts through distinct
+account-owned plans.
 See [Trading Accounts foundation](trading-accounts.md) and ADR 0005.
 
 ## Active trading external capital
 
 The `Capital Ledger` records INITIAL_FUNDING, DEPOSIT, and WITHDRAWAL per Trading Account as immutable
 append-only history. These external flows are separate from Position/Journal trading performance.
-Account-level summaries derive NetExternalCapital in the account base currency, but never reinterpret
-it as cash or equity. Trade Plan sizing remains driven by the frozen global Cockpit Config equity and
-risk inputs. See [Capital Ledger](capital-ledger.md) and ADR 0006.
+Account-level summaries derive NetExternalCapital in the account base currency. New Trade Plan sizing
+derives realized equity by adding authoritative Journal realized P&L, then snapshots account Risk %.
+It never interprets equity as cash or buying power. See [Capital Ledger](capital-ledger.md),
+[Account equity](account-equity.md), ADR 0006, and ADR 0007.
 
 ## Close Position to Journal flow
 
@@ -225,9 +221,8 @@ exists, but a normal retry cannot repair a terminal Position because non-`OPEN` 
 preserve legacy behavior. These states can be detected later by Position ID and Watchlist ID and are
 candidates for a future reconciliation command.
 
-The old close implementation remains in `Position.js` as `legacyCloseSelectedPosition_` for rollback.
-The remaining Position helpers and all Journal sheet/formula/formatting helpers stay legacy and are
-used by the new outbound adapters.
+Position and Journal sheet/formula/formatting helpers stay legacy and are used by the TypeScript
+outbound adapters. The competing legacy close and Journal creation workflows have been removed.
 
 ## Closed Position reconciliation
 

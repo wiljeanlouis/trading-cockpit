@@ -9,6 +9,11 @@ import {
   runRecordDeposit,
   runRecordWithdrawal
 } from '../composition/cockpit';
+import { installCockpitMenu } from '../adapters/inbound/google-sheets/install-cockpit-menu';
+
+export function onOpen(): void {
+  installCockpitMenu();
+}
 
 export function addSelectedToWatchlist(): void {
   runAddSelectedToWatchlist();

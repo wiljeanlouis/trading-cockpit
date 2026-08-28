@@ -25,6 +25,10 @@ await build({
   },
   footer: {
     js: [
+      'function onOpen() {',
+      '  return CockpitBundle.onOpen();',
+      '}',
+      '',
       'function addSelectedToWatchlist() {',
       '  return CockpitBundle.addSelectedToWatchlist();',
       '}',

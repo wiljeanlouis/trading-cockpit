@@ -49,5 +49,17 @@ export class GoogleSheetsTradingAccountRiskPolicyRepository implements TradingAc
         .setValue(RISK_HEADER)
         .setFontWeight('bold');
     }
+    const currentHeaders = sheet
+      .getRange(1, 1, 1, sheet.getLastColumn())
+      .getValues()[0]
+      .map((value) => String(value).trim());
+    const riskColumn = currentHeaders.indexOf(RISK_HEADER) + 1;
+    const rule = SpreadsheetApp.newDataValidation()
+      .requireNumberBetween(Number.MIN_VALUE, 1)
+      .setAllowInvalid(false)
+      .setHelpText('Risk % Per Trade doit être supérieur à 0 et inférieur ou égal à 100%.')
+      .build();
+    const dataRows = Math.max(sheet.getMaxRows() - 1, 1);
+    sheet.getRange(2, riskColumn, dataRows, 1).setDataValidation(rule).setNumberFormat('0.00%');
   }
 }

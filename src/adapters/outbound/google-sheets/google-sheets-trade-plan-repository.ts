@@ -33,7 +33,7 @@ export class GoogleSheetsTradePlanRepository implements TradePlanRepository {
     return null;
   }
 
-  findActiveByWatchlistId(watchlistId: string): TradePlan | null {
+  findActiveByWatchlistIdAndAccountId(watchlistId: string, accountId: string): TradePlan | null {
     const sheet = this.getValidatedSheet();
     const lastRow = sheet.getLastRow();
 
@@ -47,12 +47,14 @@ export class GoogleSheetsTradePlanRepository implements TradePlanRepository {
       .map((value) => String(value).trim());
     const rows: unknown[][] = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
     const normalizedWatchlistId = String(watchlistId).trim();
+    const normalizedAccountId = String(accountId).trim().toUpperCase();
 
     for (const row of rows) {
       const tradePlan = tradePlanFromRow(headers, row);
 
       if (
         tradePlan.watchlistId === normalizedWatchlistId &&
+        tradePlan.accountId === normalizedAccountId &&
         isActiveTradePlanStatus(tradePlan.status)
       ) {
         return tradePlan;
@@ -121,10 +123,21 @@ export class GoogleSheetsTradePlanRepository implements TradePlanRepository {
     }
 
     if (!this.schemaValidated) {
+      this.ensureAccountColumn(this.sheet);
       validateTradePlansSchema(this.sheet);
       this.schemaValidated = true;
     }
 
     return this.sheet;
+  }
+
+  private ensureAccountColumn(sheet: GoogleAppsScript.Spreadsheet.Sheet): void {
+    const headers = this.getHeaders(sheet);
+    if (!headers.includes('Account ID')) {
+      sheet
+        .getRange(1, sheet.getLastColumn() + 1)
+        .setValue('Account ID')
+        .setFontWeight('bold');
+    }
   }
 }

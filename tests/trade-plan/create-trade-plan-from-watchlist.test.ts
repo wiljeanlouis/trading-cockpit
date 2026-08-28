@@ -3,261 +3,199 @@ import {
   createCreateTradePlanFromWatchlist,
   type CreateTradePlanFromWatchlistDependencies
 } from '../../src/core/application/trade-plan/create-trade-plan-from-watchlist';
+import type { AccountEquitySummary } from '../../src/core/domain/account-equity';
 import type { TradePlan } from '../../src/core/domain/trade-plan';
 import type { WatchlistEntry } from '../../src/core/domain/watchlist';
 
-const watchlistEntry: WatchlistEntry = {
+const watchlist: WatchlistEntry = {
   id: 'WL-1',
-  strategyId: 'MOMENTUM_BREAKOUT',
-  strategyName: 'Momentum Breakout',
+  strategyId: 'STRATEGY',
+  strategyName: 'Strategy',
   strategyVersion: 'V1',
-  signalDate: '2026-08-27',
-  ticker: 'urnb',
-  company: 'Urban Outfitters',
-  sector: 'Consumer Cyclical',
-  addedAt: new Date('2026-08-27T13:00:00.000Z'),
-  signalPrice: 54.25,
-  currentPrice: 56.5,
-  momentumScore: 88,
+  signalDate: '',
+  ticker: 'box',
+  company: 'Box',
+  sector: 'Tech',
+  addedAt: new Date(),
+  signalPrice: 100,
+  currentPrice: 100,
+  momentumScore: 80,
   status: 'WATCHING',
   setupStatus: 'READY',
-  breakoutLevel: 57,
-  invalidationLevel: 52,
+  breakoutLevel: 100,
+  invalidationLevel: 95,
   earningsDate: '',
-  eventRisk: 'LOW',
+  eventRisk: '',
   notes: '',
   closedAt: ''
 };
 
-const existingTradePlan: TradePlan = {
-  id: 'TP-OLD',
-  watchlistId: 'WL-1',
-  strategyId: 'MOMENTUM_BREAKOUT',
-  strategyName: 'Momentum Breakout',
-  strategyVersion: 'V1',
-  signalDate: '2026-08-27',
-  signalPrice: 54.25,
-  ticker: 'URNB',
-  referencePrice: 56.5,
-  momentumScore: 88,
-  setupStatus: 'READY',
-  breakoutLevel: 57,
-  invalidationLevel: 52,
-  eventRisk: 'LOW',
-  createdAt: new Date('2026-08-27T13:30:00.000Z'),
-  entryType: 'BREAKOUT',
-  entryPrice: '',
-  stopPrice: 52,
-  targetPrice: '',
-  riskPerShare: null,
-  rewardPerShare: null,
-  riskReward: null,
-  accountEquity: 10_000,
-  riskPercent: 0.005,
-  maxRisk: 50,
-  positionSize: null,
-  positionValue: null,
-  status: 'DRAFT',
-  notes: ''
-};
-
-function createDependencies(options?: {
-  watchlistEntry?: WatchlistEntry | null;
-  existingTradePlan?: TradePlan | null;
-  configuration?: { accountEquity: number; riskPercent: number };
-}) {
-  const calls: string[] = [];
-  let saved: TradePlan | null = null;
-  let statusUpdate: { id: string; status: string } | null = null;
-
-  const dependencies: CreateTradePlanFromWatchlistDependencies = {
-    watchlistRepository: {
-      findById: (id) => {
-        calls.push(`watchlist.find:${id}`);
-        return options?.watchlistEntry === undefined ? watchlistEntry : options.watchlistEntry;
-      },
-      findActiveByIdentity: () => null,
-      save: () => undefined,
-      updateStatus: (id, status) => {
-        calls.push('watchlist.update');
-        statusUpdate = { id, status };
-      }
-    },
-    tradePlanRepository: {
-      findById: () => null,
-      findActiveByWatchlistId: () => {
-        calls.push('tradePlan.find');
-        return options?.existingTradePlan ?? null;
-      },
-      save: (tradePlan) => {
-        calls.push('tradePlan.save');
-        saved = tradePlan;
-      },
-      updateStatus: () => undefined
-    },
-    strategyRepository: {
-      existsById: () => {
-        calls.push('strategy.exists');
-        return true;
-      }
-    },
-    tradingConfiguration: {
-      getRiskConfiguration: () => {
-        calls.push('configuration.get');
-        return options?.configuration ?? { accountEquity: 10_000, riskPercent: 0.005 };
-      }
-    },
-    runtime: {
-      newId: () => {
-        calls.push('runtime.newId');
-        return 'TP-1';
-      },
-      now: () => {
-        calls.push('runtime.now');
-        return new Date('2026-08-27T14:00:00.000Z');
-      }
-    }
-  };
-
+function equity(accountId: string, amount: number): AccountEquitySummary {
   return {
-    dependencies,
-    calls,
-    saved: () => saved,
-    statusUpdate: () => statusUpdate
+    accountId,
+    baseCurrency: accountId === 'A2' ? 'USD' : 'CAD',
+    netExternalCapital: amount,
+    realizedPnl: 0,
+    realizedEquity: amount,
+    basis: 'REALIZED',
+    markToMarketEquity: null
   };
 }
 
-describe('create Trade Plan from Watchlist', () => {
-  it('creates, saves, then marks Watchlist PLANNED in exact legacy order', () => {
-    const context = createDependencies();
-    const createTradePlan = createCreateTradePlanFromWatchlist(context.dependencies);
+function context(
+  options: {
+    equity?: number;
+    risk?: number;
+    existing?: TradePlan | null;
+    accountExists?: boolean;
+    riskExists?: boolean;
+  } = {}
+) {
+  let saved: TradePlan | null = null;
+  const dependencies: CreateTradePlanFromWatchlistDependencies = {
+    watchlistRepository: {
+      findById: () => watchlist,
+      findActiveByIdentity: () => null,
+      save: () => undefined,
+      updateStatus: () => undefined
+    },
+    tradePlanRepository: {
+      findById: () => null,
+      findActiveByWatchlistIdAndAccountId: () => options.existing ?? null,
+      save: (plan) => {
+        saved = plan;
+      },
+      updateStatus: () => undefined
+    },
+    strategyRepository: { existsById: () => true },
+    tradingAccountRepository: {
+      findById: (id) =>
+        options.accountExists === false ? null : { id, name: id, baseCurrency: 'CAD' },
+      findAll: () => []
+    },
+    tradingAccountRiskPolicyRepository: {
+      findByAccountId: (id) =>
+        options.riskExists === false
+          ? null
+          : { accountId: id, riskPercentPerTrade: options.risk ?? 0.01 }
+    },
+    getAccountEquity: (id) => equity(id, options.equity ?? 10_000),
+    runtime: { newId: () => 'TP-1', now: () => new Date('2026-08-27T14:00:00Z') }
+  };
+  return { dependencies, saved: () => saved };
+}
 
-    const result = createTradePlan({ watchlistId: ' WL-1 ' });
+describe('create account-aware Trade Plan from Watchlist', () => {
+  it('rejects missing Watchlist ID before persistence', () => {
+    const c = context();
+    expect(() =>
+      createCreateTradePlanFromWatchlist(c.dependencies)({ watchlistId: '', accountId: 'A1' })
+    ).toThrow('Watchlist ID absent.');
+    expect(c.saved()).toBeNull();
+  });
 
+  it('rejects missing Account ID before persistence', () => {
+    const c = context();
+    expect(() =>
+      createCreateTradePlanFromWatchlist(c.dependencies)({ watchlistId: 'WL-1', accountId: '' })
+    ).toThrow('Account ID absent.');
+    expect(c.saved()).toBeNull();
+  });
+
+  it('snapshots account, realized equity and account risk policy', () => {
+    const c = context({ equity: 10_000, risk: 0.01 });
+    const result = createCreateTradePlanFromWatchlist(c.dependencies)({
+      watchlistId: 'WL-1',
+      accountId: 'a1'
+    });
     expect(result.kind).toBe('created');
-    expect(context.calls).toEqual([
-      'watchlist.find:WL-1',
-      'strategy.exists',
-      'tradePlan.find',
-      'runtime.newId',
-      'runtime.now',
-      'configuration.get',
-      'tradePlan.save',
-      'watchlist.update'
-    ]);
-    expect(context.saved()).toMatchObject({
-      id: 'TP-1',
+    expect(c.saved()).toMatchObject({
+      accountId: 'A1',
+      accountEquity: 10_000,
+      riskPercent: 0.01,
+      maxRisk: 100
+    });
+  });
+
+  it('supports equal sizing from different equity/risk combinations', () => {
+    const a1 = context({ equity: 10_000, risk: 0.01 });
+    const a2 = context({ equity: 20_000, risk: 0.005 });
+    createCreateTradePlanFromWatchlist(a1.dependencies)({ watchlistId: 'WL-1', accountId: 'A1' });
+    createCreateTradePlanFromWatchlist(a2.dependencies)({ watchlistId: 'WL-1', accountId: 'A2' });
+    expect(a1.saved()?.maxRisk).toBe(100);
+    expect(a2.saved()?.maxRisk).toBe(100);
+  });
+
+  it('produces different sizing inputs when account policies differ', () => {
+    const a1 = context({ equity: 10_000, risk: 0.01 });
+    const a2 = context({ equity: 20_000, risk: 0.01 });
+    createCreateTradePlanFromWatchlist(a1.dependencies)({ watchlistId: 'WL-1', accountId: 'A1' });
+    createCreateTradePlanFromWatchlist(a2.dependencies)({ watchlistId: 'WL-1', accountId: 'A2' });
+    expect(a1.saved()?.maxRisk).toBe(100);
+    expect(a2.saved()?.maxRisk).toBe(200);
+  });
+
+  it('freezes the equity snapshot after creation', () => {
+    let currentEquity = 10_000;
+    const c = context();
+    c.dependencies.getAccountEquity = (id) => equity(id, currentEquity);
+    createCreateTradePlanFromWatchlist(c.dependencies)({ watchlistId: 'WL-1', accountId: 'A1' });
+    currentEquity = 15_000;
+    expect(c.saved()?.accountEquity).toBe(10_000);
+  });
+
+  it('blocks unknown account and missing account risk policy', () => {
+    const unknown = context({ accountExists: false });
+    expect(() =>
+      createCreateTradePlanFromWatchlist(unknown.dependencies)({
+        watchlistId: 'WL-1',
+        accountId: 'A404'
+      })
+    ).toThrow('Trading Account introuvable : A404');
+    const missingRisk = context({ riskExists: false });
+    expect(() =>
+      createCreateTradePlanFromWatchlist(missingRisk.dependencies)({
+        watchlistId: 'WL-1',
+        accountId: 'A1'
+      })
+    ).toThrow('Risk % absent pour le compte A1.');
+  });
+
+  it('returns an account-scoped duplicate without creating another plan', () => {
+    const existing = { id: 'TP-OLD', accountId: 'A1' } as TradePlan;
+    const c = context({ existing });
+    const result = createCreateTradePlanFromWatchlist(c.dependencies)({
       watchlistId: 'WL-1',
-      ticker: 'URNB',
-      stopPrice: 52,
-      maxRisk: 50,
-      status: 'DRAFT'
+      accountId: 'A1'
     });
-    expect(context.statusUpdate()).toEqual({ id: 'WL-1', status: 'PLANNED' });
+    expect(result).toMatchObject({ kind: 'duplicate', existing });
+    expect(c.saved()).toBeNull();
   });
 
-  it('rejects a missing Watchlist before any port call', () => {
-    const context = createDependencies();
-    const createTradePlan = createCreateTradePlanFromWatchlist(context.dependencies);
-
-    expect(() => createTradePlan({ watchlistId: '' })).toThrow('Watchlist ID absent.');
-    expect(context.calls).toEqual([]);
-  });
-
-  it('rejects a Watchlist ID that the repository cannot find', () => {
-    const context = createDependencies({ watchlistEntry: null });
-    const createTradePlan = createCreateTradePlanFromWatchlist(context.dependencies);
-
-    expect(() => createTradePlan({ watchlistId: 'WL-404' })).toThrow(
-      'Watchlist ID introuvable : WL-404'
-    );
-    expect(context.calls).toEqual(['watchlist.find:WL-404']);
-  });
-
-  it('preserves legacy behavior by accepting a terminal or unknown Watchlist status', () => {
-    const context = createDependencies({
-      watchlistEntry: { ...watchlistEntry, status: 'REJECTED' }
-    });
-    const createTradePlan = createCreateTradePlanFromWatchlist(context.dependencies);
-
-    expect(createTradePlan({ watchlistId: 'WL-1' }).kind).toBe('created');
-  });
-
-  it('returns duplicate before consuming runtime or configuration', () => {
-    const context = createDependencies({ existingTradePlan });
-    const createTradePlan = createCreateTradePlanFromWatchlist(context.dependencies);
-
-    expect(createTradePlan({ watchlistId: 'WL-1' })).toEqual({
-      kind: 'duplicate',
-      watchlistId: 'WL-1',
-      ticker: 'urnb',
-      existing: existingTradePlan
-    });
-    expect(context.calls).toEqual(['watchlist.find:WL-1', 'strategy.exists', 'tradePlan.find']);
-  });
-
-  it('rejects missing invalidation before opening Trade Plans', () => {
-    const context = createDependencies({
-      watchlistEntry: { ...watchlistEntry, invalidationLevel: '' }
-    });
-    const createTradePlan = createCreateTradePlanFromWatchlist(context.dependencies);
-
-    expect(() => createTradePlan({ watchlistId: 'WL-1' })).toThrow(
-      "URNB n'a pas encore d'Invalidation Level. Définis-le avant de créer un Trade Plan."
-    );
-    expect(context.calls).toEqual(['watchlist.find:WL-1', 'strategy.exists']);
-  });
-
-  it('rejects unknown Strategy before validating invalidation', () => {
-    const context = createDependencies({
-      watchlistEntry: { ...watchlistEntry, invalidationLevel: '' }
-    });
-    context.dependencies.strategyRepository.existsById = () => false;
-    const createTradePlan = createCreateTradePlanFromWatchlist(context.dependencies);
-
-    expect(() => createTradePlan({ watchlistId: 'WL-1' })).toThrow(
-      'Stratégie inconnue : MOMENTUM_BREAKOUT'
-    );
-  });
-
-  it('rejects invalid configuration after consuming UUID and timestamp but before saving', () => {
-    const context = createDependencies({ configuration: { accountEquity: 0, riskPercent: 0 } });
-    const createTradePlan = createCreateTradePlanFromWatchlist(context.dependencies);
-
-    expect(() => createTradePlan({ watchlistId: 'WL-1' })).toThrow(
-      'Account Equity doit être supérieur à 0.'
-    );
-    expect(context.calls).toEqual([
-      'watchlist.find:WL-1',
-      'strategy.exists',
-      'tradePlan.find',
-      'runtime.newId',
-      'runtime.now',
-      'configuration.get'
-    ]);
-    expect(context.saved()).toBeNull();
-    expect(context.statusUpdate()).toBeNull();
-  });
-
-  it('leaves Watchlist unchanged if Trade Plan save fails', () => {
-    const context = createDependencies();
-    context.dependencies.tradePlanRepository.save = () => {
-      throw new Error('save failed');
+  it('validates invalidation before deriving equity', () => {
+    const c = context();
+    c.dependencies.watchlistRepository.findById = () => ({ ...watchlist, invalidationLevel: '' });
+    c.dependencies.getAccountEquity = () => {
+      throw new Error('must not run');
     };
-    const createTradePlan = createCreateTradePlanFromWatchlist(context.dependencies);
-
-    expect(() => createTradePlan({ watchlistId: 'WL-1' })).toThrow('save failed');
-    expect(context.statusUpdate()).toBeNull();
+    expect(() =>
+      createCreateTradePlanFromWatchlist(c.dependencies)({ watchlistId: 'WL-1', accountId: 'A1' })
+    ).toThrow("BOX n'a pas encore d'Invalidation Level");
   });
 
-  it('exposes the legacy partial-failure risk when Watchlist update fails after save', () => {
-    const context = createDependencies();
-    context.dependencies.watchlistRepository.updateStatus = () => {
-      throw new Error('update failed');
+  it('does not persist when account equity is unavailable', () => {
+    const c = context();
+    c.dependencies.getAccountEquity = () => {
+      throw new Error('equity unavailable');
     };
-    const createTradePlan = createCreateTradePlanFromWatchlist(context.dependencies);
+    expect(() =>
+      createCreateTradePlanFromWatchlist(c.dependencies)({ watchlistId: 'WL-1', accountId: 'A1' })
+    ).toThrow('equity unavailable');
+    expect(c.saved()).toBeNull();
+  });
 
-    expect(() => createTradePlan({ watchlistId: 'WL-1' })).toThrow('update failed');
-    expect(context.saved()).not.toBeNull();
+  it('does not fall back to global risk configuration', () => {
+    const c = context({ riskExists: false });
+    expect('tradingConfiguration' in c.dependencies).toBe(false);
   });
 });

@@ -32,13 +32,7 @@ export function executeSelectedTradePlanRow(openPosition: OpenPositionFromTradeP
     .map((value) => String(value).trim());
   const row: unknown[] = sourceSheet.getRange(rowNumber, 1, 1, lastColumn).getValues()[0];
   const selected = selectedTradePlanRowToCommand(headers, row);
-  const ui = SpreadsheetApp.getUi();
-  const response = ui.prompt('Choisir le Trading Account', 'Account ID :', ui.ButtonSet.OK_CANCEL);
-  if (response.getSelectedButton() !== ui.Button.OK) return;
-  const result = openPosition({
-    tradePlanId: selected.tradePlanId,
-    accountId: response.getResponseText()
-  });
+  const result = openPosition({ tradePlanId: selected.tradePlanId });
 
   if (result.kind === 'duplicate') {
     spreadsheet.toast(`${result.ticker} possède déjà une position ouverte.`, 'Trading Cockpit', 5);

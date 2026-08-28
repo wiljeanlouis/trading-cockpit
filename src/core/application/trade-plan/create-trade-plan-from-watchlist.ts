@@ -7,11 +7,14 @@ import {
 import type { RuntimePort } from '../../../ports/outbound/runtime-port';
 import type { StrategyRepository } from '../../../ports/outbound/strategy-repository';
 import type { TradePlanRepository } from '../../../ports/outbound/trade-plan-repository';
-import type { TradingConfigurationPort } from '../../../ports/outbound/trading-configuration-port';
+import type { TradingAccountRepository } from '../../../ports/outbound/trading-account-repository';
+import type { TradingAccountRiskPolicyRepository } from '../../../ports/outbound/trading-account-risk-policy-repository';
 import type { WatchlistRepository } from '../../../ports/outbound/watchlist-repository';
+import type { GetAccountEquity } from '../trading-account/get-account-equity';
 
 export interface CreateTradePlanFromWatchlistCommand {
   watchlistId: string;
+  accountId: string;
 }
 
 export type CreateTradePlanFromWatchlistResult =
@@ -30,7 +33,9 @@ export interface CreateTradePlanFromWatchlistDependencies {
   watchlistRepository: WatchlistRepository;
   tradePlanRepository: TradePlanRepository;
   strategyRepository: StrategyRepository;
-  tradingConfiguration: TradingConfigurationPort;
+  tradingAccountRepository: TradingAccountRepository;
+  tradingAccountRiskPolicyRepository: TradingAccountRiskPolicyRepository;
+  getAccountEquity: GetAccountEquity;
   runtime: RuntimePort;
 }
 
@@ -42,14 +47,23 @@ export function createCreateTradePlanFromWatchlist({
   watchlistRepository,
   tradePlanRepository,
   strategyRepository,
-  tradingConfiguration,
+  tradingAccountRepository,
+  tradingAccountRiskPolicyRepository,
+  getAccountEquity,
   runtime
 }: CreateTradePlanFromWatchlistDependencies): CreateTradePlanFromWatchlist {
-  return ({ watchlistId }) => {
+  return ({ watchlistId, accountId }) => {
     const normalizedWatchlistId = String(watchlistId || '').trim();
+    const normalizedAccountId = String(accountId || '')
+      .trim()
+      .toUpperCase();
 
     if (!normalizedWatchlistId) {
       throw new Error('Watchlist ID absent.');
+    }
+    if (!normalizedAccountId) throw new Error('Account ID absent.');
+    if (!tradingAccountRepository.findById(normalizedAccountId)) {
+      throw new Error(`Trading Account introuvable : ${normalizedAccountId}`);
     }
 
     const watchlistEntry = watchlistRepository.findById(normalizedWatchlistId);
@@ -67,7 +81,10 @@ export function createCreateTradePlanFromWatchlist({
 
     requireTradePlanInvalidationLevel(source);
 
-    const existing = tradePlanRepository.findActiveByWatchlistId(source.watchlistId);
+    const existing = tradePlanRepository.findActiveByWatchlistIdAndAccountId(
+      source.watchlistId,
+      normalizedAccountId
+    );
 
     if (existing) {
       return {
@@ -78,11 +95,16 @@ export function createCreateTradePlanFromWatchlist({
       };
     }
 
-    // Preserve the legacy order: UUID, timestamp, then configuration.
+    const equity = getAccountEquity(normalizedAccountId);
+    const riskPolicy = tradingAccountRiskPolicyRepository.findByAccountId(normalizedAccountId);
+    if (!riskPolicy) throw new Error(`Risk % absent pour le compte ${normalizedAccountId}.`);
+    const configuration = {
+      accountEquity: equity.realizedEquity,
+      riskPercent: riskPolicy.riskPercentPerTrade
+    };
     const id = runtime.newId();
     const createdAt = runtime.now();
-    const configuration = tradingConfiguration.getRiskConfiguration();
-    const tradePlan = createTradePlan(source, configuration, id, createdAt);
+    const tradePlan = createTradePlan(source, configuration, normalizedAccountId, id, createdAt);
 
     tradePlanRepository.save(tradePlan);
     watchlistRepository.updateStatus(source.watchlistId, 'PLANNED');

@@ -10,6 +10,7 @@ import type { TradePlan } from '../../src/core/domain/trade-plan';
 const createdAt = new Date('2026-08-27T14:00:00.000Z');
 const tradePlan: TradePlan = {
   id: 'TP-1',
+  accountId: 'A1',
   watchlistId: 'WL-1',
   strategyId: 'MOMENTUM_BREAKOUT',
   strategyName: 'Momentum Breakout',
@@ -41,7 +42,7 @@ const tradePlan: TradePlan = {
 };
 
 describe('Trade Plan row mapper', () => {
-  it('writes the exact 29-column legacy row and leaves formula-owned cells empty', () => {
+  it('appends Account ID after the exact 29-column legacy row', () => {
     expect(tradePlanToRow(tradePlan)).toEqual([
       'TP-1',
       'WL-1',
@@ -71,7 +72,8 @@ describe('Trade Plan row mapper', () => {
       '',
       '',
       'DRAFT',
-      ''
+      '',
+      'A1'
     ]);
   });
 
@@ -101,6 +103,11 @@ describe('Trade Plan row mapper', () => {
 
   it('fails with the established missing-column message', () => {
     expect(() => tradePlanFromRow([], [])).toThrow('Colonne absente : Trade Plan ID');
+  });
+
+  it('keeps historical rows unattributed when the appended Account ID cell is blank', () => {
+    const row = tradePlanToRow({ ...tradePlan, accountId: '' });
+    expect(tradePlanFromRow([...TRADE_PLAN_HEADERS], row).accountId).toBe('');
   });
 });
 
