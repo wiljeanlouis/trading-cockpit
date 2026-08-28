@@ -6,8 +6,8 @@
 - npm
 - clasp authenticated for the existing Apps Script project
 
-Google Apps Script remains the production runtime. The production sources are still JavaScript and
-share the Apps Script global namespace.
+Google Apps Script remains the production runtime. TypeScript is the maintained source for migrated
+behavior; documented legacy JavaScript and the generated bundle share the Apps Script namespace.
 
 ## Install
 
@@ -26,8 +26,8 @@ npm run check
 The command runs TypeScript checks, ESLint, the scoped Prettier check, Vitest, and Apps Script
 namespace/menu validation.
 
-The tests build both TypeScript pipelines first. `MomentumScore.js` and `build/Cockpit.js` are
-generated Apps Script runtime code and must not be edited directly.
+The tests build `build/Cockpit.js` from the TypeScript module graph first. The bundle is generated
+Apps Script runtime code and must not be edited directly.
 
 Individual commands are also available:
 

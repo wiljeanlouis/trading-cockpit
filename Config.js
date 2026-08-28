@@ -1,12 +1,6 @@
 // ============================================================
 // CONFIGURATION
 // ============================================================
-const FINVIZ_BASE_URL =
-  'https://elite.finviz.com/export/screener';
-
-const SIGNALS_HISTORY_SHEET =
-  'Signals History';
-
 const MOMENTUM_RANKING_SHEET =
   'Momentum Ranking';
 
@@ -36,23 +30,6 @@ const ANALYTICS_SHEET =
 
 const STRATEGIES_SHEET =
   'Strategies';   
-
-const SCREENERS = [
-  {
-    strategy: 'Momentum Breakout',
-    version: 'V1',
-    strategyId: 'MOMENTUM_BREAKOUT',
-    sheetName: 'Finviz - Momentum',
-
-    query:
-      'v=151' +
-      '&f=cap_smallover,sh_avgvol_o500,sh_price_o10,sh_relvol_o1,' +
-      'ta_highlow52w_b0to5h,ta_perf_4wup,ta_rsi_50to70,' +
-      'ta_sma20_pa,ta_sma200_pa,ta_sma50_pa' +
-      '&ft=3' +
-      '&c=0,1,2,3,4,5,6,7,67,65,66,63,64,59,57,52,54,53,42,43,68'
-  }
-];
 
 const STRATEGY_HEADERS = [
   'Strategy ID',

@@ -20,6 +20,13 @@ describe('Cockpit Apps Script bundle', () => {
     new Script(bundleSource, { filename: 'Cockpit.js' }).runInContext(context);
 
     expect(context.CockpitBundle?.onOpen).toBeTypeOf('function');
+    expect(context.CockpitBundle?.refreshFinviz).toBeTypeOf('function');
+    expect(context.CockpitBundle?.refreshMomentumRanking).toBeTypeOf('function');
+    expect(context.CockpitBundle?.configureFinvizToken).toBeTypeOf('function');
+    expect(context.CockpitBundle?.getFinvizToken).toBeTypeOf('function');
+    expect(context.CockpitBundle?.setFinvizToken).toBeTypeOf('function');
+    expect(context.CockpitBundle?.checkFinvizAuth).toBeTypeOf('function');
+    expect(context.CockpitBundle?.deleteFinvizToken).toBeTypeOf('function');
     expect(context.CockpitBundle?.addSelectedToWatchlist).toBeTypeOf('function');
     expect(context.CockpitBundle?.createTradePlanFromSelectedWatchlist).toBeTypeOf('function');
     expect(context.CockpitBundle?.executeSelectedTradePlan).toBeTypeOf('function');
@@ -39,6 +46,13 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.recordDeposit).toBeTypeOf('function');
     expect(context.recordWithdrawal).toBeTypeOf('function');
     expect(context.onOpen).toBeTypeOf('function');
+    expect(context.refreshFinviz).toBeTypeOf('function');
+    expect(context.refreshMomentumRanking).toBeTypeOf('function');
+    expect(context.configureFinvizToken).toBeTypeOf('function');
+    expect(context.getFinvizToken).toBeTypeOf('function');
+    expect(context.setFinvizToken).toBeTypeOf('function');
+    expect(context.checkFinvizAuth).toBeTypeOf('function');
+    expect(context.deleteFinvizToken).toBeTypeOf('function');
     expect(context.runArchitecturePoc).toBeUndefined();
   });
 

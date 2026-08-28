@@ -54,7 +54,19 @@ const supersededWorkflowFunctions = [
   'legacyCreateTradePlanFromSelectedWatchlist_',
   'legacyExecuteSelectedTradePlan_',
   'legacyCloseSelectedPosition_',
-  'createJournalEntryFromPosition'
+  'createJournalEntryFromPosition',
+  'refreshScreener',
+  'updateCurrentScreenerSheet',
+  'validateScreenerConfig',
+  'archiveSignals',
+  'writeMomentumRanking',
+  'findLatestSignalDate',
+  'score52WeekHigh',
+  'scoreRelativeVolume',
+  'scoreMonthlyPerformance',
+  'scoreRsi',
+  'scoreSma20',
+  'updateWatchlistStatus'
 ];
 const reintroducedWorkflowFunctions = supersededWorkflowFunctions.filter((name) =>
   definitions.has(name)

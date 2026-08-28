@@ -1,30 +1,13 @@
-import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-
-type MomentumScoreInput = number | '' | null | undefined;
+import {
+  score52WeekHigh,
+  scoreMonthlyPerformance,
+  scoreRelativeVolume,
+  scoreRsi,
+  scoreSma20,
+  type MomentumScoreInput
+} from '../src/core/domain/momentum';
 type MomentumScoreCase = [label: string, value: MomentumScoreInput, expected: number];
-
-interface MomentumScoring {
-  score52WeekHigh(value: MomentumScoreInput): number;
-  scoreRelativeVolume(value: MomentumScoreInput): number;
-  scoreMonthlyPerformance(value: MomentumScoreInput): number;
-  scoreRsi(value: MomentumScoreInput): number;
-  scoreSma20(value: MomentumScoreInput): number;
-}
-
-const source = readFileSync(new URL('../MomentumScore.js', import.meta.url), 'utf8');
-
-const loadMomentumScoring = new Function(
-  `${source}\nreturn {` +
-    'score52WeekHigh,' +
-    'scoreRelativeVolume,' +
-    'scoreMonthlyPerformance,' +
-    'scoreRsi,' +
-    'scoreSma20' +
-    '};'
-) as () => MomentumScoring;
-
-const scoring = loadMomentumScoring();
 
 describe('score52WeekHigh', () => {
   it.each([
@@ -44,7 +27,7 @@ describe('score52WeekHigh', () => {
     ['negative 5% boundary', -0.05, 10],
     ['past 5%', -0.050001, 0]
   ] satisfies MomentumScoreCase[])('%s', (_label, value, expected) => {
-    expect(scoring.score52WeekHigh(value)).toBe(expected);
+    expect(score52WeekHigh(value)).toBe(expected);
   });
 });
 
@@ -62,7 +45,7 @@ describe('scoreRelativeVolume', () => {
     ['1.0 boundary', 1, 10],
     ['below 1.0', 0.999, 0]
   ] satisfies MomentumScoreCase[])('%s', (_label, value, expected) => {
-    expect(scoring.scoreRelativeVolume(value)).toBe(expected);
+    expect(scoreRelativeVolume(value)).toBe(expected);
   });
 });
 
@@ -82,7 +65,7 @@ describe('scoreMonthlyPerformance', () => {
     ['zero', 0, 5],
     ['negative performance', -0.001, 0]
   ] satisfies MomentumScoreCase[])('%s', (_label, value, expected) => {
-    expect(scoring.scoreMonthlyPerformance(value)).toBe(expected);
+    expect(scoreMonthlyPerformance(value)).toBe(expected);
   });
 });
 
@@ -102,7 +85,7 @@ describe('scoreRsi', () => {
     ['below 50', 49.999, 0],
     ['above 70', 70.001, 0]
   ] satisfies MomentumScoreCase[])('%s', (_label, value, expected) => {
-    expect(scoring.scoreRsi(value)).toBe(expected);
+    expect(scoreRsi(value)).toBe(expected);
   });
 });
 
@@ -120,6 +103,6 @@ describe('scoreSma20', () => {
     ['above 12%', 0.12001, 5],
     ['negative extension', -0.001, 0]
   ] satisfies MomentumScoreCase[])('%s', (_label, value, expected) => {
-    expect(scoring.scoreSma20(value)).toBe(expected);
+    expect(scoreSma20(value)).toBe(expected);
   });
 });

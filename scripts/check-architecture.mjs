@@ -11,6 +11,7 @@ const forbiddenAppsScriptGlobals = [
   'Utilities',
   'ScriptApp'
 ];
+const forbiddenProviderNames = ['Finviz'];
 
 function collectTypeScriptFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -39,6 +40,17 @@ for (const filePath of sourceFiles) {
         violations.push(`${repositoryPath}: forbidden Apps Script global ${globalName}`);
       }
     }
+
+    for (const providerName of forbiddenProviderNames) {
+      if (
+        new RegExp(`\\b${providerName}\\b`, 'i').test(source) ||
+        repositoryPath.toLowerCase().includes(providerName.toLowerCase())
+      ) {
+        violations.push(
+          `${repositoryPath}: external provider name ${providerName} leaked into core/ports`
+        );
+      }
+    }
   }
 
   if (isCore || isPort) {
@@ -61,6 +73,6 @@ if (violations.length > 0) {
 } else {
   console.log(
     `Architecture check passed: ${sourceFiles.length} TypeScript modules, ` +
-      'no core/port dependency on adapters or Apps Script globals.'
+      'no core/port dependency on adapters, Apps Script globals, or external provider names.'
   );
 }

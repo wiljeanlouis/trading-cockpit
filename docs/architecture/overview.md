@@ -4,8 +4,9 @@
 
 Trading Cockpit is in a progressive migration from a global Google Apps Script application to a
 modular TypeScript application. Both forms run together in the same Apps Script project. Legacy
-root-level JavaScript continues to own all workflows except the migrated Watchlist add-candidate,
-Create Trade Plan, Open Position, and Close Position to Journal slices.
+root-level JavaScript continues to own the remaining inventoried workflows. TypeScript owns the
+migrated Watchlist, Trade Plan, Position, Journal, account capital, Momentum, Market Signals, and
+Signals History slices.
 The multi-account foundation adds explicit Trading Account identity to new Positions and Journals.
 
 ```text
@@ -34,10 +35,11 @@ build/Cockpit.js
 
 ## Layer responsibilities
 
-- `src/core/domain` contains Watchlist, Trade Plan, Position, and Journal Entry business values,
+- `src/core/domain` contains Watchlist, Trade Plan, Position, Journal Entry, Momentum, and market
+  signal business values,
   validations, identities, lifecycle transitions, and calculations.
-- `src/core/application` orchestrates the add-candidate and Create Trade Plan use cases without
-  knowing Google Sheets or Apps Script APIs.
+- `src/core/application` orchestrates migrated trading, capital, Momentum, and market signal use
+  cases without knowing Google Sheets, Apps Script APIs, or external provider details.
 - `src/ports/outbound` declares the minimum capabilities the use cases need: strategy existence,
   Watchlist and Trade Plan persistence, trading configuration, current time, and ID generation.
 - `src/adapters/inbound` translates active spreadsheet selections into application commands and
@@ -47,6 +49,37 @@ build/Cockpit.js
 - `src/composition` manually wires the use case and concrete adapters.
 - `src/entrypoints` exposes functions to the generated bundle. It does not itself create Apps Script
   globals.
+
+## External market signal provider boundary
+
+External provider names must not become domain concepts merely because they are the current
+implementation. Trading Cockpit refreshes provider-neutral market signals through the
+`MarketSignalSource` port. The provider-neutral application use case validates the associated
+strategy, replaces the current projection, and archives the signal snapshot.
+
+Finviz is an outbound adapter implementing that capability. Its URL, screener query, authentication
+token, Script Properties storage, HTTP behavior, CSV parsing, response shape, error translation, and
+transport-to-signal mapping stay under `src/adapters/outbound/finviz`. The composition root selects
+this implementation. The inbound adapter, public callbacks, menu label `Refresh Finviz`, and physical
+sheet `Finviz - Momentum` remain provider-specific compatibility surfaces.
+
+```text
+Google Sheets: Refresh Finviz
+             |
+             v
+     RefreshMarketSignals
+        |            |
+        v            v
+MarketSignalSource   SignalHistoryRepository
+        ^
+        |
+FinvizMarketSignalSource
+  HTTP + token + CSV mapping
+```
+
+Signals History persists the provider-neutral business snapshot. Momentum reads business-level
+signals and contains no dependency on Finviz transport, authentication, CSV representation, or
+adapter types. See ADR 0009.
 
 ## Build and runtime boundary
 

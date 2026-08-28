@@ -7,13 +7,15 @@ import {
 } from '../../../core/domain/watchlist';
 import type { WatchlistRepository } from '../../../ports/outbound/watchlist-repository';
 import { watchlistEntryFromRow, watchlistEntryToRow } from './watchlist-mapper';
+import { updateWatchlistStatusInSheet } from './watchlist-status-writer';
 
 declare function getOrCreateWatchlistSheet(): GoogleAppsScript.Spreadsheet.Sheet;
 declare function validateWatchlistSchema(sheet: GoogleAppsScript.Spreadsheet.Sheet): boolean;
 declare function addWatchlistFormulas(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number): void;
 declare function formatWatchlistRow(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number): void;
 declare function themeWatchlist(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet): void;
-declare function updateWatchlistStatus(watchlistId: string, newStatus: string): void;
+
+const WATCHLIST_SHEET_NAME = 'Watchlist';
 
 export class GoogleSheetsWatchlistRepository implements WatchlistRepository {
   private sheet: GoogleAppsScript.Spreadsheet.Sheet | null = null;
@@ -82,7 +84,13 @@ export class GoogleSheetsWatchlistRepository implements WatchlistRepository {
   }
 
   updateStatus(id: string, status: string): void {
-    updateWatchlistStatus(id, status);
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(WATCHLIST_SHEET_NAME);
+
+    if (!sheet) {
+      throw new Error(`${WATCHLIST_SHEET_NAME} est absent.`);
+    }
+
+    updateWatchlistStatusInSheet(sheet, id, status);
   }
 
   private getHeaders(sheet: GoogleAppsScript.Spreadsheet.Sheet): string[] {

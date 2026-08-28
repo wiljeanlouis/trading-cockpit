@@ -27,8 +27,8 @@ Use esbuild to bundle modular TypeScript entrypoints into non-minified IIFE Java
 - Unit tests import source modules directly; separate smoke tests execute the generated bundle.
 - Source maps remain disabled until a consumer for them exists.
 
-MomentumScore remains on its existing side-by-side `tsc` pipeline until a separate migration is
-approved.
+At acceptance time, MomentumScore remained on a side-by-side `tsc` pipeline. Phase 11.6 subsequently
+migrated it into the modular bundle under the source policy established by ADR 0008.
 
 ## Alternatives Considered
 

@@ -10,9 +10,46 @@ import {
   runRecordWithdrawal
 } from '../composition/cockpit';
 import { installCockpitMenu } from '../adapters/inbound/google-sheets/install-cockpit-menu';
+import { runRefreshMomentumRanking } from '../composition/momentum';
+import {
+  runCheckFinvizAuth,
+  runConfigureFinvizToken,
+  runDeleteFinvizToken,
+  runGetFinvizToken,
+  runRefreshFinviz,
+  runSetFinvizToken
+} from '../composition/finviz';
 
 export function onOpen(): void {
   installCockpitMenu();
+}
+
+export function refreshMomentumRanking(): void {
+  runRefreshMomentumRanking();
+}
+
+export function refreshFinviz(): void {
+  runRefreshFinviz();
+}
+
+export function configureFinvizToken(): void {
+  runConfigureFinvizToken();
+}
+
+export function getFinvizToken(): string {
+  return runGetFinvizToken();
+}
+
+export function setFinvizToken(token: unknown): void {
+  runSetFinvizToken(token);
+}
+
+export function checkFinvizAuth(): boolean {
+  return runCheckFinvizAuth();
+}
+
+export function deleteFinvizToken(): void {
+  runDeleteFinvizToken();
 }
 
 export function addSelectedToWatchlist(): void {
