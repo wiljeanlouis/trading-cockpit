@@ -58,6 +58,7 @@ function context(options?: {
       },
       findActiveByIdentity: () => null,
       save: () => undefined,
+      updateTradePlanningInputs: () => undefined,
       updateStatus: (id, status) => {
         calls.push('watchlist.update');
         watchlistUpdates.push({ id, status });

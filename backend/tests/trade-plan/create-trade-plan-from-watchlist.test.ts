@@ -52,11 +52,19 @@ function context(
   } = {}
 ) {
   let saved: TradePlan | null = null;
+  let updatedPlanningInputs: {
+    breakoutLevel: number | null;
+    invalidationLevel: number;
+    eventRisk: string;
+  } | null = null;
   const dependencies: CreateTradePlanFromWatchlistDependencies = {
     watchlistRepository: {
       findById: () => watchlist,
       findActiveByIdentity: () => null,
       save: () => undefined,
+      updateTradePlanningInputs: (_id, inputs) => {
+        updatedPlanningInputs = inputs;
+      },
       updateStatus: () => undefined
     },
     tradePlanRepository: {
@@ -65,6 +73,7 @@ function context(
       save: (plan) => {
         saved = plan;
       },
+      updatePlanning: () => undefined,
       updateStatus: () => undefined
     },
     strategyRepository: { existsById: () => true },
@@ -82,7 +91,7 @@ function context(
     getAccountEquity: (id) => equity(id, options.equity ?? 10_000),
     runtime: { newId: () => 'TP-1', now: () => new Date('2026-08-27T14:00:00Z') }
   };
-  return { dependencies, saved: () => saved };
+  return { dependencies, saved: () => saved, updatedPlanningInputs: () => updatedPlanningInputs };
 }
 
 describe('create account-aware Trade Plan from Watchlist', () => {
@@ -115,6 +124,44 @@ describe('create account-aware Trade Plan from Watchlist', () => {
       riskPercent: 0.01,
       maxRisk: 100
     });
+  });
+
+  it('uses and persists planning inputs supplied by the web workflow', () => {
+    const c = context();
+    const result = createCreateTradePlanFromWatchlist(c.dependencies)({
+      watchlistId: 'WL-1',
+      accountId: 'A1',
+      breakoutLevel: 102,
+      invalidationLevel: 94,
+      eventRisk: 'earnings soon'
+    });
+
+    expect(result.kind).toBe('created');
+    expect(c.saved()).toMatchObject({
+      breakoutLevel: 102,
+      invalidationLevel: 94,
+      stopPrice: 94,
+      eventRisk: 'EARNINGS SOON'
+    });
+    expect(c.updatedPlanningInputs()).toEqual({
+      breakoutLevel: 102,
+      invalidationLevel: 94,
+      eventRisk: 'EARNINGS SOON'
+    });
+  });
+
+  it('rejects invalid web planning levels before persistence', () => {
+    const c = context();
+    expect(() =>
+      createCreateTradePlanFromWatchlist(c.dependencies)({
+        watchlistId: 'WL-1',
+        accountId: 'A1',
+        breakoutLevel: 0,
+        invalidationLevel: 94,
+        eventRisk: null
+      })
+    ).toThrow('Breakout Level doit être supérieur à 0.');
+    expect(c.saved()).toBeNull();
   });
 
   it('supports equal sizing from different equity/risk combinations', () => {

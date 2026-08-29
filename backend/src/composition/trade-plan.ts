@@ -2,7 +2,9 @@ import type {
   CreateTradePlanRequest,
   CreateTradePlanResponse,
   TradePlansDto,
-  TradingAccountsDto
+  TradingAccountsDto,
+  UpdateTradePlanPlanningRequest,
+  UpdateTradePlanPlanningResponse
 } from '@trading-cockpit/contracts';
 import {
   createTradePlanFromWeb,
@@ -24,6 +26,8 @@ import {
 import { createGetAccountEquity } from '../core/application/trading-account/get-account-equity';
 import { createListTradingAccounts } from '../core/application/trading-account/list-trading-accounts';
 import { createGetTradePlans } from '../core/application/trade-plan/get-trade-plans';
+import { createUpdateTradePlanPlanning } from '../core/application/trade-plan/update-trade-plan-planning';
+import { updateTradePlanPlanningFromWeb } from '../adapters/inbound/apps-script/update-trade-plan-planning-from-web';
 
 type Observe = (event: string, fields: Record<string, unknown>) => void;
 
@@ -60,6 +64,16 @@ export function runCreateTradePlanFromWeb(
 export function runGetTradePlans(): TradePlansDto {
   return createGetTradePlans({
     reader: new GoogleSheetsTradePlanReader(),
+    strategyRepository: new GoogleSheetsStrategyRepository(),
     now: () => new Date()
   })();
+}
+
+export function runUpdateTradePlanPlanningFromWeb(
+  request: UpdateTradePlanPlanningRequest
+): UpdateTradePlanPlanningResponse {
+  return updateTradePlanPlanningFromWeb(
+    createUpdateTradePlanPlanning(new GoogleSheetsTradePlanRepository()),
+    request
+  );
 }

@@ -83,6 +83,32 @@ export class GoogleSheetsWatchlistRepository implements WatchlistRepository {
     themeWatchlist(getTradingCockpitSpreadsheet());
   }
 
+  updateTradePlanningInputs(
+    id: string,
+    inputs: { breakoutLevel: number | null; invalidationLevel: number; eventRisk: string }
+  ): void {
+    const sheet = this.getValidatedSheet();
+    const lastRow = sheet.getLastRow();
+    const headers = readSheetHeaders(sheet);
+    const idColumn = requireColumn(headers, 'Watchlist ID') + 1;
+    const normalizedId = String(id || '').trim();
+
+    if (lastRow <= 1) throw new Error(`Watchlist ID introuvable : ${normalizedId}`);
+
+    const ids = sheet.getRange(2, idColumn, lastRow - 1, 1).getValues();
+    const offset = ids.findIndex(([value]) => String(value || '').trim() === normalizedId);
+    if (offset < 0) throw new Error(`Watchlist ID introuvable : ${normalizedId}`);
+
+    const row = offset + 2;
+    sheet
+      .getRange(row, requireColumn(headers, 'Breakout Level') + 1)
+      .setValue(inputs.breakoutLevel ?? '');
+    sheet
+      .getRange(row, requireColumn(headers, 'Invalidation Level') + 1)
+      .setValue(inputs.invalidationLevel);
+    sheet.getRange(row, requireColumn(headers, 'Event Risk') + 1).setValue(inputs.eventRisk);
+  }
+
   updateStatus(id: string, status: string): void {
     const sheet = getTradingCockpitSpreadsheet().getSheetByName(WATCHLIST_SHEET_NAME);
 

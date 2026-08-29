@@ -41,7 +41,9 @@ function gateway(getWatchlist: CockpitGateway['getWatchlist']): CockpitGateway {
     getTradePlans: vi.fn(),
     executeTradePlan: vi.fn(),
     getOpenPositions: vi.fn(),
-    closePosition: vi.fn()
+    closePosition: vi.fn(),
+    getJournal: vi.fn(),
+    updateTradePlanPlanning: vi.fn()
   };
 }
 
@@ -55,12 +57,12 @@ describe('Watchlist', () => {
     expect(screen.getByText('Momentum Breakout')).toBeInTheDocument();
     expect(screen.getByText('34.82')).toBeInTheDocument();
     expect(screen.getByText('87')).toBeInTheDocument();
-    expect(screen.getByText('READY')).toBeInTheDocument();
     const candidateRow = screen.getByRole('row', { name: /BOX/ });
     const cells = within(candidateRow).getAllByRole('cell');
     expect(cells[0]).toHaveTextContent('BOX');
     expect(cells[1]).toHaveTextContent('Momentum Breakout');
     expect(cells[2]).toHaveTextContent('2026');
+    expect(within(cells[6]).getByText('READY')).toBeInTheDocument();
     expect(cells[7]).toContainElement(screen.getByRole('button', { name: 'View BOX details' }));
     expect(load).toHaveBeenCalledOnce();
   });
@@ -109,7 +111,11 @@ describe('Watchlist', () => {
     render(<Watchlist gateway={gateway(vi.fn(async () => data))} />);
     fireEvent.click(await screen.findByRole('button', { name: 'View BOX details' }));
 
-    expect(screen.getByRole('dialog', { name: 'BOX' })).toBeInTheDocument();
+    const dialog = screen.getByRole('dialog', { name: 'BOX' });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Overview' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Signal & momentum' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Setup & risk' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'BOX' })).toBeInTheDocument();
     expect(screen.getByText('33.4')).toBeInTheDocument();
     expect(screen.getByText('32.8')).toBeInTheDocument();
@@ -138,7 +144,13 @@ describe('Watchlist', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create Trade Plan' }));
 
     expect(await screen.findByText('Trade Plan TP-1 created for BOX in A1.')).toBeInTheDocument();
-    expect(cockpit.createTradePlan).toHaveBeenCalledWith({ watchlistId: 'W1', accountId: 'A1' });
+    expect(cockpit.createTradePlan).toHaveBeenCalledWith({
+      watchlistId: 'W1',
+      accountId: 'A1',
+      breakoutLevel: 34.5,
+      invalidationLevel: 32.8,
+      eventRisk: 'CLEAR'
+    });
     expect(load).toHaveBeenCalledTimes(2);
     expect(screen.getByRole('button', { name: 'Trade Plan Created' })).toBeDisabled();
   });
@@ -161,7 +173,7 @@ describe('Watchlist', () => {
     expect(screen.getByRole('button', { name: 'Create Trade Plan' })).toBeEnabled();
   });
 
-  it('prevents creation when the persisted candidate has no invalidation level', async () => {
+  it('allows entering a missing invalidation level before creation', async () => {
     const cockpit = gateway(
       vi.fn(async () => ({
         ...data,
@@ -170,8 +182,10 @@ describe('Watchlist', () => {
     );
     render(<Watchlist gateway={cockpit} />);
     fireEvent.click(await screen.findByRole('button', { name: 'View BOX details' }));
+    await screen.findByRole('option', { name: 'Primary · A1 · CAD' });
 
-    expect(screen.getByText(/Add an Invalidation Level/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create Trade Plan' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Invalidation Level'), { target: { value: '31.5' } });
+    expect(screen.getByRole('button', { name: 'Create Trade Plan' })).toBeEnabled();
   });
 });

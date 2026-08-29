@@ -1,9 +1,16 @@
 import type { TradePlanItemDto, TradePlansDto } from '@trading-cockpit/contracts';
 import type { TradePlanSnapshotValue } from '../../domain/trade-plan';
 import type { TradePlanReader } from '../../../ports/outbound/trade-plan-reader';
+import type { StrategyRepository } from '../../../ports/outbound/strategy-repository';
+import {
+  normalizePositionSource,
+  requireExecutableTradePlanStatus,
+  requirePositionExecutionData
+} from '../../domain/position';
 
 export interface GetTradePlansDependencies {
   reader: TradePlanReader;
+  strategyRepository: StrategyRepository;
   now: () => Date;
 }
 
@@ -23,7 +30,27 @@ function serializedDate(value: TradePlanSnapshotValue): string | null {
   return nullableText(value);
 }
 
-function toItem(plan: ReturnType<TradePlanReader['findAll']>[number]): TradePlanItemDto {
+function executionEligibility(
+  plan: ReturnType<TradePlanReader['findAll']>[number],
+  strategyRepository: StrategyRepository
+): TradePlanItemDto['executionEligibility'] {
+  try {
+    const source = normalizePositionSource(plan);
+    if (!strategyRepository.existsById(source.strategyId)) {
+      throw new Error(`Stratégie inconnue : ${source.strategyId}`);
+    }
+    requireExecutableTradePlanStatus(source);
+    requirePositionExecutionData(source);
+    return { eligible: true, reason: null };
+  } catch (error) {
+    return { eligible: false, reason: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+function toItem(
+  plan: ReturnType<TradePlanReader['findAll']>[number],
+  strategyRepository: StrategyRepository
+): TradePlanItemDto {
   return {
     id: plan.id,
     watchlistId: plan.watchlistId,
@@ -56,16 +83,18 @@ function toItem(plan: ReturnType<TradePlanReader['findAll']>[number]): TradePlan
     positionSize: nullableNumber(plan.positionSize),
     positionValue: nullableNumber(plan.positionValue),
     status: plan.status,
-    notes: nullableText(plan.notes)
+    notes: nullableText(plan.notes),
+    executionEligibility: executionEligibility(plan, strategyRepository)
   };
 }
 
 export function createGetTradePlans({
   reader,
+  strategyRepository,
   now
 }: GetTradePlansDependencies): () => TradePlansDto {
   return () => ({
     generatedAt: now().toISOString(),
-    items: reader.findAll().map(toItem)
+    items: reader.findAll().map((plan) => toItem(plan, strategyRepository))
   });
 }

@@ -7,8 +7,11 @@ import type {
   ExecuteTradePlanRequest,
   ExecuteTradePlanResponse,
   OpenPositionsDto,
+  JournalDto,
   TradePlansDto,
   TradingAccountsDto,
+  UpdateTradePlanPlanningRequest,
+  UpdateTradePlanPlanningResponse,
   WatchlistDto
 } from '@trading-cockpit/contracts';
 
@@ -21,4 +24,8 @@ export interface CockpitGateway {
   executeTradePlan(request: ExecuteTradePlanRequest): Promise<ExecuteTradePlanResponse>;
   getOpenPositions(): Promise<OpenPositionsDto>;
   closePosition(request: ClosePositionRequest): Promise<ClosePositionResponse>;
+  getJournal(): Promise<JournalDto>;
+  updateTradePlanPlanning(
+    request: UpdateTradePlanPlanningRequest
+  ): Promise<UpdateTradePlanPlanningResponse>;
 }

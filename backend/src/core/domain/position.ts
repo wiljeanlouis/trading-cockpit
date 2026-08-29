@@ -192,19 +192,17 @@ export function requireExecutableTradePlanStatus(source: NormalizedPositionSourc
 }
 
 export function requirePositionExecutionData(source: NormalizedPositionSource): void {
-  if (source.plannedEntry === '' || source.plannedEntry === null) {
+  const plannedEntry = Number(source.plannedEntry);
+  if (!Number.isFinite(plannedEntry) || plannedEntry <= 0) {
     throw new Error(`${source.ticker} n'a pas d'Entry Price.`);
   }
 
-  if (source.plannedStop === '' || source.plannedStop === null) {
+  const plannedStop = Number(source.plannedStop);
+  if (!Number.isFinite(plannedStop) || plannedStop <= 0) {
     throw new Error(`${source.ticker} n'a pas de Stop Price.`);
   }
 
-  if (
-    source.plannedQuantity === '' ||
-    source.plannedQuantity === null ||
-    Number(source.plannedQuantity) <= 0
-  ) {
+  if (!Number.isFinite(Number(source.plannedQuantity)) || Number(source.plannedQuantity) <= 0) {
     throw new Error(`${source.ticker} n'a pas de Position Size valide.`);
   }
 }

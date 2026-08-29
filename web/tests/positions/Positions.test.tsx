@@ -39,6 +39,8 @@ function gateway(getOpenPositions: CockpitGateway['getOpenPositions']): CockpitG
   return {
     getOpenPositions,
     closePosition: vi.fn(),
+    getJournal: vi.fn(),
+    updateTradePlanPlanning: vi.fn(),
     getDashboardSummary: vi.fn(),
     getWatchlist: vi.fn(),
     getTradingAccounts: vi.fn(),
@@ -67,6 +69,9 @@ describe('Positions', () => {
     render(<Positions gateway={gateway(vi.fn(async () => data))} />);
     fireEvent.click(await screen.findByRole('button', { name: 'View BOX Position' }));
     const dialog = screen.getByRole('dialog', { name: 'BOX' });
+    expect(within(dialog).getByRole('heading', { name: 'Overview' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Execution & prices' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Risk & performance' })).toBeInTheDocument();
     expect(dialog).toHaveTextContent('Planned entry');
     expect(dialog).toHaveTextContent('Actual entry');
     expect(dialog).toHaveTextContent('Initial stop');

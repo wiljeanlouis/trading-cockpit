@@ -24,7 +24,8 @@ if (!existsSync(webHtmlPath)) {
 }
 
 const webHtml = readFileSync(webHtmlPath, 'utf8');
-if (!webHtml.includes('<div id="root"></div>')) {
+const reactRootPattern = /<div\b(?=[^>]*\bid=["']root["'])[^>]*>\s*<\/div>/i;
+if (!reactRootPattern.test(webHtml)) {
   throw new Error('CockpitWeb.html does not contain the React root.');
 }
 if (/<script[^>]+src=|<link[^>]+rel=["']stylesheet["']/i.test(webHtml)) {

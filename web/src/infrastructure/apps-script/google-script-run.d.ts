@@ -7,8 +7,11 @@ import type {
   ExecuteTradePlanRequest,
   ExecuteTradePlanResponse,
   OpenPositionsDto,
+  JournalDto,
   TradePlansDto,
   TradingAccountsDto,
+  UpdateTradePlanPlanningRequest,
+  UpdateTradePlanPlanningResponse,
   WatchlistDto
 } from '@trading-cockpit/contracts';
 
@@ -21,6 +24,10 @@ interface CockpitScriptRunner {
   withSuccessHandler(handler: (value: ExecuteTradePlanResponse) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: OpenPositionsDto) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: ClosePositionResponse) => void): CockpitScriptRunner;
+  withSuccessHandler(handler: (value: JournalDto) => void): CockpitScriptRunner;
+  withSuccessHandler(
+    handler: (value: UpdateTradePlanPlanningResponse) => void
+  ): CockpitScriptRunner;
   withFailureHandler(handler: (error: unknown) => void): CockpitScriptRunner;
   getDashboardSummary(): void;
   getWatchlist(): void;
@@ -30,6 +37,8 @@ interface CockpitScriptRunner {
   executeTradePlan(request: ExecuteTradePlanRequest): void;
   getOpenPositions(): void;
   closePosition(request: ClosePositionRequest): void;
+  getJournal(): void;
+  updateTradePlanPlanning(request: UpdateTradePlanPlanningRequest): void;
 }
 
 declare global {

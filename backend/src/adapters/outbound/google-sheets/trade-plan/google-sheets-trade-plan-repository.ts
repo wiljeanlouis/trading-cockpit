@@ -74,6 +74,40 @@ export class GoogleSheetsTradePlanRepository implements TradePlanRepository {
     formatTradePlanRow(sheet, insertedRow);
   }
 
+  updatePlanning(tradePlan: TradePlan, options?: { positionSizeOverridden: boolean }): void {
+    const sheet = this.getValidatedSheet();
+    const lastRow = sheet.getLastRow();
+    const headers = readSheetHeaders(sheet);
+    const idIndex = requireColumn(headers, 'Trade Plan ID');
+    const entryIndex = requireColumn(headers, 'Entry Price');
+    const stopIndex = requireColumn(headers, 'Stop Price');
+    const targetIndex = requireColumn(headers, 'Target Price');
+    const rows: unknown[][] = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+
+    for (let index = 0; index < rows.length; index += 1) {
+      if (String(rows[index][idIndex] || '').trim() === tradePlan.id) {
+        const row = index + 2;
+        sheet.getRange(row, entryIndex + 1).setValue(tradePlan.entryPrice);
+        sheet.getRange(row, stopIndex + 1).setValue(tradePlan.stopPrice);
+        sheet.getRange(row, targetIndex + 1).setValue(tradePlan.targetPrice);
+        addTradePlanFormulas(sheet, row);
+        if (options?.positionSizeOverridden) {
+          sheet
+            .getRange(row, requireColumn(headers, 'Position Size') + 1)
+            .setValue(tradePlan.positionSize);
+          sheet
+            .getRange(row, requireColumn(headers, 'Position Value') + 1)
+            .setValue(tradePlan.positionValue);
+        }
+        formatTradePlanRow(sheet, row);
+        SpreadsheetApp.flush();
+        return;
+      }
+    }
+
+    throw new Error(`Trade Plan ID introuvable : ${tradePlan.id}`);
+  }
+
   updateStatus(id: string, status: string): void {
     const sheet = this.getValidatedSheet();
     const lastRow = sheet.getLastRow();

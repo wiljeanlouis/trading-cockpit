@@ -40,6 +40,7 @@ function context(options?: { position?: Position | null; journal?: JournalEntry 
       findById: () => null,
       findActiveByIdentity: () => null,
       save: () => undefined,
+      updateTradePlanningInputs: () => undefined,
       updateStatus: () => calls.push('watchlist.update')
     },
     runtime: {

@@ -8,7 +8,9 @@ export type {
   TradePlanItemDto,
   TradePlansDto,
   TradingAccountDto,
-  TradingAccountsDto
+  TradingAccountsDto,
+  UpdateTradePlanPlanningRequest,
+  UpdateTradePlanPlanningResponse
 } from './trade-plan';
 export type {
   ClosePositionRequest,
@@ -16,3 +18,4 @@ export type {
   OpenPositionsDto,
   PositionItemDto
 } from './position';
+export type { JournalDto, JournalItemDto, JournalOutcomeDto } from './journal';

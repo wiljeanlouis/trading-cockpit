@@ -21,7 +21,15 @@ describe('Apps Script Trade Plan web adapter', () => {
       tradePlan: plan
     }));
 
-    expect(createTradePlanFromWeb(create, { watchlistId: 'WL-1', accountId: 'A1' })).toEqual({
+    expect(
+      createTradePlanFromWeb(create, {
+        watchlistId: 'WL-1',
+        accountId: 'A1',
+        breakoutLevel: 101,
+        invalidationLevel: 95,
+        eventRisk: 'CLEAR'
+      })
+    ).toEqual({
       kind: 'created',
       tradePlanId: 'TP-1',
       watchlistId: 'WL-1',
@@ -29,7 +37,13 @@ describe('Apps Script Trade Plan web adapter', () => {
       accountId: 'A1',
       status: 'DRAFT'
     });
-    expect(create).toHaveBeenCalledWith({ watchlistId: 'WL-1', accountId: 'A1' });
+    expect(create).toHaveBeenCalledWith({
+      watchlistId: 'WL-1',
+      accountId: 'A1',
+      breakoutLevel: 101,
+      invalidationLevel: 95,
+      eventRisk: 'CLEAR'
+    });
   });
 
   it('serializes account-scoped duplicates without reporting a creation', () => {
@@ -40,7 +54,15 @@ describe('Apps Script Trade Plan web adapter', () => {
       existing: { ...plan, id: 'TP-OLD' }
     });
 
-    expect(createTradePlanFromWeb(create, { watchlistId: 'WL-1', accountId: 'A1' })).toMatchObject({
+    expect(
+      createTradePlanFromWeb(create, {
+        watchlistId: 'WL-1',
+        accountId: 'A1',
+        breakoutLevel: null,
+        invalidationLevel: 95,
+        eventRisk: null
+      })
+    ).toMatchObject({
       kind: 'duplicate',
       tradePlanId: 'TP-OLD',
       accountId: 'A1'

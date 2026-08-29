@@ -11,6 +11,9 @@ export interface TradingAccountsDto {
 export interface CreateTradePlanRequest {
   watchlistId: string;
   accountId: string;
+  breakoutLevel: number | null;
+  invalidationLevel: number;
+  eventRisk: string | null;
 }
 
 export type CreateTradePlanResponse =
@@ -62,6 +65,10 @@ export interface TradePlanItemDto {
   positionValue: number | null;
   status: string;
   notes: string | null;
+  executionEligibility: {
+    eligible: boolean;
+    reason: string | null;
+  };
 }
 
 export interface TradePlansDto {
@@ -71,6 +78,19 @@ export interface TradePlansDto {
 
 export interface ExecuteTradePlanRequest {
   tradePlanId: string;
+}
+
+export interface UpdateTradePlanPlanningRequest {
+  tradePlanId: string;
+  entryPrice: number;
+  stopPrice: number;
+  targetPrice: number | null;
+  positionSize: number | null;
+}
+
+export interface UpdateTradePlanPlanningResponse {
+  tradePlanId: string;
+  status: string;
 }
 
 export type ExecuteTradePlanResponse = {

@@ -102,7 +102,13 @@ describe('AppsScriptCockpitGateway', () => {
     };
     vi.stubGlobal('google', { script: { run: runner } });
 
-    const command = { watchlistId: 'WL-1', accountId: 'A1' };
+    const command = {
+      watchlistId: 'WL-1',
+      accountId: 'A1',
+      breakoutLevel: 101,
+      invalidationLevel: 95,
+      eventRisk: 'CLEAR'
+    };
     await expect(new AppsScriptCockpitGateway().createTradePlan(command)).resolves.toEqual(result);
     expect(runner.createTradePlan).toHaveBeenCalledWith(command);
   });
@@ -194,5 +200,48 @@ describe('AppsScriptCockpitGateway', () => {
 
     await expect(new AppsScriptCockpitGateway().closePosition(command)).resolves.toEqual(result);
     expect(runner.closePosition).toHaveBeenCalledWith(command);
+  });
+
+  it('loads the Journal through the Apps Script callback bridge', async () => {
+    const journal = { generatedAt: summary.generatedAt, items: [] };
+    let success: ((value: typeof journal) => void) | undefined;
+    const runner = {
+      withSuccessHandler: vi.fn((handler) => {
+        success = handler;
+        return runner;
+      }),
+      withFailureHandler: vi.fn(() => runner),
+      getJournal: vi.fn(() => success?.(journal))
+    };
+    vi.stubGlobal('google', { script: { run: runner } });
+
+    await expect(new AppsScriptCockpitGateway().getJournal()).resolves.toEqual(journal);
+    expect(runner.getJournal).toHaveBeenCalledOnce();
+  });
+
+  it('sends planning inputs through the Apps Script callback bridge', async () => {
+    const result = { tradePlanId: 'TP-1', status: 'DRAFT' };
+    let success: ((value: typeof result) => void) | undefined;
+    const runner = {
+      withSuccessHandler: vi.fn((handler) => {
+        success = handler;
+        return runner;
+      }),
+      withFailureHandler: vi.fn(() => runner),
+      updateTradePlanPlanning: vi.fn(() => success?.(result))
+    };
+    vi.stubGlobal('google', { script: { run: runner } });
+    const command = {
+      tradePlanId: 'TP-1',
+      entryPrice: 35,
+      stopPrice: 32,
+      targetPrice: 40,
+      positionSize: 25
+    };
+
+    await expect(new AppsScriptCockpitGateway().updateTradePlanPlanning(command)).resolves.toEqual(
+      result
+    );
+    expect(runner.updateTradePlanPlanning).toHaveBeenCalledWith(command);
   });
 });

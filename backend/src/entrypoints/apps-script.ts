@@ -37,9 +37,12 @@ import type {
   ExecuteTradePlanRequest,
   ExecuteTradePlanResponse,
   OpenPositionsDto,
+  JournalDto,
   TradePlansDto,
   TradingAccountsDto,
-  WatchlistDto
+  WatchlistDto,
+  UpdateTradePlanPlanningRequest,
+  UpdateTradePlanPlanningResponse
 } from '@trading-cockpit/contracts';
 import { serveReactCockpit } from '../adapters/inbound/apps-script/serve-react-cockpit';
 import { runGetDashboardSummary } from '../composition/dashboard';
@@ -48,13 +51,15 @@ import { runGetWatchlist } from '../composition/watchlist';
 import {
   runCreateTradePlanFromWeb,
   runGetTradePlans,
-  runListTradingAccountsForWeb
+  runListTradingAccountsForWeb,
+  runUpdateTradePlanPlanningFromWeb
 } from '../composition/trade-plan';
 import {
   runClosePositionFromWeb,
   runExecuteTradePlanFromWeb,
   runGetOpenPositions
 } from '../composition/position';
+import { runGetJournal } from '../composition/journal';
 
 export function doGet(): GoogleAppsScript.HTML.HtmlOutput {
   return serveReactCockpit();
@@ -84,12 +89,22 @@ export function executeTradePlan(request: ExecuteTradePlanRequest): ExecuteTrade
   return runExecuteTradePlanFromWeb(request);
 }
 
+export function updateTradePlanPlanning(
+  request: UpdateTradePlanPlanningRequest
+): UpdateTradePlanPlanningResponse {
+  return runUpdateTradePlanPlanningFromWeb(request);
+}
+
 export function getOpenPositions(): OpenPositionsDto {
   return runGetOpenPositions();
 }
 
 export function closePosition(request: ClosePositionRequest): ClosePositionResponse {
   return runClosePositionFromWeb(request);
+}
+
+export function getJournal(): JournalDto {
+  return runGetJournal();
 }
 
 export function onOpen(): void {

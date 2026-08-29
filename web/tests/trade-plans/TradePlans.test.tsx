@@ -36,8 +36,9 @@ const data: TradePlansDto = {
       maxRisk: 100,
       positionSize: 45,
       positionValue: 1575,
-      status: 'READY',
-      notes: 'Wait for volume'
+      status: 'DRAFT',
+      notes: 'Wait for volume',
+      executionEligibility: { eligible: true, reason: null }
     }
   ]
 };
@@ -51,7 +52,9 @@ function gateway(getTradePlans: CockpitGateway['getTradePlans']): CockpitGateway
     createTradePlan: vi.fn(),
     executeTradePlan: vi.fn(),
     getOpenPositions: vi.fn(),
-    closePosition: vi.fn()
+    closePosition: vi.fn(),
+    getJournal: vi.fn(),
+    updateTradePlanPlanning: vi.fn()
   };
 }
 
@@ -67,7 +70,7 @@ describe('Trade Plans', () => {
     expect(cells[1]).toHaveTextContent('A1');
     expect(cells[4]).toHaveTextContent('35');
     expect(cells[7]).toHaveTextContent('100');
-    expect(cells[9]).toHaveTextContent('READY');
+    expect(cells[9]).toHaveTextContent('DRAFT');
     expect(load).toHaveBeenCalledOnce();
   });
 
@@ -76,7 +79,12 @@ describe('Trade Plans', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'View BOX Trade Plan' }));
 
     const dialog = screen.getByRole('dialog', { name: 'BOX' });
+    expect(within(dialog).getByRole('heading', { name: 'Overview' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Prices' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Risk & sizing' })).toBeInTheDocument();
     expect(dialog).toHaveTextContent('Snapshot, not a live quote');
+    expect(dialog).toHaveTextContent('Actual execution / fill');
+    expect(dialog).toHaveTextContent('Recorded on the Position only after explicit execution');
     expect(dialog).toHaveTextContent('2.27');
     expect(dialog).toHaveTextContent('1,575');
     expect(dialog).toHaveTextContent('Wait for volume');
@@ -156,7 +164,8 @@ describe('Trade Plans', () => {
     ).toBeInTheDocument();
     expect(cockpit.executeTradePlan).toHaveBeenCalledWith({ tradePlanId: 'TP-1' });
     expect(load).toHaveBeenCalledTimes(2);
-    expect(screen.getAllByText('EXECUTED')).toHaveLength(2);
+    const dialog = screen.getByRole('dialog', { name: 'BOX' });
+    expect(within(dialog).getByText('EXECUTED')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Execute Trade Plan' })).not.toBeInTheDocument();
   });
 
@@ -175,13 +184,100 @@ describe('Trade Plans', () => {
     expect(screen.getByRole('button', { name: 'Confirm & Create Position' })).toBeEnabled();
   });
 
+  it('renders invalid numeric values as incomplete and hides execution', async () => {
+    render(
+      <TradePlans
+        gateway={gateway(
+          vi.fn(async () => ({
+            ...data,
+            items: [
+              {
+                ...data.items[0],
+                status: 'DRAFT',
+                entryPrice: Number.NaN,
+                targetPrice: Number.NaN,
+                riskPerShare: Number.NaN,
+                rewardPerShare: Number.NaN,
+                riskReward: Number.NaN,
+                positionSize: Number.NaN,
+                positionValue: Number.NaN,
+                executionEligibility: {
+                  eligible: false,
+                  reason: "BOX n'a pas d'Entry Price."
+                }
+              }
+            ]
+          }))
+        )}
+      />
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'View BOX Trade Plan' }));
+
+    expect(screen.queryByText('NaN')).not.toBeInTheDocument();
+    expect(screen.getByText('Execution unavailable')).toBeInTheDocument();
+    expect(screen.getByText("BOX n'a pas d'Entry Price.")).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Execute Trade Plan' })).not.toBeInTheDocument();
+  });
+
+  it('saves user-owned planning inputs and reloads backend calculations', async () => {
+    const incomplete = {
+      ...data.items[0],
+      status: 'DRAFT',
+      entryPrice: null,
+      targetPrice: null,
+      riskPerShare: null,
+      rewardPerShare: null,
+      riskReward: null,
+      positionSize: null,
+      positionValue: null,
+      executionEligibility: { eligible: false, reason: "BOX n'a pas d'Entry Price." }
+    };
+    const load = vi
+      .fn<CockpitGateway['getTradePlans']>()
+      .mockResolvedValueOnce({ ...data, items: [incomplete] })
+      .mockResolvedValueOnce({ ...data, items: [{ ...data.items[0], status: 'DRAFT' }] });
+    const cockpit = gateway(load);
+    cockpit.updateTradePlanPlanning = vi.fn(async () => ({
+      tradePlanId: 'TP-1',
+      status: 'DRAFT'
+    }));
+    render(<TradePlans gateway={cockpit} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'View BOX Trade Plan' }));
+    fireEvent.change(screen.getByLabelText('Planned Entry'), { target: { value: '35' } });
+    fireEvent.change(screen.getByLabelText('Stop Price'), { target: { value: '32.8' } });
+    fireEvent.change(screen.getByLabelText(/Target Price/), { target: { value: '40' } });
+    fireEvent.change(screen.getByLabelText(/Position Size/), { target: { value: '30' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Planning' }));
+
+    expect(await screen.findByText(/Planning saved/)).toBeInTheDocument();
+    expect(cockpit.updateTradePlanPlanning).toHaveBeenCalledWith({
+      tradePlanId: 'TP-1',
+      entryPrice: 35,
+      stopPrice: 32.8,
+      targetPrice: 40,
+      positionSize: 30
+    });
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(screen.getByText('2.27')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Execute Trade Plan' })).toBeInTheDocument();
+  });
+
   it('does not expose execution, edit, or cancel actions for a terminal plan', async () => {
     render(
       <TradePlans
         gateway={gateway(
           vi.fn(async () => ({
             ...data,
-            items: [{ ...data.items[0], status: 'CANCELLED' }]
+            items: [
+              {
+                ...data.items[0],
+                status: 'CANCELLED',
+                executionEligibility: {
+                  eligible: false,
+                  reason: "Impossible d'exécuter un Trade Plan CANCELLED."
+                }
+              }
+            ]
           }))
         )}
       />
@@ -190,6 +286,6 @@ describe('Trade Plans', () => {
 
     expect(screen.queryByRole('button', { name: 'Execute Trade Plan' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /edit/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /cancel/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Cancel Trade Plan$/i })).not.toBeInTheDocument();
   });
 });

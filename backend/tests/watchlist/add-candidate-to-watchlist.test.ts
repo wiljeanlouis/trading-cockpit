@@ -36,6 +36,7 @@ function createDependencies(existing: WatchlistEntry | null = null) {
       calls.push('watchlist.save');
       savedEntry = entry;
     },
+    updateTradePlanningInputs: () => undefined,
     updateStatus: () => undefined
   };
   const strategyRepository: StrategyRepository = {

@@ -10,6 +10,7 @@ import {
   isActiveTradePlanStatus,
   normalizeTradePlanSource,
   requireTradePlanInvalidationLevel,
+  updateTradePlanPlanning,
   validateTradingRiskConfiguration
 } from '../../src/core/domain/trade-plan';
 import type { WatchlistEntry } from '../../src/core/domain/watchlist';
@@ -190,6 +191,105 @@ describe('Trade Plan domain', () => {
       expect(isActiveTradePlanStatus(status)).toBe(false);
     }
   );
+
+  it('updates user-owned planning inputs with existing backend calculations', () => {
+    const current = createTradePlan(
+      normalizeTradePlanSource(watchlistEntry),
+      { accountEquity: 10_000, riskPercent: 0.01 },
+      'A1',
+      'TP-1',
+      new Date()
+    );
+
+    expect(
+      updateTradePlanPlanning(current, {
+        entryPrice: 57,
+        stopPrice: 52,
+        targetPrice: 67,
+        positionSize: null
+      })
+    ).toMatchObject({
+      entryPrice: 57,
+      stopPrice: 52,
+      targetPrice: 67,
+      riskPerShare: 5,
+      rewardPerShare: 10,
+      riskReward: 2,
+      maxRisk: 100,
+      positionSize: 20,
+      positionValue: 1140,
+      status: 'DRAFT'
+    });
+  });
+
+  it('supports an optional target without inventing reward values', () => {
+    const current = createTradePlan(
+      normalizeTradePlanSource(watchlistEntry),
+      { accountEquity: 10_000, riskPercent: 0.01 },
+      'A1',
+      'TP-1',
+      new Date()
+    );
+    expect(
+      updateTradePlanPlanning(current, {
+        entryPrice: 57,
+        stopPrice: 52,
+        targetPrice: null,
+        positionSize: null
+      })
+    ).toMatchObject({ targetPrice: '', rewardPerShare: null, riskReward: null, positionSize: 20 });
+  });
+
+  it('uses an explicit Position Size override and recalculates planned capital', () => {
+    const current = createTradePlan(
+      normalizeTradePlanSource(watchlistEntry),
+      { accountEquity: 10_000, riskPercent: 0.01 },
+      'A1',
+      'TP-1',
+      new Date()
+    );
+    expect(
+      updateTradePlanPlanning(current, {
+        entryPrice: 57,
+        stopPrice: 52,
+        targetPrice: 67,
+        positionSize: 12
+      })
+    ).toMatchObject({ positionSize: 12, positionValue: 684, maxRisk: 100 });
+  });
+
+  it.each([
+    [
+      { entryPrice: Number.NaN, stopPrice: 52, targetPrice: null, positionSize: null },
+      'Planned Entry'
+    ],
+    [
+      { entryPrice: 57, stopPrice: Number.NaN, targetPrice: null, positionSize: null },
+      'Stop Price'
+    ],
+    [
+      { entryPrice: 57, stopPrice: 52, targetPrice: Number.NaN, positionSize: null },
+      'Target Price'
+    ],
+    [
+      { entryPrice: 52, stopPrice: 52, targetPrice: null, positionSize: null },
+      'supérieur au Stop Price'
+    ],
+    [{ entryPrice: 57, stopPrice: 52, targetPrice: null, positionSize: 1.5 }, 'Position Size'],
+    [
+      { entryPrice: 57, stopPrice: 52, targetPrice: null, positionSize: 21 },
+      'dépasse le risque maximum'
+    ]
+  ])('rejects invalid planning input %o', (inputs, message) => {
+    const current = createTradePlan(
+      normalizeTradePlanSource(watchlistEntry),
+      { accountEquity: 10_000, riskPercent: 0.01 },
+      'A1',
+      'TP-1',
+      new Date()
+    );
+    expect(() => updateTradePlanPlanning(current, inputs)).toThrow(message);
+  });
 
   it.each([
     [{ accountEquity: 0, riskPercent: 0.005 }, 'Account Equity doit être supérieur à 0.'],

@@ -23,7 +23,9 @@ function gateway(getDashboardSummary: CockpitGateway['getDashboardSummary']): Co
     getTradePlans: vi.fn(),
     executeTradePlan: vi.fn(),
     getOpenPositions: vi.fn(),
-    closePosition: vi.fn()
+    closePosition: vi.fn(),
+    getJournal: vi.fn(),
+    updateTradePlanPlanning: vi.fn()
   };
 }
 

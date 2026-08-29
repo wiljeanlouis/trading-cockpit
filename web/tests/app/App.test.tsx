@@ -22,7 +22,9 @@ describe('App navigation', () => {
       getTradePlans: vi.fn(async () => ({ generatedAt: '2026-08-28T16:04:00.000Z', items: [] })),
       executeTradePlan: vi.fn(),
       getOpenPositions: vi.fn(),
-      closePosition: vi.fn()
+      closePosition: vi.fn(),
+      getJournal: vi.fn(),
+      updateTradePlanPlanning: vi.fn()
     };
     render(
       <MemoryRouter>
@@ -48,7 +50,9 @@ describe('App navigation', () => {
       getTradePlans: vi.fn(async () => ({ generatedAt: '2026-08-28T16:04:00.000Z', items: [] })),
       executeTradePlan: vi.fn(),
       getOpenPositions: vi.fn(),
-      closePosition: vi.fn()
+      closePosition: vi.fn(),
+      getJournal: vi.fn(),
+      updateTradePlanPlanning: vi.fn()
     };
 
     render(
@@ -74,7 +78,9 @@ describe('App navigation', () => {
       })),
       executeTradePlan: vi.fn(),
       getOpenPositions: vi.fn(),
-      closePosition: vi.fn()
+      closePosition: vi.fn(),
+      getJournal: vi.fn(),
+      updateTradePlanPlanning: vi.fn()
     };
     render(
       <MemoryRouter>
@@ -100,7 +106,9 @@ describe('App navigation', () => {
         generatedAt: '2026-08-28T16:04:00.000Z',
         items: []
       })),
-      closePosition: vi.fn()
+      closePosition: vi.fn(),
+      getJournal: vi.fn(),
+      updateTradePlanPlanning: vi.fn()
     };
     render(
       <MemoryRouter>
@@ -112,5 +120,33 @@ describe('App navigation', () => {
 
     expect(await screen.findByRole('heading', { name: 'Positions' })).toBeInTheDocument();
     expect(gateway.getOpenPositions).toHaveBeenCalledOnce();
+  });
+
+  it('opens the Journal workspace from navigation', async () => {
+    const gateway: CockpitGateway = {
+      getDashboardSummary: vi.fn(),
+      getWatchlist: vi.fn(),
+      getTradingAccounts: vi.fn(),
+      createTradePlan: vi.fn(),
+      getTradePlans: vi.fn(),
+      executeTradePlan: vi.fn(),
+      getOpenPositions: vi.fn(),
+      closePosition: vi.fn(),
+      getJournal: vi.fn(async () => ({
+        generatedAt: '2026-08-28T16:04:00.000Z',
+        items: []
+      })),
+      updateTradePlanPlanning: vi.fn()
+    };
+    render(
+      <MemoryRouter>
+        <App gateway={gateway} />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('link', { name: 'Journal' }));
+
+    expect(await screen.findByRole('heading', { name: 'Journal' })).toBeInTheDocument();
+    expect(gateway.getJournal).toHaveBeenCalledOnce();
   });
 });

@@ -56,12 +56,14 @@ function context(plan: TradePlan | null = tradePlan, existing: Position | null =
       findById: () => plan,
       findActiveByWatchlistIdAndAccountId: () => null,
       save: () => undefined,
+      updatePlanning: () => undefined,
       updateStatus: () => calls.push('tradePlan.update')
     },
     watchlistRepository: {
       findById: () => null,
       findActiveByIdentity: () => null,
       save: () => undefined,
+      updateTradePlanningInputs: () => undefined,
       updateStatus: () => calls.push('watchlist.update')
     },
     strategyRepository: { existsById: () => true },

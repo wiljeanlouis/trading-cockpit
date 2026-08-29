@@ -7,8 +7,11 @@ import type {
   ExecuteTradePlanRequest,
   ExecuteTradePlanResponse,
   OpenPositionsDto,
+  JournalDto,
   TradePlansDto,
   TradingAccountsDto,
+  UpdateTradePlanPlanningRequest,
+  UpdateTradePlanPlanningResponse,
   WatchlistDto
 } from '@trading-cockpit/contracts';
 import type { CockpitGateway } from '../cockpit-gateway';
@@ -91,6 +94,26 @@ export class AppsScriptCockpitGateway implements CockpitGateway {
         .withSuccessHandler(resolve)
         .withFailureHandler((error) => reject(new Error(failureMessage(error))))
         .closePosition(request);
+    });
+  }
+
+  getJournal(): Promise<JournalDto> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .getJournal();
+    });
+  }
+
+  updateTradePlanPlanning(
+    request: UpdateTradePlanPlanningRequest
+  ): Promise<UpdateTradePlanPlanningResponse> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .updateTradePlanPlanning(request);
     });
   }
 }

@@ -18,7 +18,10 @@ export function createTradePlanFromWeb(
 ): CreateTradePlanResponse {
   const result = createTradePlan({
     watchlistId: String(request?.watchlistId ?? ''),
-    accountId: String(request?.accountId ?? '')
+    accountId: String(request?.accountId ?? ''),
+    breakoutLevel: request?.breakoutLevel ?? null,
+    invalidationLevel: request?.invalidationLevel ?? null,
+    eventRisk: request?.eventRisk ?? null
   });
 
   const tradePlan = result.kind === 'created' ? result.tradePlan : result.existing;

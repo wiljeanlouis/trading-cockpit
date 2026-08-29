@@ -17,6 +17,13 @@ export interface TradingRiskConfiguration {
   riskPercent: number;
 }
 
+export interface TradePlanPlanningInputs {
+  entryPrice: number;
+  stopPrice: number;
+  targetPrice: number | null;
+  positionSize: number | null;
+}
+
 export interface NormalizedTradePlanSource {
   watchlistId: string;
   strategyId: string;
@@ -235,5 +242,68 @@ export function createTradePlan(
     positionValue: null,
     status: INITIAL_TRADE_PLAN_STATUS,
     notes: ''
+  };
+}
+
+export function updateTradePlanPlanning(
+  tradePlan: TradePlan,
+  inputs: TradePlanPlanningInputs
+): TradePlan {
+  if (!isActiveTradePlanStatus(tradePlan.status)) {
+    throw new Error(`Le Trade Plan ${tradePlan.ticker} n'est plus modifiable.`);
+  }
+  if (!Number.isFinite(inputs.entryPrice) || inputs.entryPrice <= 0) {
+    throw new Error('Planned Entry doit être supérieur à 0.');
+  }
+  if (!Number.isFinite(inputs.stopPrice) || inputs.stopPrice <= 0) {
+    throw new Error('Stop Price doit être supérieur à 0.');
+  }
+  if (
+    inputs.targetPrice !== null &&
+    (!Number.isFinite(inputs.targetPrice) || inputs.targetPrice <= 0)
+  ) {
+    throw new Error('Target Price doit être supérieur à 0 lorsqu’il est renseigné.');
+  }
+  if (
+    inputs.positionSize !== null &&
+    (!Number.isFinite(inputs.positionSize) ||
+      inputs.positionSize <= 0 ||
+      !Number.isInteger(inputs.positionSize))
+  ) {
+    throw new Error(
+      'Position Size doit être un nombre entier supérieur à 0 lorsqu’il est renseigné.'
+    );
+  }
+
+  const riskPerShare = calculateRiskPerShare(inputs.entryPrice, inputs.stopPrice);
+  if (riskPerShare === null || riskPerShare <= 0) {
+    throw new Error('Planned Entry doit être supérieur au Stop Price.');
+  }
+  const rewardPerShare = calculateRewardPerShare(inputs.entryPrice, inputs.targetPrice);
+  const riskReward = calculateRiskReward(riskPerShare, rewardPerShare);
+  const maxRisk = calculateMaxRisk(tradePlan.accountEquity, tradePlan.riskPercent);
+  if (
+    inputs.positionSize !== null &&
+    maxRisk !== null &&
+    inputs.positionSize * riskPerShare > maxRisk
+  ) {
+    throw new Error(
+      `Position Size dépasse le risque maximum autorisé de ${maxRisk.toFixed(2)} pour ce Trade Plan.`
+    );
+  }
+  const positionSize = inputs.positionSize ?? calculatePlannedQuantity(maxRisk, riskPerShare);
+  const positionValue = calculatePositionValue(positionSize, inputs.entryPrice);
+
+  return {
+    ...tradePlan,
+    entryPrice: inputs.entryPrice,
+    stopPrice: inputs.stopPrice,
+    targetPrice: inputs.targetPrice ?? '',
+    riskPerShare,
+    rewardPerShare,
+    riskReward,
+    maxRisk,
+    positionSize,
+    positionValue
   };
 }

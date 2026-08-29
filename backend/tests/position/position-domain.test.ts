@@ -176,22 +176,10 @@ describe('Position domain', () => {
     ['stopPrice', -5],
     ['stopPrice', 'not-a-price'],
     ['positionSize', 'not-a-quantity']
-  ] as const)('preserves legacy acceptance of %s=%s', (field, value) => {
+  ] as const)('rejects non-financial execution value %s=%s', (field, value) => {
     const source = normalizePositionSource({ ...tradePlan, [field]: value });
 
-    expect(() => requirePositionExecutionData(source)).not.toThrow();
-  });
-
-  it('preserves NaN actual values produced from accepted text', () => {
-    const source = normalizePositionSource({
-      ...tradePlan,
-      entryPrice: 'not-a-price',
-      positionSize: 'not-a-quantity'
-    });
-    const position = createOpenPosition(source, 'P-1', new Date());
-
-    expect(Number.isNaN(position.actualEntry)).toBe(true);
-    expect(Number.isNaN(position.actualQuantity)).toBe(true);
+    expect(() => requirePositionExecutionData(source)).toThrow();
   });
 
   it.each(['OPEN', ' open ', 'open'])('recognizes open Position status %s', (status) => {

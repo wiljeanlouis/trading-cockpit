@@ -15,6 +15,9 @@ import type { GetAccountEquity } from '../trading-account/get-account-equity';
 export interface CreateTradePlanFromWatchlistCommand {
   watchlistId: string;
   accountId: string;
+  breakoutLevel?: number | null;
+  invalidationLevel?: number | null;
+  eventRisk?: string | null;
 }
 
 export type CreateTradePlanFromWatchlistResult =
@@ -43,6 +46,20 @@ export type CreateTradePlanFromWatchlist = (
   command: CreateTradePlanFromWatchlistCommand
 ) => CreateTradePlanFromWatchlistResult;
 
+function optionalPositiveLevel(value: number | null, label: string): number | null {
+  if (value === null) return null;
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error(`${label} doit être supérieur à 0.`);
+  }
+  return value;
+}
+
+function requiredPositiveLevel(value: number | null, label: string): number {
+  const normalized = optionalPositiveLevel(value, label);
+  if (normalized === null) throw new Error(`${label} est requis.`);
+  return normalized;
+}
+
 export function createCreateTradePlanFromWatchlist({
   watchlistRepository,
   tradePlanRepository,
@@ -52,7 +69,7 @@ export function createCreateTradePlanFromWatchlist({
   getAccountEquity,
   runtime
 }: CreateTradePlanFromWatchlistDependencies): CreateTradePlanFromWatchlist {
-  return ({ watchlistId, accountId }) => {
+  return ({ watchlistId, accountId, breakoutLevel, invalidationLevel, eventRisk }) => {
     const normalizedWatchlistId = String(watchlistId || '').trim();
     const normalizedAccountId = String(accountId || '')
       .trim()
@@ -72,8 +89,29 @@ export function createCreateTradePlanFromWatchlist({
       throw new Error(`Watchlist ID introuvable : ${normalizedWatchlistId}`);
     }
 
+    const hasWebPlanningInputs =
+      breakoutLevel !== undefined || invalidationLevel !== undefined || eventRisk !== undefined;
+    const normalizedBreakoutLevel =
+      breakoutLevel === undefined
+        ? watchlistEntry.breakoutLevel
+        : (optionalPositiveLevel(breakoutLevel, 'Breakout Level') ?? '');
+    const normalizedInvalidationLevel =
+      invalidationLevel === undefined
+        ? watchlistEntry.invalidationLevel
+        : requiredPositiveLevel(invalidationLevel, 'Invalidation Level');
+    const normalizedEventRisk =
+      eventRisk === undefined
+        ? watchlistEntry.eventRisk
+        : String(eventRisk ?? '')
+            .trim()
+            .toUpperCase();
     const duplicateTicker = String(watchlistEntry.ticker || '').trim();
-    const source = normalizeTradePlanSource(watchlistEntry);
+    const source = normalizeTradePlanSource({
+      ...watchlistEntry,
+      breakoutLevel: normalizedBreakoutLevel,
+      invalidationLevel: normalizedInvalidationLevel,
+      eventRisk: normalizedEventRisk
+    });
 
     if (!strategyRepository.existsById(source.strategyId)) {
       throw new Error(`Stratégie inconnue : ${source.strategyId}`);
@@ -107,6 +145,13 @@ export function createCreateTradePlanFromWatchlist({
     const tradePlan = createTradePlan(source, configuration, normalizedAccountId, id, createdAt);
 
     tradePlanRepository.save(tradePlan);
+    if (hasWebPlanningInputs) {
+      watchlistRepository.updateTradePlanningInputs(source.watchlistId, {
+        breakoutLevel: typeof normalizedBreakoutLevel === 'number' ? normalizedBreakoutLevel : null,
+        invalidationLevel: Number(normalizedInvalidationLevel),
+        eventRisk: normalizedEventRisk
+      });
+    }
     watchlistRepository.updateStatus(source.watchlistId, 'PLANNED');
 
     return {

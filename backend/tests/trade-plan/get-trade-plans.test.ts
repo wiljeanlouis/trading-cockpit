@@ -39,6 +39,7 @@ describe('get Trade Plans', () => {
   it('returns persisted financial snapshots without recalculating them', () => {
     const result = createGetTradePlans({
       reader: { findAll: () => [plan] },
+      strategyRepository: { existsById: () => true },
       now: () => new Date('2026-08-28T16:00:00.000Z')
     })();
 
@@ -75,7 +76,8 @@ describe('get Trade Plans', () => {
           positionSize: 45,
           positionValue: 1575,
           status: 'READY',
-          notes: 'Wait for volume'
+          notes: 'Wait for volume',
+          executionEligibility: { eligible: true, reason: null }
         }
       ]
     });
@@ -95,6 +97,7 @@ describe('get Trade Plans', () => {
           }
         ]
       },
+      strategyRepository: { existsById: () => true },
       now: () => new Date()
     })();
 
@@ -103,7 +106,8 @@ describe('get Trade Plans', () => {
       riskPerShare: null,
       positionSize: null,
       accountEquity: null,
-      riskPercent: null
+      riskPercent: null,
+      executionEligibility: { eligible: false, reason: "BOX n'a pas d'Entry Price." }
     });
   });
 });
