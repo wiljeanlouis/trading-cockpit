@@ -1,9 +1,12 @@
 import type {
   CreateTradePlanRequest,
   CreateTradePlanResponse,
+  ClosePositionRequest,
+  ClosePositionResponse,
   DashboardSummaryDto,
   ExecuteTradePlanRequest,
   ExecuteTradePlanResponse,
+  OpenPositionsDto,
   TradePlansDto,
   TradingAccountsDto,
   WatchlistDto
@@ -70,6 +73,24 @@ export class AppsScriptCockpitGateway implements CockpitGateway {
         .withSuccessHandler(resolve)
         .withFailureHandler((error) => reject(new Error(failureMessage(error))))
         .executeTradePlan(request);
+    });
+  }
+
+  getOpenPositions(): Promise<OpenPositionsDto> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .getOpenPositions();
+    });
+  }
+
+  closePosition(request: ClosePositionRequest): Promise<ClosePositionResponse> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .closePosition(request);
     });
   }
 }

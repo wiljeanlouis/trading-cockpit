@@ -31,9 +31,12 @@ import {
 import type {
   CreateTradePlanRequest,
   CreateTradePlanResponse,
+  ClosePositionRequest,
+  ClosePositionResponse,
   DashboardSummaryDto,
   ExecuteTradePlanRequest,
   ExecuteTradePlanResponse,
+  OpenPositionsDto,
   TradePlansDto,
   TradingAccountsDto,
   WatchlistDto
@@ -47,7 +50,11 @@ import {
   runGetTradePlans,
   runListTradingAccountsForWeb
 } from '../composition/trade-plan';
-import { runExecuteTradePlanFromWeb } from '../composition/position';
+import {
+  runClosePositionFromWeb,
+  runExecuteTradePlanFromWeb,
+  runGetOpenPositions
+} from '../composition/position';
 
 export function doGet(): GoogleAppsScript.HTML.HtmlOutput {
   return serveReactCockpit();
@@ -75,6 +82,14 @@ export function getTradePlans(): TradePlansDto {
 
 export function executeTradePlan(request: ExecuteTradePlanRequest): ExecuteTradePlanResponse {
   return runExecuteTradePlanFromWeb(request);
+}
+
+export function getOpenPositions(): OpenPositionsDto {
+  return runGetOpenPositions();
+}
+
+export function closePosition(request: ClosePositionRequest): ClosePositionResponse {
+  return runClosePositionFromWeb(request);
 }
 
 export function onOpen(): void {

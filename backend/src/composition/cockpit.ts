@@ -18,7 +18,6 @@ import { GoogleSheetsTradingAccountRepository } from '../adapters/outbound/googl
 import { GoogleSheetsCapitalTransactionRepository } from '../adapters/outbound/google-sheets/capital-transaction/google-sheets-capital-transaction-repository';
 import { GoogleSheetsTradingAccountRiskPolicyRepository } from '../adapters/outbound/google-sheets/trading-account/google-sheets-trading-account-risk-policy-repository';
 import { GoogleSheetsWatchlistRepository } from '../adapters/outbound/google-sheets/watchlist/google-sheets-watchlist-repository';
-import { createClosePosition } from '../core/application/position/close-position';
 import { createReconcileClosedPosition } from '../core/application/position/reconcile-closed-position';
 import { createAddCandidateToWatchlist } from '../core/application/watchlist/add-candidate-to-watchlist';
 import { createListTradingAccounts } from '../core/application/trading-account/list-trading-accounts';
@@ -29,7 +28,7 @@ import {
   type RecordCapitalTransactionDependencies
 } from '../core/application/trading-account/record-capital-transaction';
 import { createTradePlanUseCase } from './trade-plan';
-import { createOpenPositionUseCase } from './position';
+import { createClosePositionUseCase, createOpenPositionUseCase } from './position';
 
 function isExpectedBlock(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
@@ -233,21 +232,15 @@ export function runCloseSelectedPosition(): void {
   const logger = new RuntimeLogger('close-position');
   logger.start();
   let technicalFailureLogged = false;
-  const closePosition = createClosePosition({
-    positionRepository: new GoogleSheetsPositionRepository(),
-    journalRepository: new GoogleSheetsJournalRepository(),
-    watchlistRepository: new GoogleSheetsWatchlistRepository(),
-    runtime: new AppsScriptRuntime(),
-    observe: (event, fields) => {
-      if (event === 'PARTIAL_FAILURE' || event === 'TECHNICAL_FAILURE') {
-        technicalFailureLogged = true;
-        logger.error(
-          String(fields.stage),
-          new Error(String(fields.errorMessage || 'Runtime failure')),
-          fields
-        );
-      } else logger.info(event, fields);
-    }
+  const closePosition = createClosePositionUseCase((event, fields) => {
+    if (event === 'PARTIAL_FAILURE' || event === 'TECHNICAL_FAILURE') {
+      technicalFailureLogged = true;
+      logger.error(
+        String(fields.stage),
+        new Error(String(fields.errorMessage || 'Runtime failure')),
+        fields
+      );
+    } else logger.info(event, fields);
   });
 
   try {

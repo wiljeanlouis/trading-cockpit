@@ -3,6 +3,7 @@ import type { CockpitGateway } from '../infrastructure/cockpit-gateway';
 import { Dashboard } from '../features/dashboard/Dashboard';
 import { Watchlist } from '../features/watchlist/Watchlist';
 import { TradePlans } from '../features/trade-plans/TradePlans';
+import { Positions } from '../features/positions/Positions';
 
 interface AppProps {
   gateway: CockpitGateway;
@@ -41,6 +42,13 @@ export function App({ gateway, development = false }: AppProps) {
             <span aria-hidden="true">◇</span>
             Trade Plans
           </NavLink>
+          <NavLink
+            to="/positions"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+          >
+            <span aria-hidden="true">↗</span>
+            Positions
+          </NavLink>
           <div className="nav-divider" />
           <p>Administration</p>
           <span className="nav-item disabled" aria-disabled="true">
@@ -62,6 +70,7 @@ export function App({ gateway, development = false }: AppProps) {
           <Route path="/" element={<Dashboard gateway={gateway} />} />
           <Route path="/watchlist" element={<Watchlist gateway={gateway} />} />
           <Route path="/trade-plans" element={<TradePlans gateway={gateway} />} />
+          <Route path="/positions" element={<Positions gateway={gateway} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

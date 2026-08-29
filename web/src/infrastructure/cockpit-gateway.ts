@@ -1,9 +1,12 @@
 import type {
   CreateTradePlanRequest,
   CreateTradePlanResponse,
+  ClosePositionRequest,
+  ClosePositionResponse,
   DashboardSummaryDto,
   ExecuteTradePlanRequest,
   ExecuteTradePlanResponse,
+  OpenPositionsDto,
   TradePlansDto,
   TradingAccountsDto,
   WatchlistDto
@@ -16,4 +19,6 @@ export interface CockpitGateway {
   createTradePlan(request: CreateTradePlanRequest): Promise<CreateTradePlanResponse>;
   getTradePlans(): Promise<TradePlansDto>;
   executeTradePlan(request: ExecuteTradePlanRequest): Promise<ExecuteTradePlanResponse>;
+  getOpenPositions(): Promise<OpenPositionsDto>;
+  closePosition(request: ClosePositionRequest): Promise<ClosePositionResponse>;
 }

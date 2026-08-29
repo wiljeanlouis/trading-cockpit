@@ -328,7 +328,8 @@ h2 {
 }
 
 .watchlist-shell,
-.trade-plans-shell {
+.trade-plans-shell,
+.positions-shell {
   max-width: 1440px;
   margin: 0 auto;
   padding: 48px 48px 64px;
@@ -351,7 +352,8 @@ h2 {
   gap: 16px;
 }
 .watchlist-panel,
-.trade-plans-panel {
+.trade-plans-panel,
+.positions-panel {
   overflow: hidden;
   border: 1px solid #1d3045;
   border-radius: 14px;
@@ -628,6 +630,45 @@ h2 {
 .execution-result {
   margin-top: 18px;
 }
+.position-close-form label {
+  color: #8296ad;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.position-close-form input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #2b4650;
+  border-radius: 9px;
+  padding: 0 12px;
+  color: #e6f1f8;
+  background: #0a1826;
+  font: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.position-close-form input:focus {
+  border-color: #4ee1a0;
+  outline: 2px solid rgba(78, 225, 160, 0.14);
+}
+.position-close-form input:disabled {
+  opacity: 0.6;
+}
+.position-success {
+  margin-bottom: 18px;
+}
+.position-success strong,
+.position-success span {
+  margin-right: 4px;
+}
+.positive-value {
+  color: #79e9b4;
+}
+.negative-value {
+  color: #ff9da8;
+}
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -697,7 +738,8 @@ h2 {
   }
   .dashboard-shell,
   .watchlist-shell,
-  .trade-plans-shell {
+  .trade-plans-shell,
+  .positions-shell {
     padding: 36px 26px;
   }
   .metric-grid {

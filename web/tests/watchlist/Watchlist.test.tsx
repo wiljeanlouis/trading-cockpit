@@ -39,7 +39,9 @@ function gateway(getWatchlist: CockpitGateway['getWatchlist']): CockpitGateway {
     })),
     createTradePlan: vi.fn(),
     getTradePlans: vi.fn(),
-    executeTradePlan: vi.fn()
+    executeTradePlan: vi.fn(),
+    getOpenPositions: vi.fn(),
+    closePosition: vi.fn()
   };
 }
 

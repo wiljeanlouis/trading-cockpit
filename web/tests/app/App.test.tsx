@@ -20,7 +20,9 @@ describe('App navigation', () => {
       getTradingAccounts: vi.fn(async () => ({ accounts: [] })),
       createTradePlan: vi.fn(),
       getTradePlans: vi.fn(async () => ({ generatedAt: '2026-08-28T16:04:00.000Z', items: [] })),
-      executeTradePlan: vi.fn()
+      executeTradePlan: vi.fn(),
+      getOpenPositions: vi.fn(),
+      closePosition: vi.fn()
     };
     render(
       <MemoryRouter>
@@ -44,7 +46,9 @@ describe('App navigation', () => {
       getTradingAccounts: vi.fn(async () => ({ accounts: [] })),
       createTradePlan: vi.fn(),
       getTradePlans: vi.fn(async () => ({ generatedAt: '2026-08-28T16:04:00.000Z', items: [] })),
-      executeTradePlan: vi.fn()
+      executeTradePlan: vi.fn(),
+      getOpenPositions: vi.fn(),
+      closePosition: vi.fn()
     };
 
     render(
@@ -68,7 +72,9 @@ describe('App navigation', () => {
         generatedAt: '2026-08-28T16:04:00.000Z',
         items: []
       })),
-      executeTradePlan: vi.fn()
+      executeTradePlan: vi.fn(),
+      getOpenPositions: vi.fn(),
+      closePosition: vi.fn()
     };
     render(
       <MemoryRouter>
@@ -80,5 +86,31 @@ describe('App navigation', () => {
 
     expect(await screen.findByRole('heading', { name: 'Trade Plans' })).toBeInTheDocument();
     expect(gateway.getTradePlans).toHaveBeenCalledOnce();
+  });
+
+  it('opens the Positions workspace from navigation', async () => {
+    const gateway: CockpitGateway = {
+      getDashboardSummary: vi.fn(),
+      getWatchlist: vi.fn(),
+      getTradingAccounts: vi.fn(),
+      createTradePlan: vi.fn(),
+      getTradePlans: vi.fn(),
+      executeTradePlan: vi.fn(),
+      getOpenPositions: vi.fn(async () => ({
+        generatedAt: '2026-08-28T16:04:00.000Z',
+        items: []
+      })),
+      closePosition: vi.fn()
+    };
+    render(
+      <MemoryRouter>
+        <App gateway={gateway} />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('link', { name: 'Positions' }));
+
+    expect(await screen.findByRole('heading', { name: 'Positions' })).toBeInTheDocument();
+    expect(gateway.getOpenPositions).toHaveBeenCalledOnce();
   });
 });

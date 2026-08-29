@@ -1,9 +1,13 @@
 import type {
   CreateTradePlanRequest,
   CreateTradePlanResponse,
+  ClosePositionRequest,
+  ClosePositionResponse,
   DashboardSummaryDto,
   ExecuteTradePlanRequest,
   ExecuteTradePlanResponse,
+  OpenPositionsDto,
+  PositionItemDto,
   TradePlanItemDto,
   TradePlansDto,
   TradingAccountsDto,
@@ -134,9 +138,38 @@ const DEVELOPMENT_TRADE_PLANS: TradePlanItemDto[] = [
   }
 ];
 
+const DEVELOPMENT_POSITIONS: PositionItemDto[] = [
+  {
+    id: 'DEMO-P-BOX-DEMO-CAD',
+    accountId: 'DEMO-CAD',
+    tradePlanId: 'DEMO-TP-BOX',
+    watchlistId: 'W-BOX-20260827',
+    ticker: 'BOX',
+    strategyId: 'MOMENTUM_BREAKOUT',
+    strategyName: 'Momentum Breakout',
+    strategyVersion: '1.0',
+    openedAt: '2026-08-28T15:30:00.000Z',
+    plannedEntry: 35,
+    actualEntry: 35,
+    plannedQuantity: 45,
+    actualQuantity: 45,
+    initialStop: 32.8,
+    currentStop: 32.8,
+    target: 40,
+    plannedMaxRisk: 100,
+    plannedRiskReward: 2.27,
+    currentPrice: 35.6,
+    unrealizedPnl: 27,
+    unrealizedPnlPercent: 0.0171,
+    status: 'OPEN',
+    notes: 'Development fixture'
+  }
+];
+
 export class MockCockpitGateway implements CockpitGateway {
   private watchlistItems = DEVELOPMENT_WATCHLIST.items.map((item) => ({ ...item }));
   private tradePlanItems = DEVELOPMENT_TRADE_PLANS.map((item) => ({ ...item }));
+  private positionItems = DEVELOPMENT_POSITIONS.map((item) => ({ ...item }));
   async getDashboardSummary(): Promise<DashboardSummaryDto> {
     await new Promise((resolve) => setTimeout(resolve, 250));
     return { ...DEVELOPMENT_SUMMARY, generatedAt: new Date().toISOString() };
@@ -199,6 +232,31 @@ export class MockCockpitGateway implements CockpitGateway {
       actualEntry: plan.entryPrice,
       actualQuantity: plan.positionSize,
       positionStatus: 'OPEN'
+    };
+  }
+
+  async getOpenPositions(): Promise<OpenPositionsDto> {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    return {
+      generatedAt: new Date().toISOString(),
+      items: this.positionItems.map((item) => ({ ...item }))
+    };
+  }
+
+  async closePosition(request: ClosePositionRequest): Promise<ClosePositionResponse> {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const index = this.positionItems.findIndex((position) => position.id === request.positionId);
+    if (index < 0) throw new Error(`Development Position not found: ${request.positionId}`);
+    const [position] = this.positionItems.splice(index, 1);
+    return {
+      positionId: position.id,
+      accountId: position.accountId,
+      ticker: position.ticker,
+      status: 'CLOSED',
+      closedAt: new Date().toISOString(),
+      exitPrice: request.exitPrice,
+      realizedPnl: null,
+      journalCreated: true
     };
   }
 }

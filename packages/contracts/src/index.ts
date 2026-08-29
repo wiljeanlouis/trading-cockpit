@@ -10,3 +10,9 @@ export type {
   TradingAccountDto,
   TradingAccountsDto
 } from './trade-plan';
+export type {
+  ClosePositionRequest,
+  ClosePositionResponse,
+  OpenPositionsDto,
+  PositionItemDto
+} from './position';

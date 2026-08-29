@@ -151,4 +151,48 @@ describe('AppsScriptCockpitGateway', () => {
     await expect(new AppsScriptCockpitGateway().executeTradePlan(command)).resolves.toEqual(result);
     expect(runner.executeTradePlan).toHaveBeenCalledWith(command);
   });
+
+  it('loads open Positions through the Apps Script callback bridge', async () => {
+    const positions = { generatedAt: summary.generatedAt, items: [] };
+    let success: ((value: typeof positions) => void) | undefined;
+    const runner = {
+      withSuccessHandler: vi.fn((handler) => {
+        success = handler;
+        return runner;
+      }),
+      withFailureHandler: vi.fn(() => runner),
+      getOpenPositions: vi.fn(() => success?.(positions))
+    };
+    vi.stubGlobal('google', { script: { run: runner } });
+
+    await expect(new AppsScriptCockpitGateway().getOpenPositions()).resolves.toEqual(positions);
+    expect(runner.getOpenPositions).toHaveBeenCalledOnce();
+  });
+
+  it('sends an explicit Position close command through the Apps Script bridge', async () => {
+    const result = {
+      positionId: 'P-1',
+      accountId: 'A1',
+      ticker: 'BOX',
+      status: 'CLOSED',
+      closedAt: summary.generatedAt,
+      exitPrice: 38,
+      realizedPnl: 135,
+      journalCreated: true
+    };
+    let success: ((value: typeof result) => void) | undefined;
+    const runner = {
+      withSuccessHandler: vi.fn((handler) => {
+        success = handler;
+        return runner;
+      }),
+      withFailureHandler: vi.fn(() => runner),
+      closePosition: vi.fn(() => success?.(result))
+    };
+    vi.stubGlobal('google', { script: { run: runner } });
+    const command = { positionId: 'P-1', exitPrice: 38 };
+
+    await expect(new AppsScriptCockpitGateway().closePosition(command)).resolves.toEqual(result);
+    expect(runner.closePosition).toHaveBeenCalledWith(command);
+  });
 });
