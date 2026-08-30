@@ -32,32 +32,31 @@ export function mapTradingStrategyRow(
 
 export class GoogleSheetsTradingStrategyReader {
   getById(strategyId: string): SheetTradingStrategy {
+    const strategies = this.listAll();
+    const expected = String(strategyId).trim().toUpperCase();
+    const strategy = strategies.find((candidate) => candidate.id.trim().toUpperCase() === expected);
+    if (!strategy) throw new Error(`Stratégie inconnue : ${strategyId}`);
+    return strategy;
+  }
+
+  listAll(): SheetTradingStrategy[] {
     const sheet = getTradingCockpitSpreadsheet().getSheetByName(STRATEGIES_SHEET_NAME);
     if (!sheet || sheet.getLastRow() <= 1) {
       throw new Error('Aucune stratégie configurée.');
     }
     const headers = readSheetHeaders(sheet);
-    const idIndex = requireColumn(headers, 'Strategy ID');
-    const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues();
-    const expected = String(strategyId).trim().toUpperCase();
-    const row = rows.find(
-      (candidate) =>
-        String(candidate[idIndex] || '')
-          .trim()
-          .toUpperCase() === expected
-    );
-    if (!row) throw new Error(`Stratégie inconnue : ${strategyId}`);
-    return mapTradingStrategyRow(headers, row);
-  }
-
-  listEnabled(): SheetTradingStrategy[] {
-    const sheet = getTradingCockpitSpreadsheet().getSheetByName(STRATEGIES_SHEET_NAME);
-    if (!sheet || sheet.getLastRow() <= 1) return [];
-    const headers = readSheetHeaders(sheet);
     return sheet
       .getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn())
       .getValues()
-      .map((row) => mapTradingStrategyRow(headers, row))
-      .filter((strategy) => strategy.enabled);
+      .map((row) => mapTradingStrategyRow(headers, row));
+  }
+
+  listEnabled(): SheetTradingStrategy[] {
+    try {
+      return this.listAll().filter((strategy) => strategy.enabled);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'Aucune stratégie configurée.') return [];
+      throw error;
+    }
   }
 }

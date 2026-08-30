@@ -2,6 +2,7 @@ import { refreshMomentumRankingFromSheets } from '../adapters/inbound/google-she
 import { AppsScriptRuntime } from '../adapters/outbound/apps-script/apps-script-runtime';
 import { GoogleSheetsStrategyRepository } from '../adapters/outbound/google-sheets/trading-strategy/google-sheets-strategy-repository';
 import { GoogleSheetsWatchlistRepository } from '../adapters/outbound/google-sheets/watchlist/google-sheets-watchlist-repository';
+import { GoogleSheetsWatchlistReader } from '../adapters/outbound/google-sheets/watchlist/google-sheets-watchlist-reader';
 import { GoogleSheetsMomentumRankingProjection } from '../adapters/outbound/google-sheets/momentum/google-sheets-momentum-ranking-projection';
 import { GoogleSheetsMomentumRankingReader } from '../adapters/outbound/google-sheets/momentum/google-sheets-momentum-ranking-reader';
 import {
@@ -43,7 +44,7 @@ export function runRefreshMomentumRanking(): void {
 export function runGetMomentumRanking(): MomentumRankingDto {
   return createGetMomentumRanking({
     reader: new GoogleSheetsMomentumRankingReader(),
-    watchlistRepository: new GoogleSheetsWatchlistRepository(),
+    watchlistReader: new GoogleSheetsWatchlistReader(),
     now: () => new Date()
   })();
 }

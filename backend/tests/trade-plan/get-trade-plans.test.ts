@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { TradePlan } from '../../src/core/domain/trade-plan';
 import { createGetTradePlans } from '../../src/core/application/trade-plan/get-trade-plans';
 
@@ -39,7 +39,7 @@ describe('get Trade Plans', () => {
   it('returns persisted financial snapshots without recalculating them', () => {
     const result = createGetTradePlans({
       reader: { findAll: () => [plan] },
-      strategyRepository: { existsById: () => true },
+      strategyIds: () => ['BREAKOUT'],
       now: () => new Date('2026-08-28T16:00:00.000Z')
     })();
 
@@ -97,7 +97,7 @@ describe('get Trade Plans', () => {
           }
         ]
       },
-      strategyRepository: { existsById: () => true },
+      strategyIds: () => ['BREAKOUT'],
       now: () => new Date()
     })();
 
@@ -108,6 +108,45 @@ describe('get Trade Plans', () => {
       accountEquity: null,
       riskPercent: null,
       executionEligibility: { eligible: false, reason: "BOX n'a pas d'Entry Price." }
+    });
+  });
+
+  it('loads configured Strategy IDs once for multiple Trade Plans', () => {
+    const findAllPlans = vi.fn(() => [
+      plan,
+      { ...plan, id: 'TP-2', ticker: 'URBN' },
+      { ...plan, id: 'TP-3', ticker: 'DK' }
+    ]);
+    const strategyIds = vi.fn(() => ['BREAKOUT']);
+
+    const result = createGetTradePlans({
+      reader: { findAll: findAllPlans },
+      strategyIds,
+      now: () => new Date('2026-08-28T16:00:00.000Z')
+    })();
+
+    expect(findAllPlans).toHaveBeenCalledTimes(1);
+    expect(strategyIds).toHaveBeenCalledTimes(1);
+    expect(result.items).toHaveLength(3);
+    expect(result.items.map((item) => item.executionEligibility)).toEqual([
+      { eligible: true, reason: null },
+      { eligible: true, reason: null },
+      { eligible: true, reason: null }
+    ]);
+  });
+
+  it('preserves Strategy lookup failures as execution eligibility reasons', () => {
+    const result = createGetTradePlans({
+      reader: { findAll: () => [plan] },
+      strategyIds: () => {
+        throw new Error('Aucune stratégie configurée.');
+      },
+      now: () => new Date('2026-08-28T16:00:00.000Z')
+    })();
+
+    expect(result.items[0].executionEligibility).toEqual({
+      eligible: false,
+      reason: 'Aucune stratégie configurée.'
     });
   });
 });

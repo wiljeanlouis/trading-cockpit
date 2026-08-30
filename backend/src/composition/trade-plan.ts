@@ -17,6 +17,7 @@ import { GoogleSheetsTradePlanRepository } from '../adapters/outbound/google-she
 import { GoogleSheetsTradePlanReader } from '../adapters/outbound/google-sheets/trade-plan/google-sheets-trade-plan-reader';
 import { GoogleSheetsTradingAccountRepository } from '../adapters/outbound/google-sheets/trading-account/google-sheets-trading-account-repository';
 import { GoogleSheetsTradingAccountRiskPolicyRepository } from '../adapters/outbound/google-sheets/trading-account/google-sheets-trading-account-risk-policy-repository';
+import { GoogleSheetsTradingStrategyReader } from '../adapters/outbound/google-sheets/trading-strategy/google-sheets-trading-strategy-reader';
 import { GoogleSheetsStrategyRepository } from '../adapters/outbound/google-sheets/trading-strategy/google-sheets-strategy-repository';
 import { GoogleSheetsWatchlistRepository } from '../adapters/outbound/google-sheets/watchlist/google-sheets-watchlist-repository';
 import {
@@ -62,9 +63,10 @@ export function runCreateTradePlanFromWeb(
 }
 
 export function runGetTradePlans(): TradePlansDto {
+  const strategyReader = new GoogleSheetsTradingStrategyReader();
   return createGetTradePlans({
     reader: new GoogleSheetsTradePlanReader(),
-    strategyRepository: new GoogleSheetsStrategyRepository(),
+    strategyIds: () => strategyReader.listAll().map((strategy) => strategy.id),
     now: () => new Date()
   })();
 }
