@@ -1,5 +1,5 @@
 import { JOURNAL_HEADERS } from './journal-mapper';
-import { readSheetHeaders, requireColumn } from '../sheet-headers';
+import { readSheetHeaders, requireColumn, requireSheetHeaders } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 import { themeJournal } from '../../../inbound/google-sheets/theme/theme';
 
@@ -23,13 +23,11 @@ export function getOrCreateJournalSheet(): GoogleAppsScript.Spreadsheet.Sheet {
 }
 
 export function validateJournalSchema(sheet: GoogleAppsScript.Spreadsheet.Sheet): boolean {
-  const headers = readSheetHeaders(sheet);
-  for (const header of HISTORICAL_HEADERS) {
-    if (!headers.includes(header)) {
-      throw new Error(`Journal utilise un ancien schéma. Colonne absente : ${header}`);
-    }
-  }
-  return true;
+  return validateJournalHeaders(readSheetHeaders(sheet));
+}
+
+export function validateJournalHeaders(headers: readonly unknown[]): true {
+  return requireSheetHeaders(headers, HISTORICAL_HEADERS, 'Journal');
 }
 
 export function ensureJournalAccountColumn(sheet: GoogleAppsScript.Spreadsheet.Sheet): void {

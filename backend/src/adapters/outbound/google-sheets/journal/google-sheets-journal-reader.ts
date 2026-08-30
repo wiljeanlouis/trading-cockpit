@@ -1,9 +1,9 @@
 import type { JournalEntry } from '../../../../core/domain/journal-entry';
 import type { JournalReader } from '../../../../ports/outbound/journal-reader';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
-import { readSheetHeaders } from '../sheet-headers';
+import { readSheetTable } from '../sheet-headers';
 import { journalEntryFromRow } from './journal-mapper';
-import { validateJournalSchema } from './journal-sheet';
+import { validateJournalHeaders } from './journal-sheet';
 
 const JOURNAL_SHEET_NAME = 'Journal';
 
@@ -12,17 +12,12 @@ export class GoogleSheetsJournalReader implements JournalReader {
     const sheet = getTradingCockpitSpreadsheet().getSheetByName(JOURNAL_SHEET_NAME);
     if (!sheet) throw new Error(`${JOURNAL_SHEET_NAME} est absent.`);
 
-    validateJournalSchema(sheet);
-    const lastRow = sheet.getLastRow();
-    if (lastRow <= 1) return [];
-
-    const headers = readSheetHeaders(sheet);
+    const { headers, rows } = readSheetTable(sheet);
+    validateJournalHeaders(headers);
     const hasAccountId = headers.includes('Account ID');
     const mapperHeaders = hasAccountId ? headers : [...headers, 'Account ID'];
 
-    return sheet
-      .getRange(2, 1, lastRow - 1, sheet.getLastColumn())
-      .getValues()
+    return rows
       .map((row) => journalEntryFromRow(mapperHeaders, hasAccountId ? row : [...row, '']))
       .filter((entry) => Boolean(entry.id));
   }

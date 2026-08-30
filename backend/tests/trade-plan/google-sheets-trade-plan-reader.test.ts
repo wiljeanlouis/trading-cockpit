@@ -47,9 +47,12 @@ function sheetWith(rows: unknown[][]) {
   return {
     getLastRow: () => rows.length + 1,
     getLastColumn: () => TRADE_PLAN_HEADERS.length,
-    getRange: (row: number) => ({
-      getValues: () => (row === 1 ? [[...TRADE_PLAN_HEADERS]] : rows)
-    })
+    getRange: vi.fn((row: number, _column: number, numberOfRows: number) => ({
+      getValues: () =>
+        row === 1 && numberOfRows > 1
+          ? [[...TRADE_PLAN_HEADERS], ...rows]
+          : [[...TRADE_PLAN_HEADERS]]
+    }))
   };
 }
 
@@ -66,6 +69,8 @@ describe('Google Sheets Trade Plan reader', () => {
       ticker: 'BOX',
       status: 'READY'
     });
+    expect(sheet.getRange).toHaveBeenCalledTimes(1);
+    expect(sheet.getRange).toHaveBeenCalledWith(1, 1, 2, TRADE_PLAN_HEADERS.length);
   });
 
   it('returns an empty list for a header-only sheet', () => {

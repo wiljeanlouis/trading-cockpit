@@ -1,5 +1,5 @@
 import { POSITION_HEADERS } from './position-mapper';
-import { readSheetHeaders, requireColumn } from '../sheet-headers';
+import { readSheetHeaders, requireColumn, requireSheetHeaders } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 import { themePositions } from '../../../inbound/google-sheets/theme/theme';
 
@@ -24,13 +24,11 @@ export function getOrCreatePositionsSheet(): GoogleAppsScript.Spreadsheet.Sheet 
 }
 
 export function validatePositionsSchema(sheet: GoogleAppsScript.Spreadsheet.Sheet): boolean {
-  const headers = readSheetHeaders(sheet);
-  for (const header of HISTORICAL_HEADERS) {
-    if (!headers.includes(header)) {
-      throw new Error(`Positions utilise un ancien schéma. Colonne absente : ${header}`);
-    }
-  }
-  return true;
+  return validatePositionsHeaders(readSheetHeaders(sheet));
+}
+
+export function validatePositionsHeaders(headers: readonly unknown[]): true {
+  return requireSheetHeaders(headers, HISTORICAL_HEADERS, 'Positions');
 }
 
 export function ensurePositionAccountColumn(sheet: GoogleAppsScript.Spreadsheet.Sheet): void {

@@ -6,6 +6,7 @@ import {
   capitalTransactionsFromRowsForAccount
 } from './capital-transaction-mapper';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
+import { readSheetTable } from '../sheet-headers';
 
 const CAPITAL_LEDGER_SHEET_NAME = 'Capital Ledger';
 
@@ -20,15 +21,10 @@ export class GoogleSheetsCapitalTransactionRepository implements CapitalTransact
 
   findByAccountId(accountId: string): CapitalTransaction[] {
     const sheet = this.getOrCreateSheet();
-    if (sheet.getLastRow() <= 1) return [];
-    const headers = sheet
-      .getRange(1, 1, 1, sheet.getLastColumn())
-      .getValues()[0]
-      .map((value) => String(value).trim());
+    const { headers, rows } = readSheetTable(sheet);
     const normalizedId = String(accountId || '')
       .trim()
       .toUpperCase();
-    const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).getValues();
     return capitalTransactionsFromRowsForAccount(headers, rows, normalizedId);
   }
 

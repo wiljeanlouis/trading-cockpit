@@ -65,14 +65,38 @@ describe('trading strategy row characterization', () => {
     const sheet = {
       getLastRow: () => 3,
       getLastColumn: () => headers.length,
-      getRange: (...args: unknown[]) => ({
-        getValues: () => (args[0] === 1 ? [headers] : rows)
+      getRange: (_row: number, _column: number, numberOfRows: number) => ({
+        getValues: () => (numberOfRows > 1 ? [headers, ...rows] : [headers])
       })
     };
     vi.stubGlobal('SpreadsheetApp', {
       getActiveSpreadsheet: () => ({ getSheetByName: () => sheet })
     });
     expect(new GoogleSheetsTradingStrategyReader().getById(' abc ').name).toBe('First');
+  });
+
+  it('reads Strategy headers and rows once when listing all strategies', () => {
+    const rows = [
+      ['ABC', 'First', 'V1', 'MOMENTUM', true, 0.01, 1, ''],
+      ['DEF', 'Second', 'V1', 'MOMENTUM', false, 0.01, 1, '']
+    ];
+    const sheet = {
+      getLastRow: () => 3,
+      getLastColumn: () => headers.length,
+      getRange: vi.fn((row: number, _column: number, numberOfRows: number) => ({
+        getValues: () => (row === 1 && numberOfRows > 1 ? [headers, ...rows] : [headers])
+      }))
+    };
+    vi.stubGlobal('SpreadsheetApp', {
+      getActiveSpreadsheet: () => ({ getSheetByName: () => sheet })
+    });
+
+    expect(new GoogleSheetsTradingStrategyReader().listAll().map((item) => item.id)).toEqual([
+      'ABC',
+      'DEF'
+    ]);
+    expect(sheet.getRange).toHaveBeenCalledTimes(1);
+    expect(sheet.getRange).toHaveBeenCalledWith(1, 1, 3, headers.length);
   });
 
   it('preserves the absent registry error', () => {

@@ -1,5 +1,5 @@
 import { TRADE_PLAN_HEADERS } from './trade-plan-mapper';
-import { readSheetHeaders, requireColumn } from '../sheet-headers';
+import { readSheetHeaders, requireColumn, requireSheetHeaders } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 import { themeTradePlans } from '../../../inbound/google-sheets/theme/theme';
 
@@ -23,13 +23,11 @@ export function getOrCreateTradePlansSheet(): GoogleAppsScript.Spreadsheet.Sheet
 }
 
 export function validateTradePlansSchema(sheet: GoogleAppsScript.Spreadsheet.Sheet): true {
-  const headers = readSheetHeaders(sheet);
-  HISTORICAL_HEADERS.forEach((header) => {
-    if (!headers.includes(header)) {
-      throw new Error(`Trade Plans utilise un ancien schéma. Colonne absente : ${header}`);
-    }
-  });
-  return true;
+  return validateTradePlansHeaders(readSheetHeaders(sheet));
+}
+
+export function validateTradePlansHeaders(headers: readonly unknown[]): true {
+  return requireSheetHeaders(headers, HISTORICAL_HEADERS, 'Trade Plans');
 }
 
 export function refreshTradePlanValidations(sheet: GoogleAppsScript.Spreadsheet.Sheet): void {

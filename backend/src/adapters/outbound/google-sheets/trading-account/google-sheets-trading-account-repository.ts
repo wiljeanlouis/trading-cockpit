@@ -5,6 +5,7 @@ import {
 import type { TradingAccountRepository } from '../../../../ports/outbound/trading-account-repository';
 import { TRADING_ACCOUNT_HEADERS, tradingAccountFromRow } from './trading-account-mapper';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
+import { readSheetTable } from '../sheet-headers';
 
 const ACCOUNTS_SHEET_NAME = 'Accounts';
 
@@ -18,14 +19,9 @@ export class GoogleSheetsTradingAccountRepository implements TradingAccountRepos
 
   findAll(): TradingAccount[] {
     const sheet = this.getOrCreateSheet();
-    if (sheet.getLastRow() <= 1) return [];
-    const headers = sheet
-      .getRange(1, 1, 1, sheet.getLastColumn())
-      .getValues()[0]
-      .map((value) => String(value).trim());
-    const accounts = sheet
-      .getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn())
-      .getValues()
+    const { headers, rows } = readSheetTable(sheet);
+    this.ensureRiskColumn(sheet, headers);
+    const accounts = rows
       .filter((row) => row.some((value) => String(value || '').trim()))
       .map((row) => tradingAccountFromRow(headers, row));
     requireUniqueTradingAccountIds(accounts);
@@ -35,19 +31,7 @@ export class GoogleSheetsTradingAccountRepository implements TradingAccountRepos
   private getOrCreateSheet(): GoogleAppsScript.Spreadsheet.Sheet {
     const spreadsheet = getTradingCockpitSpreadsheet();
     const existing = spreadsheet.getSheetByName(ACCOUNTS_SHEET_NAME);
-    if (existing) {
-      const headers = existing
-        .getRange(1, 1, 1, existing.getLastColumn())
-        .getValues()[0]
-        .map((value) => String(value).trim());
-      if (!headers.includes('Risk % Per Trade')) {
-        existing
-          .getRange(1, existing.getLastColumn() + 1)
-          .setValue('Risk % Per Trade')
-          .setFontWeight('bold');
-      }
-      return existing;
-    }
+    if (existing) return existing;
 
     const sheet = spreadsheet.insertSheet(ACCOUNTS_SHEET_NAME);
     sheet
@@ -57,5 +41,17 @@ export class GoogleSheetsTradingAccountRepository implements TradingAccountRepos
     sheet.setFrozenRows(1);
     sheet.autoResizeColumns(1, TRADING_ACCOUNT_HEADERS.length);
     return sheet;
+  }
+
+  private ensureRiskColumn(
+    sheet: GoogleAppsScript.Spreadsheet.Sheet,
+    headers: readonly string[]
+  ): void {
+    if (!headers.includes('Risk % Per Trade')) {
+      sheet
+        .getRange(1, sheet.getLastColumn() + 1)
+        .setValue('Risk % Per Trade')
+        .setFontWeight('bold');
+    }
   }
 }

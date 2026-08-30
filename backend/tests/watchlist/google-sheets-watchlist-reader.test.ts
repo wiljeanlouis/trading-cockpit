@@ -10,8 +10,9 @@ function stubSpreadsheet(rows: unknown[][], includeWatchlist = true) {
   const sheet = {
     getLastRow: () => rows.length + 1,
     getLastColumn: () => WATCHLIST_HEADERS.length,
-    getRange: vi.fn((row: number) => ({
-      getValues: () => (row === 1 ? [[...WATCHLIST_HEADERS]] : rows)
+    getRange: vi.fn((row: number, _column: number, numberOfRows: number) => ({
+      getValues: () =>
+        row === 1 && numberOfRows > 1 ? [[...WATCHLIST_HEADERS], ...rows] : [[...WATCHLIST_HEADERS]]
     }))
   };
   vi.stubGlobal('SpreadsheetApp', {
@@ -45,7 +46,8 @@ describe('GoogleSheetsWatchlistReader', () => {
     expect(new GoogleSheetsWatchlistReader().findAll()).toEqual([
       expect.objectContaining({ id: 'W1', ticker: 'BOX', currentPrice: 34.82, status: 'READY' })
     ]);
-    expect(sheet.getRange).toHaveBeenCalledWith(2, 1, 1, WATCHLIST_HEADERS.length);
+    expect(sheet.getRange).toHaveBeenCalledTimes(1);
+    expect(sheet.getRange).toHaveBeenCalledWith(1, 1, 2, WATCHLIST_HEADERS.length);
   });
 
   it('returns an empty list for a header-only Watchlist', () => {

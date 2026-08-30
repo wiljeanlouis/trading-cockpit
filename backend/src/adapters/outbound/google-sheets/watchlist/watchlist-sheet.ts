@@ -1,5 +1,5 @@
 import { WATCHLIST_HEADERS } from './watchlist-mapper';
-import { readSheetHeaders, requireColumn } from '../sheet-headers';
+import { readSheetHeaders, requireColumn, requireSheetHeaders } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 import { themeWatchlist } from '../../../inbound/google-sheets/theme/theme';
 
@@ -19,13 +19,11 @@ export function getOrCreateWatchlistSheet(): GoogleAppsScript.Spreadsheet.Sheet 
 }
 
 export function validateWatchlistSchema(sheet: GoogleAppsScript.Spreadsheet.Sheet): true {
-  const headers = readSheetHeaders(sheet);
-  WATCHLIST_HEADERS.forEach((header) => {
-    if (!headers.includes(header)) {
-      throw new Error(`Watchlist utilise un ancien schéma. Colonne absente : ${header}`);
-    }
-  });
-  return true;
+  return validateWatchlistHeaders(readSheetHeaders(sheet));
+}
+
+export function validateWatchlistHeaders(headers: readonly unknown[]): true {
+  return requireSheetHeaders(headers, WATCHLIST_HEADERS, 'Watchlist');
 }
 
 export function addWatchlistFormulas(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number): void {
