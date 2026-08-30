@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   MOMENTUM_RANKING_SETUP_HEADERS,
   MOMENTUM_SCORE_CONFIG_VALUES
-} from '../../src/adapters/inbound/google-sheets/setup-momentum-ranking';
+} from '../../src/adapters/inbound/google-sheets/ui/setup-momentum-ranking';
 import {
   STRATEGY_HEADERS,
   STRATEGY_TYPE_VALUES
-} from '../../src/adapters/inbound/google-sheets/setup-strategies';
+} from '../../src/adapters/inbound/google-sheets/ui/setup-strategies';
 
 describe('legacy setup data characterization', () => {
   it('preserves the eight-column Strategies schema and type list', () => {

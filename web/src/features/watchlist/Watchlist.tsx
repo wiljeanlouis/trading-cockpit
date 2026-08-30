@@ -127,6 +127,7 @@ export function Watchlist({ gateway }: WatchlistProps) {
     error: null
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [refreshingSignals, setRefreshingSignals] = useState(false);
 
   const load = useCallback(async () => {
     setState((current) => ({ ...current, loading: true, error: null }));
@@ -145,6 +146,17 @@ export function Watchlist({ gateway }: WatchlistProps) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  async function refreshFinvizSignals() {
+    if (refreshingSignals) return;
+    setRefreshingSignals(true);
+    try {
+      await gateway.refreshFinviz();
+      await load();
+    } finally {
+      setRefreshingSignals(false);
+    }
+  }
 
   const table = useCockpitTable<WatchlistItemDto, WatchlistSortKey>({
     items: state.data?.items ?? [],
@@ -197,9 +209,16 @@ export function Watchlist({ gateway }: WatchlistProps) {
           {state.data && (
             <UpdatedAt>Updated {formattedTimestamp(state.data.generatedAt)}</UpdatedAt>
           )}
-          <Button onClick={() => void load()} disabled={state.loading}>
+          <Button
+            onClick={() => void refreshFinvizSignals()}
+            disabled={state.loading || refreshingSignals}
+          >
             <span aria-hidden="true">↻</span>
-            {state.loading ? 'Refreshing' : 'Refresh'}
+            {refreshingSignals
+              ? 'Refreshing signals'
+              : state.loading
+                ? 'Refreshing'
+                : 'Refresh Finviz'}
           </Button>
         </PageActions>
       </PageHeader>

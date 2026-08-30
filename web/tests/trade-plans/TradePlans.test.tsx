@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { TradePlansDto } from '@trading-cockpit/contracts';
-import type { CockpitGateway } from '../../src/infrastructure/cockpit-gateway';
 import { TradePlans } from '../../src/features/trade-plans/TradePlans';
+import { createGatewayStub } from '../support/cockpit-gateway';
 
 const data: TradePlansDto = {
   generatedAt: '2026-08-28T16:04:00.000Z',
@@ -43,25 +43,10 @@ const data: TradePlansDto = {
   ]
 };
 
-function gateway(getTradePlans: CockpitGateway['getTradePlans']): CockpitGateway {
-  return {
-    getTradePlans,
-    getDashboardSummary: vi.fn(),
-    getWatchlist: vi.fn(),
-    getTradingAccounts: vi.fn(),
-    createTradePlan: vi.fn(),
-    executeTradePlan: vi.fn(),
-    getOpenPositions: vi.fn(),
-    closePosition: vi.fn(),
-    getJournal: vi.fn(),
-    updateTradePlanPlanning: vi.fn()
-  };
-}
-
 describe('Trade Plans', () => {
   it('loads automatically and renders persisted planning values in aligned columns', async () => {
     const load = vi.fn(async () => data);
-    render(<TradePlans gateway={gateway(load)} />);
+    render(<TradePlans gateway={createGatewayStub({ getTradePlans: load })} />);
 
     expect(screen.getByText('Loading Trade Plans…')).toBeInTheDocument();
     const row = await screen.findByRole('row', { name: /BOX/ });
@@ -75,7 +60,7 @@ describe('Trade Plans', () => {
   });
 
   it('opens a read-only detail modal using backend snapshots', async () => {
-    render(<TradePlans gateway={gateway(vi.fn(async () => data))} />);
+    render(<TradePlans gateway={createGatewayStub({ getTradePlans: vi.fn(async () => data) })} />);
     fireEvent.click(await screen.findByRole('button', { name: 'View BOX Trade Plan' }));
 
     const dialog = screen.getByRole('dialog', { name: 'BOX' });
@@ -96,11 +81,11 @@ describe('Trade Plans', () => {
 
   it('renders empty, error/retry, and refresh states', async () => {
     const load = vi
-      .fn<CockpitGateway['getTradePlans']>()
+      .fn()
       .mockRejectedValueOnce(new Error('Trade Plans unavailable'))
       .mockResolvedValueOnce({ ...data, items: [] })
       .mockResolvedValueOnce(data);
-    render(<TradePlans gateway={gateway(load)} />);
+    render(<TradePlans gateway={createGatewayStub({ getTradePlans: load })} />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Trade Plans unavailable');
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
@@ -113,7 +98,7 @@ describe('Trade Plans', () => {
   it('keeps the last successful rows visible during manual refresh', async () => {
     let resolveRefresh: ((value: TradePlansDto) => void) | undefined;
     const load = vi
-      .fn<CockpitGateway['getTradePlans']>()
+      .fn()
       .mockResolvedValueOnce(data)
       .mockImplementationOnce(
         () =>
@@ -121,7 +106,7 @@ describe('Trade Plans', () => {
             resolveRefresh = resolve;
           })
       );
-    render(<TradePlans gateway={gateway(load)} />);
+    render(<TradePlans gateway={createGatewayStub({ getTradePlans: load })} />);
     expect(await screen.findByText('BOX')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
@@ -133,24 +118,26 @@ describe('Trade Plans', () => {
 
   it('requires confirmation, executes through the gateway, and refreshes backend state', async () => {
     const load = vi
-      .fn<CockpitGateway['getTradePlans']>()
+      .fn()
       .mockResolvedValueOnce(data)
       .mockResolvedValueOnce({
         ...data,
         items: [{ ...data.items[0], status: 'EXECUTED' }]
       });
-    const cockpit = gateway(load);
-    cockpit.executeTradePlan = vi.fn(async () => ({
-      kind: 'opened' as const,
-      positionId: 'P-1',
-      tradePlanId: 'TP-1',
-      accountId: 'A1',
-      ticker: 'BOX',
-      openedAt: '2026-08-28T18:00:00.000Z',
-      actualEntry: 35,
-      actualQuantity: 45,
-      positionStatus: 'OPEN'
-    }));
+    const cockpit = createGatewayStub({
+      getTradePlans: load,
+      executeTradePlan: vi.fn(async () => ({
+        kind: 'opened' as const,
+        positionId: 'P-1',
+        tradePlanId: 'TP-1',
+        accountId: 'A1',
+        ticker: 'BOX',
+        openedAt: '2026-08-28T18:00:00.000Z',
+        actualEntry: 35,
+        actualQuantity: 45,
+        positionStatus: 'OPEN'
+      }))
+    });
     render(<TradePlans gateway={cockpit} />);
     fireEvent.click(await screen.findByRole('button', { name: 'View BOX Trade Plan' }));
 
@@ -170,9 +157,11 @@ describe('Trade Plans', () => {
   });
 
   it('shows backend validation errors without pretending execution succeeded', async () => {
-    const cockpit = gateway(vi.fn(async () => data));
-    cockpit.executeTradePlan = vi.fn(async () => {
-      throw new Error("BOX n'a pas d'Entry Price.");
+    const cockpit = createGatewayStub({
+      getTradePlans: vi.fn(async () => data),
+      executeTradePlan: vi.fn(async () => {
+        throw new Error("BOX n'a pas d'Entry Price.");
+      })
     });
     render(<TradePlans gateway={cockpit} />);
     fireEvent.click(await screen.findByRole('button', { name: 'View BOX Trade Plan' }));
@@ -187,8 +176,8 @@ describe('Trade Plans', () => {
   it('renders invalid numeric values as incomplete and hides execution', async () => {
     render(
       <TradePlans
-        gateway={gateway(
-          vi.fn(async () => ({
+        gateway={createGatewayStub({
+          getTradePlans: vi.fn(async () => ({
             ...data,
             items: [
               {
@@ -208,7 +197,7 @@ describe('Trade Plans', () => {
               }
             ]
           }))
-        )}
+        })}
       />
     );
     fireEvent.click(await screen.findByRole('button', { name: 'View BOX Trade Plan' }));
@@ -233,14 +222,16 @@ describe('Trade Plans', () => {
       executionEligibility: { eligible: false, reason: "BOX n'a pas d'Entry Price." }
     };
     const load = vi
-      .fn<CockpitGateway['getTradePlans']>()
+      .fn()
       .mockResolvedValueOnce({ ...data, items: [incomplete] })
       .mockResolvedValueOnce({ ...data, items: [{ ...data.items[0], status: 'DRAFT' }] });
-    const cockpit = gateway(load);
-    cockpit.updateTradePlanPlanning = vi.fn(async () => ({
-      tradePlanId: 'TP-1',
-      status: 'DRAFT'
-    }));
+    const cockpit = createGatewayStub({
+      getTradePlans: load,
+      updateTradePlanPlanning: vi.fn(async () => ({
+        tradePlanId: 'TP-1',
+        status: 'DRAFT'
+      }))
+    });
     render(<TradePlans gateway={cockpit} />);
     fireEvent.click(await screen.findByRole('button', { name: 'View BOX Trade Plan' }));
     fireEvent.change(screen.getByLabelText('Planned Entry'), { target: { value: '35' } });
@@ -262,11 +253,29 @@ describe('Trade Plans', () => {
     expect(screen.getByRole('button', { name: 'Execute Trade Plan' })).toBeInTheDocument();
   });
 
+  it('rejects an invalid LONG target before saving planning inputs', async () => {
+    const cockpit = createGatewayStub({
+      getTradePlans: vi.fn(async () => data),
+      updateTradePlanPlanning: vi.fn()
+    });
+    render(<TradePlans gateway={cockpit} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'View BOX Trade Plan' }));
+    fireEvent.change(screen.getByLabelText('Planned Entry'), { target: { value: '35' } });
+    fireEvent.change(screen.getByLabelText('Stop Price'), { target: { value: '32.8' } });
+    fireEvent.change(screen.getByLabelText(/Target Price/), { target: { value: '34' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Planning' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Pour un trade LONG, le Target doit être supérieur au Planned Entry.'
+    );
+    expect(cockpit.updateTradePlanPlanning).not.toHaveBeenCalled();
+  });
+
   it('does not expose execution, edit, or cancel actions for a terminal plan', async () => {
     render(
       <TradePlans
-        gateway={gateway(
-          vi.fn(async () => ({
+        gateway={createGatewayStub({
+          getTradePlans: vi.fn(async () => ({
             ...data,
             items: [
               {
@@ -279,7 +288,7 @@ describe('Trade Plans', () => {
               }
             ]
           }))
-        )}
+        })}
       />
     );
     fireEvent.click(await screen.findByRole('button', { name: 'View BOX Trade Plan' }));

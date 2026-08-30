@@ -16,7 +16,7 @@ import {
 } from './watchlist-sheet';
 import { readSheetHeaders, requireColumn } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
-declare function themeWatchlist(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet): void;
+import { themeWatchlist } from '../../../inbound/google-sheets/theme/theme';
 
 const WATCHLIST_SHEET_NAME = 'Watchlist';
 

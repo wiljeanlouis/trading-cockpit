@@ -1,8 +1,7 @@
 import type { RankedMomentumCandidate } from '../../../../core/domain/momentum';
 import type { MomentumRankingProjection } from '../../../../ports/outbound/momentum-ranking-projection';
 import type { MomentumStrategySnapshot } from '../../../../ports/outbound/momentum-signal-repository';
-
-declare function themeRanking(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet): void;
+import { themeRanking } from '../../../inbound/google-sheets/theme/theme';
 
 const MOMENTUM_RANKING_SHEET_NAME = 'Momentum Ranking';
 export const MOMENTUM_RANKING_HEADERS = [

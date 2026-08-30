@@ -280,6 +280,9 @@ export function updateTradePlanPlanning(
     throw new Error('Planned Entry doit être supérieur au Stop Price.');
   }
   const rewardPerShare = calculateRewardPerShare(inputs.entryPrice, inputs.targetPrice);
+  if (inputs.targetPrice !== null && (rewardPerShare === null || rewardPerShare <= 0)) {
+    throw new Error('Target Price doit être supérieur au Planned Entry pour un trade LONG.');
+  }
   const riskReward = calculateRiskReward(riskPerShare, rewardPerShare);
   const maxRisk = calculateMaxRisk(tradePlan.accountEquity, tradePlan.riskPercent);
   if (

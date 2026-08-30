@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { OpenPositionsDto } from '@trading-cockpit/contracts';
-import type { CockpitGateway } from '../../src/infrastructure/cockpit-gateway';
 import { Positions } from '../../src/features/positions/Positions';
+import { createGatewayStub } from '../support/cockpit-gateway';
 
 const data: OpenPositionsDto = {
   generatedAt: '2026-08-28T16:00:00.000Z',
@@ -35,25 +35,10 @@ const data: OpenPositionsDto = {
   ]
 };
 
-function gateway(getOpenPositions: CockpitGateway['getOpenPositions']): CockpitGateway {
-  return {
-    getOpenPositions,
-    closePosition: vi.fn(),
-    getJournal: vi.fn(),
-    updateTradePlanPlanning: vi.fn(),
-    getDashboardSummary: vi.fn(),
-    getWatchlist: vi.fn(),
-    getTradingAccounts: vi.fn(),
-    createTradePlan: vi.fn(),
-    getTradePlans: vi.fn(),
-    executeTradePlan: vi.fn()
-  };
-}
-
 describe('Positions', () => {
   it('loads automatically and displays backend-provided open Position values', async () => {
     const load = vi.fn(async () => data);
-    render(<Positions gateway={gateway(load)} />);
+    render(<Positions gateway={createGatewayStub({ getOpenPositions: load })} />);
     expect(screen.getByText('Loading Positions…')).toBeInTheDocument();
     const row = await screen.findByRole('row', { name: /BOX/ });
     const cells = within(row).getAllByRole('cell');
@@ -66,7 +51,9 @@ describe('Positions', () => {
   });
 
   it('shows detailed planned, actual, stop, and indicative values in a modal', async () => {
-    render(<Positions gateway={gateway(vi.fn(async () => data))} />);
+    render(
+      <Positions gateway={createGatewayStub({ getOpenPositions: vi.fn(async () => data) })} />
+    );
     fireEvent.click(await screen.findByRole('button', { name: 'View BOX Position' }));
     const dialog = screen.getByRole('dialog', { name: 'BOX' });
     expect(within(dialog).getByRole('heading', { name: 'Overview' })).toBeInTheDocument();
@@ -82,20 +69,22 @@ describe('Positions', () => {
 
   it('requires an explicit valid exit, delegates closure, and reloads backend state', async () => {
     const load = vi
-      .fn<CockpitGateway['getOpenPositions']>()
+      .fn()
       .mockResolvedValueOnce(data)
       .mockResolvedValueOnce({ ...data, items: [] });
-    const cockpit = gateway(load);
-    cockpit.closePosition = vi.fn(async () => ({
-      positionId: 'P-1',
-      accountId: 'A1',
-      ticker: 'BOX',
-      status: 'CLOSED',
-      closedAt: '2026-08-28T18:00:00.000Z',
-      exitPrice: 38,
-      realizedPnl: 135,
-      journalCreated: true
-    }));
+    const cockpit = createGatewayStub({
+      getOpenPositions: load,
+      closePosition: vi.fn(async () => ({
+        positionId: 'P-1',
+        accountId: 'A1',
+        ticker: 'BOX',
+        status: 'CLOSED',
+        closedAt: '2026-08-28T18:00:00.000Z',
+        exitPrice: 38,
+        realizedPnl: 135,
+        journalCreated: true
+      }))
+    });
     render(<Positions gateway={cockpit} />);
     fireEvent.click(await screen.findByRole('button', { name: 'View BOX Position' }));
     fireEvent.click(screen.getByRole('button', { name: 'Close Position' }));
@@ -112,9 +101,11 @@ describe('Positions', () => {
   });
 
   it('keeps the Position open when backend closure fails', async () => {
-    const cockpit = gateway(vi.fn(async () => data));
-    cockpit.closePosition = vi.fn(async () => {
-      throw new Error("BOX n'est pas une position OPEN.");
+    const cockpit = createGatewayStub({
+      getOpenPositions: vi.fn(async () => data),
+      closePosition: vi.fn(async () => {
+        throw new Error("BOX n'est pas une position OPEN.");
+      })
     });
     render(<Positions gateway={cockpit} />);
     fireEvent.click(await screen.findByRole('button', { name: 'View BOX Position' }));
@@ -128,7 +119,7 @@ describe('Positions', () => {
   it('supports errors, retry, empty data, and manual refresh without dropping prior rows', async () => {
     let resolveRefresh: ((value: OpenPositionsDto) => void) | undefined;
     const load = vi
-      .fn<CockpitGateway['getOpenPositions']>()
+      .fn()
       .mockRejectedValueOnce(new Error('Positions unavailable'))
       .mockResolvedValueOnce(data)
       .mockImplementationOnce(
@@ -137,7 +128,7 @@ describe('Positions', () => {
             resolveRefresh = resolve;
           })
       );
-    render(<Positions gateway={gateway(load)} />);
+    render(<Positions gateway={createGatewayStub({ getOpenPositions: load })} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('BOX')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));

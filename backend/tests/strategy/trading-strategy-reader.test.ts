@@ -4,7 +4,7 @@ import {
   mapTradingStrategyRow,
   type SheetTradingStrategy
 } from '../../src/adapters/outbound/google-sheets/trading-strategy/google-sheets-trading-strategy-reader';
-import { validateEnabledStrategies } from '../../src/adapters/inbound/google-sheets/setup-strategies';
+import { validateEnabledStrategies } from '../../src/adapters/inbound/google-sheets/ui/setup-strategies';
 
 afterEach(() => vi.unstubAllGlobals());
 

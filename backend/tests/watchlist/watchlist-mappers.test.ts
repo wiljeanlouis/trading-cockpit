@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rankingRowToAddCandidateCommand } from '../../src/adapters/inbound/google-sheets/ranking-candidate-mapper';
+import { rankingRowToAddCandidateCommand } from '../../src/adapters/inbound/google-sheets/ui/ranking-candidate-mapper';
 import {
   WATCHLIST_HEADERS,
   watchlistEntryFromRow,

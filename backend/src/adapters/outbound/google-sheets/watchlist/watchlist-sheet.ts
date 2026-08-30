@@ -1,9 +1,9 @@
 import { WATCHLIST_HEADERS } from './watchlist-mapper';
 import { readSheetHeaders, requireColumn } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
+import { themeWatchlist } from '../../../inbound/google-sheets/theme/theme';
 
 const SHEET_NAME = 'Watchlist';
-declare function themeWatchlist(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet): void;
 
 export function getOrCreateWatchlistSheet(): GoogleAppsScript.Spreadsheet.Sheet {
   const spreadsheet = getTradingCockpitSpreadsheet();

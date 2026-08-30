@@ -1,16 +1,16 @@
-import { createTradePlanFromSelectedWatchlistRow } from '../adapters/inbound/google-sheets/create-trade-plan-from-selected-watchlist';
-import { executeSelectedTradePlanRow } from '../adapters/inbound/google-sheets/execute-selected-trade-plan';
-import { closeSelectedPositionRow } from '../adapters/inbound/google-sheets/close-selected-position';
-import { reconcileSelectedPositionRow } from '../adapters/inbound/google-sheets/reconcile-selected-position';
-import { addSelectedRankingCandidateToWatchlist } from '../adapters/inbound/google-sheets/add-selected-to-watchlist';
+import { createTradePlanFromSelectedWatchlistRow } from '../adapters/inbound/google-sheets/ui/create-trade-plan-from-selected-watchlist';
+import { executeSelectedTradePlanRow } from '../adapters/inbound/google-sheets/ui/execute-selected-trade-plan';
+import { closeSelectedPositionRow } from '../adapters/inbound/google-sheets/ui/close-selected-position';
+import { reconcileSelectedPositionRow } from '../adapters/inbound/google-sheets/ui/reconcile-selected-position';
+import { addSelectedRankingCandidateToWatchlist } from '../adapters/inbound/google-sheets/ui/add-selected-to-watchlist';
 import { AppsScriptRuntime } from '../adapters/outbound/apps-script/apps-script-runtime';
 import { RuntimeLogger } from '../adapters/outbound/apps-script/runtime-logger';
-import { setupTradingAccounts } from '../adapters/inbound/google-sheets/setup-trading-accounts';
+import { setupTradingAccounts } from '../adapters/inbound/google-sheets/ui/setup-trading-accounts';
 import {
   recordDepositFromSheets,
   recordInitialFundingFromSheets,
   recordWithdrawalFromSheets
-} from '../adapters/inbound/google-sheets/record-capital-transaction';
+} from '../adapters/inbound/google-sheets/ui/record-capital-transaction';
 import { GoogleSheetsStrategyRepository } from '../adapters/outbound/google-sheets/trading-strategy/google-sheets-strategy-repository';
 import { GoogleSheetsPositionRepository } from '../adapters/outbound/google-sheets/position/google-sheets-position-repository';
 import { GoogleSheetsJournalRepository } from '../adapters/outbound/google-sheets/journal/google-sheets-journal-repository';
@@ -25,6 +25,7 @@ import {
   createRecordDeposit,
   createRecordInitialFunding,
   createRecordWithdrawal,
+  type RecordCapitalTransactionCommand,
   type RecordCapitalTransactionDependencies
 } from '../core/application/trading-account/record-capital-transaction';
 import { createTradePlanUseCase } from './trade-plan';
@@ -147,6 +148,39 @@ export function runRecordWithdrawal(): void {
     recordWithdrawalFromSheets,
     createRecordWithdrawal(capitalDependencies())
   );
+}
+
+export function runRecordCapitalTransaction(
+  command: RecordCapitalTransactionCommand & { type: 'INITIAL_FUNDING' | 'DEPOSIT' | 'WITHDRAWAL' }
+) {
+  const dependencies = capitalDependencies();
+  const recorders = {
+    INITIAL_FUNDING: createRecordInitialFunding(dependencies),
+    DEPOSIT: createRecordDeposit(dependencies),
+    WITHDRAWAL: createRecordWithdrawal(dependencies)
+  } as const;
+  const recorder = recorders[command.type];
+  const logger = new RuntimeLogger('record-capital-transaction');
+  logger.start();
+  try {
+    logger.info('TRANSACTION_REQUESTED', {
+      accountId: command.accountId,
+      amount: command.amount,
+      type: command.type
+    });
+    const transaction = recorder(command);
+    logger.info('TRANSACTION_RECORDED', {
+      accountId: transaction.accountId,
+      transactionType: transaction.type,
+      amount: transaction.amount,
+      capitalTransactionId: transaction.id
+    });
+    logger.success({ capitalTransactionId: transaction.id });
+    return transaction;
+  } catch (error) {
+    logFailure(logger, 'CAPITAL_TRANSACTION_SAVE', error);
+    throw error;
+  }
 }
 
 export function runCreateTradePlanFromSelectedWatchlist(): void {

@@ -1,17 +1,26 @@
 import type {
+  AnalyticsDto,
+  AddMomentumCandidateToWatchlistRequest,
+  AddMomentumCandidateToWatchlistResponse,
   CreateTradePlanRequest,
   CreateTradePlanResponse,
   ClosePositionRequest,
   ClosePositionResponse,
+  DashboardDto,
   DashboardSummaryDto,
+  RecordCapitalTransactionRequest,
+  RecordCapitalTransactionResponse,
   ExecuteTradePlanRequest,
   ExecuteTradePlanResponse,
   OpenPositionsDto,
   JournalDto,
   JournalItemDto,
+  MomentumRankingDto,
+  MomentumRankingItemDto,
   PositionItemDto,
   TradePlanItemDto,
   TradePlansDto,
+  TradingConfigDto,
   TradingAccountsDto,
   WatchlistDto,
   UpdateTradePlanPlanningRequest,
@@ -74,6 +83,78 @@ const DEVELOPMENT_WATCHLIST: WatchlistDto = {
     }
   ]
 };
+
+const DEVELOPMENT_MOMENTUM_RANKING: MomentumRankingItemDto[] = [
+  {
+    strategyId: 'MOMENTUM_BREAKOUT',
+    strategyName: 'Momentum Breakout',
+    strategyVersion: '1.0',
+    signalDate: '2026-08-28',
+    ticker: 'NVDA',
+    company: 'NVIDIA Corp',
+    sector: 'Technology',
+    price: 217.55,
+    high52: 220,
+    high52Score: 20,
+    relativeVolume: 1.8,
+    relativeVolumeScore: 18,
+    performanceMonth: 0.12,
+    performanceScore: 16,
+    rsi: 63,
+    rsiScore: 14,
+    sma20: 1.03,
+    sma20Score: 18,
+    momentumScore: 86,
+    reviewStatus: 'READY',
+    watchlistStatus: null
+  },
+  {
+    strategyId: 'MOMENTUM_BREAKOUT',
+    strategyName: 'Momentum Breakout',
+    strategyVersion: '1.0',
+    signalDate: '2026-08-27',
+    ticker: 'BOX',
+    company: 'Box, Inc.',
+    sector: 'Technology',
+    price: 34.98,
+    high52: 36,
+    high52Score: 18,
+    relativeVolume: 1.5,
+    relativeVolumeScore: 16,
+    performanceMonth: 0.09,
+    performanceScore: 14,
+    rsi: 59,
+    rsiScore: 13,
+    sma20: 1.02,
+    sma20Score: 17,
+    momentumScore: 87,
+    reviewStatus: 'WATCH',
+    watchlistStatus: 'READY'
+  },
+  {
+    strategyId: 'MOMENTUM_BREAKOUT',
+    strategyName: 'Momentum Breakout',
+    strategyVersion: '1.0',
+    signalDate: '2026-08-26',
+    ticker: 'URNB',
+    company: 'Ur-Nergy Inc.',
+    sector: 'Energy',
+    price: 1.74,
+    high52: 1.9,
+    high52Score: 15,
+    relativeVolume: 1.2,
+    relativeVolumeScore: 13,
+    performanceMonth: 0.07,
+    performanceScore: 12,
+    rsi: 55,
+    rsiScore: 12,
+    sma20: 1.01,
+    sma20Score: 14,
+    momentumScore: 72,
+    reviewStatus: 'REVIEW',
+    watchlistStatus: null
+  }
+];
 
 const DEVELOPMENT_TRADE_PLANS: TradePlanItemDto[] = [
   {
@@ -204,14 +285,208 @@ const DEVELOPMENT_JOURNAL: JournalItemDto[] = [
   }
 ];
 
+const DEVELOPMENT_ANALYTICS: AnalyticsDto = {
+  generatedAt: '2026-08-28T16:10:00.000Z',
+  available: true,
+  summary: {
+    trades: 14,
+    wins: 9,
+    losses: 4,
+    breakeven: 1,
+    winRate: 0.6428571428571429,
+    profitFactor: 2.14,
+    totalPnl: 1287,
+    averagePnl: 91.93,
+    bestPnl: 240,
+    grossProfit: 1820,
+    grossLoss: -533,
+    worstPnl: -142,
+    totalR: 18.2,
+    averageR: 1.3,
+    expectancyR: 0.42,
+    averageWinnerR: 2.08,
+    averageLoserR: -0.71,
+    bestR: 4.1
+  },
+  byStrategy: [
+    {
+      strategyId: 'MOMENTUM_BREAKOUT',
+      strategy: 'Momentum Breakout',
+      trades: 14,
+      wins: 9,
+      winRate: 0.6428571428571429,
+      totalPnl: 1287,
+      averageR: 1.3,
+      totalR: 18.2
+    }
+  ],
+  byStrategyVersion: [
+    {
+      strategyId: 'MOMENTUM_BREAKOUT',
+      strategy: 'Momentum Breakout',
+      version: 'V1',
+      trades: 14,
+      wins: 9,
+      winRate: 0.6428571428571429,
+      totalPnl: 1287,
+      averageR: 1.3,
+      totalR: 18.2
+    }
+  ]
+};
+
+const DEVELOPMENT_TRADING_CONFIG: TradingConfigDto = {
+  accountName: 'Trading',
+  accountEquity: 10_000,
+  defaultRiskPercent: 0.005,
+  maxPositionPercent: 0.1,
+  currency: 'CAD'
+};
+
 export class MockCockpitGateway implements CockpitGateway {
   private watchlistItems = DEVELOPMENT_WATCHLIST.items.map((item) => ({ ...item }));
+  private momentumRankingItems = DEVELOPMENT_MOMENTUM_RANKING.map((item) => ({ ...item }));
   private tradePlanItems = DEVELOPMENT_TRADE_PLANS.map((item) => ({ ...item }));
   private positionItems = DEVELOPMENT_POSITIONS.map((item) => ({ ...item }));
   private journalItems = DEVELOPMENT_JOURNAL.map((item) => ({ ...item }));
+  private analytics = { ...DEVELOPMENT_ANALYTICS };
+  private finvizConfigured = true;
+  private tradingConfig = { ...DEVELOPMENT_TRADING_CONFIG };
+
+  async getDashboard(): Promise<DashboardDto> {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    const generatedAt = new Date().toISOString();
+    const activeWatchlist = this.watchlistItems.filter((item) => item.ticker);
+    const ready = activeWatchlist.filter((item) => item.status === 'READY');
+    const nearBreakout = activeWatchlist
+      .filter(
+        (item) =>
+          ['WATCHING', 'READY'].includes(item.status) &&
+          item.breakoutLevel !== null &&
+          item.currentPrice !== null &&
+          item.currentPrice <= item.breakoutLevel &&
+          (item.breakoutLevel - item.currentPrice) / item.breakoutLevel <= 0.02
+      )
+      .map((item) => ({
+        ticker: item.ticker,
+        distance:
+          item.breakoutLevel && item.currentPrice
+            ? (item.currentPrice - item.breakoutLevel) / item.breakoutLevel
+            : 0,
+        currentPrice: item.currentPrice,
+        breakoutLevel: item.breakoutLevel,
+        setupStatus: item.setupStatus
+      }));
+    const openPositions = this.positionItems.filter((item) => item.status === 'OPEN');
+    const closedTrades = this.analytics.summary.trades;
+    const pipeline = {
+      signals: this.momentumRankingItems.length,
+      watchlist: activeWatchlist.length,
+      ready: ready.length,
+      nearBreakout: nearBreakout.length,
+      activeTradePlans: this.tradePlanItems.filter((item) =>
+        ['DRAFT', 'READY'].includes(item.status)
+      ).length,
+      openPositions: openPositions.length,
+      closedTrades
+    };
+
+    return {
+      generatedAt,
+      summary: {
+        generatedAt,
+        signals: pipeline.signals,
+        watchlist: pipeline.watchlist,
+        ready: pipeline.ready,
+        activeTradePlans: pipeline.activeTradePlans,
+        openPositions: pipeline.openPositions,
+        closedTrades
+      },
+      account: { ...this.tradingConfig },
+      pipeline,
+      performance: {
+        trades: this.analytics.summary.trades,
+        wins: this.analytics.summary.wins,
+        realizedPnl: this.analytics.summary.totalPnl,
+        winRate: this.analytics.summary.winRate,
+        averageR: this.analytics.summary.averageR,
+        totalR: this.analytics.summary.totalR
+      },
+      topMomentum: this.momentumRankingItems.slice(0, 5).map((item, index) => ({
+        rank: index + 1,
+        ticker: item.ticker,
+        score: item.momentumScore,
+        price: item.price,
+        high52: item.high52,
+        relativeVolume: item.relativeVolume,
+        rsi: item.rsi,
+        reviewStatus: item.reviewStatus
+      })),
+      watchlistPreview: activeWatchlist
+        .filter((item) => item.status !== 'REJECTED')
+        .slice(0, 5)
+        .map((item) => ({
+          ticker: item.ticker,
+          currentPrice: item.currentPrice,
+          signalPrice: item.signalPrice,
+          changeSinceSignal:
+            item.currentPrice !== null && item.signalPrice !== null
+              ? item.currentPrice / item.signalPrice - 1
+              : null,
+          breakoutLevel: item.breakoutLevel,
+          distanceToBreakout:
+            item.breakoutLevel !== null && item.currentPrice !== null
+              ? (item.currentPrice - item.breakoutLevel) / item.breakoutLevel
+              : null,
+          setupStatus: item.setupStatus,
+          status: item.status
+        })),
+      openPositionsPreview: openPositions.slice(0, 5).map((item) => ({
+        ticker: item.ticker,
+        actualEntry: item.actualEntry,
+        currentPrice: item.currentPrice,
+        currentStop: item.currentStop,
+        target: item.target,
+        actualQuantity: item.actualQuantity,
+        unrealizedPnl: item.unrealizedPnl,
+        unrealizedPnlPercent: item.unrealizedPnlPercent
+      })),
+      actions: {
+        nearBreakout,
+        ready: ready.map((item) => ({
+          ticker: item.ticker,
+          currentPrice: item.currentPrice,
+          breakoutLevel: item.breakoutLevel,
+          setupStatus: item.setupStatus
+        })),
+        openPositions: openPositions.map((item) => ({
+          ticker: item.ticker,
+          actualEntry: item.actualEntry,
+          currentPrice: item.currentPrice,
+          currentStop: item.currentStop,
+          unrealizedPnlPercent: item.unrealizedPnlPercent,
+          stopDistance:
+            item.currentPrice !== null && item.currentPrice > 0 && item.currentStop !== null
+              ? (item.currentPrice - item.currentStop) / item.currentPrice
+              : null
+        }))
+      }
+    };
+  }
+
   async getDashboardSummary(): Promise<DashboardSummaryDto> {
     await new Promise((resolve) => setTimeout(resolve, 250));
     return { ...DEVELOPMENT_SUMMARY, generatedAt: new Date().toISOString() };
+  }
+
+  async refreshFinviz(): Promise<number> {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    return 2;
+  }
+
+  async getAnalytics(): Promise<AnalyticsDto> {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    return { ...this.analytics, generatedAt: new Date().toISOString() };
   }
 
   async getWatchlist(): Promise<WatchlistDto> {
@@ -219,6 +494,14 @@ export class MockCockpitGateway implements CockpitGateway {
     return {
       generatedAt: new Date().toISOString(),
       items: this.watchlistItems.map((item) => ({ ...item }))
+    };
+  }
+
+  async getMomentumRanking(): Promise<MomentumRankingDto> {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    return {
+      generatedAt: new Date().toISOString(),
+      items: this.momentumRankingItems.map((item) => ({ ...item }))
     };
   }
 
@@ -230,6 +513,125 @@ export class MockCockpitGateway implements CockpitGateway {
         { id: 'DEMO-USD', name: 'Development USD', baseCurrency: 'USD' }
       ]
     };
+  }
+
+  async getTradingConfig(): Promise<TradingConfigDto> {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    return { ...this.tradingConfig };
+  }
+
+  async setupMomentumRanking(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  }
+
+  async refreshMomentumRanking(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+
+  async addMomentumCandidateToWatchlist(
+    request: AddMomentumCandidateToWatchlistRequest
+  ): Promise<AddMomentumCandidateToWatchlistResponse> {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    const candidate = this.momentumRankingItems.find(
+      (item) =>
+        item.strategyId === request.strategyId &&
+        item.strategyVersion === request.strategyVersion &&
+        item.signalDate === request.signalDate &&
+        item.ticker === request.ticker
+    );
+    if (!candidate) throw new Error(`Development Momentum candidate not found: ${request.ticker}`);
+
+    const existing = this.watchlistItems.find(
+      (item) =>
+        item.strategyId === candidate.strategyId &&
+        item.strategyVersion === candidate.strategyVersion &&
+        item.ticker === candidate.ticker &&
+        !['CLOSED', 'REJECTED'].includes(item.status.toUpperCase())
+    );
+    if (existing) {
+      candidate.watchlistStatus = existing.status;
+      return {
+        kind: 'duplicate',
+        watchlistId: existing.id,
+        ticker: existing.ticker,
+        status: existing.status
+      };
+    }
+
+    const watchlistId = `W-${candidate.ticker}-${candidate.signalDate}`;
+    this.watchlistItems.push({
+      id: watchlistId,
+      ticker: candidate.ticker,
+      company: candidate.company,
+      sector: candidate.sector,
+      strategyId: candidate.strategyId,
+      strategyName: candidate.strategyName,
+      strategyVersion: candidate.strategyVersion,
+      signalDate: candidate.signalDate,
+      signalPrice: candidate.price,
+      currentPrice: candidate.price,
+      momentumScore: candidate.momentumScore,
+      status: 'WATCHING',
+      setupStatus: '',
+      breakoutLevel: null,
+      invalidationLevel: null,
+      earningsDate: null,
+      eventRisk: null,
+      notes: 'Added from Discovery mock'
+    });
+    candidate.watchlistStatus = 'WATCHING';
+    return {
+      kind: 'added',
+      watchlistId,
+      ticker: candidate.ticker,
+      status: 'WATCHING'
+    };
+  }
+
+  async setupStrategies(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  }
+
+  async validateStrategies(): Promise<boolean> {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    return true;
+  }
+
+  async setupCockpitConfig(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  }
+
+  async setupTradingAccounts(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  }
+
+  async recordCapitalTransaction(
+    request: RecordCapitalTransactionRequest
+  ): Promise<RecordCapitalTransactionResponse> {
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    return {
+      transactionId: `CT-${request.type}-${request.accountId}-${Date.now()}`,
+      accountId: request.accountId,
+      type: request.type,
+      amount: request.amount,
+      occurredAt: new Date().toISOString(),
+      note: request.note ?? ''
+    };
+  }
+
+  async checkFinvizAuth(): Promise<boolean> {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    return this.finvizConfigured;
+  }
+
+  async setFinvizToken(token: string): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    this.finvizConfigured = Boolean(token?.trim());
+  }
+
+  async deleteFinvizToken(): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    this.finvizConfigured = false;
   }
 
   async createTradePlan(request: CreateTradePlanRequest): Promise<CreateTradePlanResponse> {

@@ -1,10 +1,13 @@
 import { Navigate, NavLink, Route, Routes } from 'react-router-dom';
 import type { CockpitGateway } from '../infrastructure/cockpit-gateway';
 import { Dashboard } from '../features/dashboard/Dashboard';
+import { Discovery } from '../features/discovery/Discovery';
 import { Watchlist } from '../features/watchlist/Watchlist';
 import { TradePlans } from '../features/trade-plans/TradePlans';
 import { Positions } from '../features/positions/Positions';
 import { Journal } from '../features/journal/Journal';
+import { Analytics } from '../features/analytics/Analytics';
+import { Admin } from '../features/admin/Admin';
 
 interface AppProps {
   gateway: CockpitGateway;
@@ -12,7 +15,7 @@ interface AppProps {
 }
 
 const navBaseClassName =
-  'flex min-h-11 w-full items-center gap-3 rounded-[9px] px-3 text-left text-sm text-[#93a2b8] no-underline transition-colors hover:bg-[rgba(78,225,160,0.06)] hover:text-[#d6e5f4] max-[900px]:justify-center max-[900px]:px-0 max-[900px]:text-[0px] max-[900px]:[&>span]:text-xl';
+  'flex min-h-11 w-full items-center gap-3 rounded-[9px] px-3 text-left text-sm text-[#93a2b8] no-underline transition-colors hover:bg-[rgba(78,225,160,0.06)] hover:text-[#d6e5f4] [&>span:first-child]:grid [&>span:first-child]:w-6 [&>span:first-child]:place-items-center [&>span:first-child]:text-lg [&>span:first-child]:leading-none [&>span:first-child]:text-[#b5c7dc] max-[900px]:justify-center max-[900px]:px-0 max-[900px]:text-[0px] max-[900px]:[&>span:first-child]:text-2xl';
 
 function navClassName({ isActive }: { isActive: boolean }): string {
   return `${navBaseClassName} ${
@@ -51,6 +54,10 @@ export function App({ gateway, development = false }: AppProps) {
             <span aria-hidden="true">⌁</span>
             Dashboard
           </NavLink>
+          <NavLink to="/discovery" className={navClassName}>
+            <span aria-hidden="true">⌕</span>
+            Discovery
+          </NavLink>
           <NavLink to="/watchlist" className={navClassName}>
             <span aria-hidden="true">◉</span>
             Watchlist
@@ -67,26 +74,26 @@ export function App({ gateway, development = false }: AppProps) {
             <span aria-hidden="true">▤</span>
             Journal
           </NavLink>
+          <NavLink to="/analytics" className={navClassName}>
+            <span aria-hidden="true">◫</span>
+            Analytics
+          </NavLink>
           <div className="mx-2 mt-6 mb-[10px] h-px bg-[#1a293c] max-[620px]:hidden" />
           <p className="mx-[10px] mt-5 mb-2 text-[10px] font-extrabold tracking-[0.16em] text-[#566780] uppercase max-[900px]:hidden">
             Administration
           </p>
-          <span
-            className={`${navBaseClassName} cursor-default opacity-50 max-[620px]:hidden`}
-            aria-disabled="true"
-          >
+          <NavLink to="/admin" className={navClassName}>
             <span aria-hidden="true">⚙</span>
             Administration
-            <small className="ml-auto text-[9px] tracking-[0.1em] text-[#687a92] uppercase max-[900px]:hidden">
-              Later
-            </small>
+          </NavLink>
+          <span
+            className="mt-auto flex items-center gap-2 border-t border-[#17263a] px-[10px] pt-4 text-[11px] text-[#71819a] max-[900px]:hidden"
+            aria-hidden="true"
+          >
+            <span className="size-[7px] rounded-full bg-[#4ee1a0] shadow-[0_0_10px_#4ee1a0]" />
+            Apps Script backend
           </span>
         </nav>
-
-        <div className="mt-auto flex items-center gap-2 border-t border-[#17263a] px-[10px] pt-4 text-[11px] text-[#71819a] max-[900px]:hidden">
-          <span className="size-[7px] rounded-full bg-[#4ee1a0] shadow-[0_0_10px_#4ee1a0]" />
-          Apps Script backend
-        </div>
       </aside>
 
       <div className="min-w-0">
@@ -97,10 +104,13 @@ export function App({ gateway, development = false }: AppProps) {
         )}
         <Routes>
           <Route path="/" element={<Dashboard gateway={gateway} />} />
+          <Route path="/discovery" element={<Discovery gateway={gateway} />} />
           <Route path="/watchlist" element={<Watchlist gateway={gateway} />} />
           <Route path="/trade-plans" element={<TradePlans gateway={gateway} />} />
           <Route path="/positions" element={<Positions gateway={gateway} />} />
           <Route path="/journal" element={<Journal gateway={gateway} />} />
+          <Route path="/analytics" element={<Analytics gateway={gateway} />} />
+          <Route path="/admin" element={<Admin gateway={gateway} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

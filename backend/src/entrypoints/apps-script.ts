@@ -5,12 +5,19 @@ import {
   runReconcileSelectedPosition,
   runExecuteSelectedTradePlan,
   runSetupTradingAccounts,
+  runRecordCapitalTransaction,
   runRecordInitialFunding,
   runRecordDeposit,
   runRecordWithdrawal
 } from '../composition/cockpit';
-import { installCockpitMenu } from '../adapters/inbound/google-sheets/install-cockpit-menu';
-import { runRefreshMomentumRanking } from '../composition/momentum';
+import { installCockpitMenu } from '../adapters/inbound/google-sheets/ui/install-cockpit-menu';
+import { refreshDocumentation as refreshDocumentationSheet } from '../adapters/inbound/google-sheets/documentation/documentation';
+import { applyCockpitTheme as applyCockpitThemeToSheets } from '../adapters/inbound/google-sheets/theme/theme';
+import {
+  runAddMomentumCandidateToWatchlist,
+  runGetMomentumRanking,
+  runRefreshMomentumRanking
+} from '../composition/momentum';
 import {
   runSetupMomentumRanking,
   runSetupStrategies,
@@ -29,23 +36,36 @@ import {
   runSetFinvizToken
 } from '../composition/finviz';
 import type {
+  AnalyticsDto,
+  AddMomentumCandidateToWatchlistRequest,
+  AddMomentumCandidateToWatchlistResponse,
   CreateTradePlanRequest,
   CreateTradePlanResponse,
   ClosePositionRequest,
   ClosePositionResponse,
+  DashboardDto,
   DashboardSummaryDto,
+  RecordCapitalTransactionRequest,
+  RecordCapitalTransactionResponse,
   ExecuteTradePlanRequest,
   ExecuteTradePlanResponse,
   OpenPositionsDto,
   JournalDto,
+  MomentumRankingDto,
   TradePlansDto,
   TradingAccountsDto,
+  TradingConfigDto,
   WatchlistDto,
   UpdateTradePlanPlanningRequest,
   UpdateTradePlanPlanningResponse
 } from '@trading-cockpit/contracts';
 import { serveReactCockpit } from '../adapters/inbound/apps-script/serve-react-cockpit';
-import { runGetDashboardSummary } from '../composition/dashboard';
+import {
+  runGetDashboard,
+  runGetDashboardSummary,
+  runRefreshDashboard
+} from '../composition/dashboard';
+import { runGetAnalytics, runRefreshAnalytics } from '../composition/analytics';
 import { rememberActiveTradingCockpitSpreadsheet } from '../adapters/outbound/google-sheets/trading-cockpit-spreadsheet';
 import { runGetWatchlist } from '../composition/watchlist';
 import {
@@ -69,12 +89,38 @@ export function getDashboardSummary(): DashboardSummaryDto {
   return runGetDashboardSummary();
 }
 
+export function getDashboard(): DashboardDto {
+  return runGetDashboard();
+}
+
+export function refreshDashboard(): DashboardDto {
+  return runRefreshDashboard();
+}
+
 export function getWatchlist(): WatchlistDto {
   return runGetWatchlist();
 }
 
+export function getMomentumRanking(): MomentumRankingDto {
+  return runGetMomentumRanking();
+}
+
+export function addMomentumCandidateToWatchlist(
+  request: AddMomentumCandidateToWatchlistRequest
+): AddMomentumCandidateToWatchlistResponse {
+  return runAddMomentumCandidateToWatchlist(request);
+}
+
 export function getTradingAccounts(): TradingAccountsDto {
   return runListTradingAccountsForWeb();
+}
+
+export function getAnalytics(): AnalyticsDto {
+  return runGetAnalytics();
+}
+
+export function refreshAnalytics(): AnalyticsDto {
+  return runRefreshAnalytics();
 }
 
 export function createTradePlan(request: CreateTradePlanRequest): CreateTradePlanResponse {
@@ -132,12 +178,12 @@ export function setupCockpitConfig(): void {
   runSetupCockpitConfiguration();
 }
 
-export function getTradingConfig() {
+export function getTradingConfig(): TradingConfigDto {
   return runGetLegacyTradingConfiguration();
 }
 
-export function refreshFinviz(): void {
-  runRefreshFinviz();
+export function refreshFinviz(): number {
+  return runRefreshFinviz();
 }
 
 export function configureFinvizToken(): void {
@@ -184,6 +230,23 @@ export function setupTradingAccounts(): void {
   runSetupTradingAccounts();
 }
 
+export function recordCapitalTransaction(
+  request: RecordCapitalTransactionRequest
+): RecordCapitalTransactionResponse {
+  const transaction = runRecordCapitalTransaction({
+    ...request,
+    note: request.note ?? undefined
+  });
+  return {
+    transactionId: transaction.id,
+    accountId: transaction.accountId,
+    type: transaction.type,
+    amount: transaction.amount,
+    occurredAt: transaction.occurredAt.toISOString(),
+    note: transaction.note
+  };
+}
+
 export function recordInitialFunding(): void {
   runRecordInitialFunding();
 }
@@ -194,4 +257,12 @@ export function recordDeposit(): void {
 
 export function recordWithdrawal(): void {
   runRecordWithdrawal();
+}
+
+export function applyCockpitTheme(): void {
+  applyCockpitThemeToSheets();
+}
+
+export function refreshDocumentation(): void {
+  refreshDocumentationSheet();
 }

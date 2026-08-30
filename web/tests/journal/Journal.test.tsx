@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { JournalDto, JournalItemDto } from '@trading-cockpit/contracts';
-import type { CockpitGateway } from '../../src/infrastructure/cockpit-gateway';
 import { Journal } from '../../src/features/journal/Journal';
+import { createGatewayStub } from '../support/cockpit-gateway';
 
 const win: JournalItemDto = {
   id: 'J-1',
@@ -51,25 +51,10 @@ const loss: JournalItemDto = {
 };
 const data: JournalDto = { generatedAt: '2026-08-28T16:00:00.000Z', items: [win, loss] };
 
-function gateway(getJournal: CockpitGateway['getJournal']): CockpitGateway {
-  return {
-    getJournal,
-    getDashboardSummary: vi.fn(),
-    getWatchlist: vi.fn(),
-    getTradingAccounts: vi.fn(),
-    createTradePlan: vi.fn(),
-    getTradePlans: vi.fn(),
-    executeTradePlan: vi.fn(),
-    getOpenPositions: vi.fn(),
-    closePosition: vi.fn(),
-    updateTradePlanPlanning: vi.fn()
-  };
-}
-
 describe('Journal', () => {
   it('loads automatically and renders persisted realized outcomes', async () => {
     const load = vi.fn(async () => data);
-    render(<Journal gateway={gateway(load)} />);
+    render(<Journal gateway={createGatewayStub({ getJournal: load })} />);
     expect(screen.getByText('Loading Journal…')).toBeInTheDocument();
     const boxRow = await screen.findByRole('row', { name: /BOX/ });
     const cells = within(boxRow).getAllByRole('cell');
@@ -83,7 +68,7 @@ describe('Journal', () => {
   });
 
   it('opens a read-only lifecycle detail with backend-provided review fields', async () => {
-    render(<Journal gateway={gateway(vi.fn(async () => data))} />);
+    render(<Journal gateway={createGatewayStub({ getJournal: vi.fn(async () => data) })} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Review BOX Journal entry' }));
     const dialog = screen.getByRole('dialog', { name: 'BOX' });
     expect(within(dialog).getByRole('heading', { name: 'Trade context' })).toBeInTheDocument();
@@ -102,7 +87,7 @@ describe('Journal', () => {
   });
 
   it('filters the loaded projection by ticker, account, strategy and outcome', async () => {
-    render(<Journal gateway={gateway(vi.fn(async () => data))} />);
+    render(<Journal gateway={createGatewayStub({ getJournal: vi.fn(async () => data) })} />);
     await screen.findByText('BOX');
     fireEvent.change(screen.getByPlaceholderText('Search ticker'), { target: { value: 'bo' } });
     expect(screen.getByText('BOX')).toBeInTheDocument();
@@ -122,7 +107,7 @@ describe('Journal', () => {
   it('supports error/retry, empty and non-destructive manual refresh states', async () => {
     let resolveRefresh: ((value: JournalDto) => void) | undefined;
     const load = vi
-      .fn<CockpitGateway['getJournal']>()
+      .fn()
       .mockRejectedValueOnce(new Error('Journal unavailable'))
       .mockResolvedValueOnce(data)
       .mockImplementationOnce(
@@ -131,7 +116,7 @@ describe('Journal', () => {
             resolveRefresh = resolve;
           })
       );
-    render(<Journal gateway={gateway(load)} />);
+    render(<Journal gateway={createGatewayStub({ getJournal: load })} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
     expect(await screen.findByText('BOX')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));

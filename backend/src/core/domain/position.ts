@@ -202,6 +202,21 @@ export function requirePositionExecutionData(source: NormalizedPositionSource): 
     throw new Error(`${source.ticker} n'a pas de Stop Price.`);
   }
 
+  if (plannedStop >= plannedEntry) {
+    throw new Error(`${source.ticker} doit respecter Stop < Entry pour un trade LONG.`);
+  }
+
+  const hasPlannedTarget =
+    source.plannedTarget !== '' &&
+    source.plannedTarget !== null &&
+    source.plannedTarget !== undefined;
+  if (hasPlannedTarget) {
+    const plannedTarget = Number(source.plannedTarget);
+    if (!Number.isFinite(plannedTarget) || plannedTarget <= plannedEntry) {
+      throw new Error(`${source.ticker} doit respecter Entry < Target pour un trade LONG.`);
+    }
+  }
+
   if (!Number.isFinite(Number(source.plannedQuantity)) || Number(source.plannedQuantity) <= 0) {
     throw new Error(`${source.ticker} n'a pas de Position Size valide.`);
   }

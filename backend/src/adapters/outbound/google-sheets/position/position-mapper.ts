@@ -35,15 +35,11 @@ function valueByHeader(headers: string[], row: unknown[], name: string): unknown
 }
 
 function snapshotValue(value: unknown): PositionSnapshotValue {
-  if (
-    value === null ||
-    value instanceof Date ||
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean'
-  ) {
-    return value;
-  }
+  if (value === null) return null;
+  if (value instanceof Date) return value;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'boolean') return value;
 
   return value === undefined ? '' : String(value);
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { selectedTradePlanRowToCommand } from '../../src/adapters/inbound/google-sheets/trade-plan-selection-mapper';
+import { selectedTradePlanRowToCommand } from '../../src/adapters/inbound/google-sheets/ui/trade-plan-selection-mapper';
 import {
   POSITION_HEADERS,
   positionFromRow,

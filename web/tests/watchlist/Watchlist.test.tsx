@@ -1,8 +1,8 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { WatchlistDto } from '@trading-cockpit/contracts';
-import type { CockpitGateway } from '../../src/infrastructure/cockpit-gateway';
 import { Watchlist } from '../../src/features/watchlist/Watchlist';
+import { createGatewayStub } from '../support/cockpit-gateway';
 
 const data: WatchlistDto = {
   generatedAt: '2026-08-28T16:04:00.000Z',
@@ -30,27 +30,19 @@ const data: WatchlistDto = {
   ]
 };
 
-function gateway(getWatchlist: CockpitGateway['getWatchlist']): CockpitGateway {
-  return {
-    getWatchlist,
-    getDashboardSummary: vi.fn(),
-    getTradingAccounts: vi.fn(async () => ({
-      accounts: [{ id: 'A1', name: 'Primary', baseCurrency: 'CAD' }]
-    })),
-    createTradePlan: vi.fn(),
-    getTradePlans: vi.fn(),
-    executeTradePlan: vi.fn(),
-    getOpenPositions: vi.fn(),
-    closePosition: vi.fn(),
-    getJournal: vi.fn(),
-    updateTradePlanPlanning: vi.fn()
-  };
-}
-
 describe('Watchlist', () => {
   it('loads automatically and renders useful existing fields', async () => {
     const load = vi.fn(async () => data);
-    render(<Watchlist gateway={gateway(load)} />);
+    render(
+      <Watchlist
+        gateway={createGatewayStub({
+          getWatchlist: load,
+          getTradingAccounts: vi.fn(async () => ({
+            accounts: [{ id: 'A1', name: 'Primary', baseCurrency: 'CAD' }]
+          }))
+        })}
+      />
+    );
 
     expect(screen.getByText('Loading watchlist…')).toBeInTheDocument();
     expect(await screen.findByText('BOX')).toBeInTheDocument();
@@ -68,16 +60,22 @@ describe('Watchlist', () => {
   });
 
   it('renders a dedicated empty state', async () => {
-    render(<Watchlist gateway={gateway(vi.fn(async () => ({ ...data, items: [] })))} />);
+    render(
+      <Watchlist
+        gateway={createGatewayStub({
+          getWatchlist: vi.fn(async () => ({ ...data, items: [] }))
+        })}
+      />
+    );
     expect(await screen.findByText('No watchlist candidates')).toBeInTheDocument();
   });
 
   it('shows an error and retries', async () => {
     const load = vi
-      .fn<CockpitGateway['getWatchlist']>()
+      .fn()
       .mockRejectedValueOnce(new Error('Watchlist unavailable'))
       .mockResolvedValueOnce(data);
-    render(<Watchlist gateway={gateway(load)} />);
+    render(<Watchlist gateway={createGatewayStub({ getWatchlist: load })} />);
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Watchlist unavailable');
     fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
@@ -88,7 +86,7 @@ describe('Watchlist', () => {
   it('refreshes manually while preserving current rows', async () => {
     let resolveRefresh: ((value: WatchlistDto) => void) | undefined;
     const load = vi
-      .fn<CockpitGateway['getWatchlist']>()
+      .fn()
       .mockResolvedValueOnce(data)
       .mockImplementationOnce(
         () =>
@@ -96,19 +94,29 @@ describe('Watchlist', () => {
             resolveRefresh = resolve;
           })
       );
-    render(<Watchlist gateway={gateway(load)} />);
+    render(<Watchlist gateway={createGatewayStub({ getWatchlist: load })} />);
     expect(await screen.findByText('BOX')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh Finviz' }));
     expect(screen.getByText('BOX')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Refreshing' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Refreshing signals' })).toBeDisabled();
 
+    await waitFor(() => expect(resolveRefresh).toBeDefined());
     resolveRefresh?.({ ...data, items: [{ ...data.items[0], momentumScore: 91 }] });
     await waitFor(() => expect(screen.getByText('91')).toBeInTheDocument());
   });
 
   it('opens candidate details with persisted signal and trade context', async () => {
-    render(<Watchlist gateway={gateway(vi.fn(async () => data))} />);
+    render(
+      <Watchlist
+        gateway={createGatewayStub({
+          getWatchlist: vi.fn(async () => data),
+          getTradingAccounts: vi.fn(async () => ({
+            accounts: [{ id: 'A1', name: 'Primary', baseCurrency: 'CAD' }]
+          }))
+        })}
+      />
+    );
     fireEvent.click(await screen.findByRole('button', { name: 'View BOX details' }));
 
     const dialog = screen.getByRole('dialog', { name: 'BOX' });
@@ -128,15 +136,20 @@ describe('Watchlist', () => {
 
   it('creates a Trade Plan through the gateway, confirms it and refreshes Watchlist', async () => {
     const load = vi.fn(async () => data);
-    const cockpit = gateway(load);
-    cockpit.createTradePlan = vi.fn(async () => ({
-      kind: 'created' as const,
-      tradePlanId: 'TP-1',
-      watchlistId: 'W1',
-      ticker: 'BOX',
-      accountId: 'A1',
-      status: 'DRAFT'
-    }));
+    const cockpit = createGatewayStub({
+      getWatchlist: load,
+      getTradingAccounts: vi.fn(async () => ({
+        accounts: [{ id: 'A1', name: 'Primary', baseCurrency: 'CAD' }]
+      })),
+      createTradePlan: vi.fn(async () => ({
+        kind: 'created' as const,
+        tradePlanId: 'TP-1',
+        watchlistId: 'W1',
+        ticker: 'BOX',
+        accountId: 'A1',
+        status: 'DRAFT'
+      }))
+    });
     render(<Watchlist gateway={cockpit} />);
     fireEvent.click(await screen.findByRole('button', { name: 'View BOX details' }));
     await screen.findByRole('option', { name: 'Primary · A1 · CAD' });
@@ -156,9 +169,14 @@ describe('Watchlist', () => {
   });
 
   it('keeps the candidate open and reports a backend creation failure', async () => {
-    const cockpit = gateway(vi.fn(async () => data));
-    cockpit.createTradePlan = vi.fn(async () => {
-      throw new Error('Initial Funding absent pour le compte A1.');
+    const cockpit = createGatewayStub({
+      getWatchlist: vi.fn(async () => data),
+      getTradingAccounts: vi.fn(async () => ({
+        accounts: [{ id: 'A1', name: 'Primary', baseCurrency: 'CAD' }]
+      })),
+      createTradePlan: vi.fn(async () => {
+        throw new Error('Initial Funding absent pour le compte A1.');
+      })
     });
     render(<Watchlist gateway={cockpit} />);
     fireEvent.click(await screen.findByRole('button', { name: 'View BOX details' }));
@@ -174,12 +192,15 @@ describe('Watchlist', () => {
   });
 
   it('allows entering a missing invalidation level before creation', async () => {
-    const cockpit = gateway(
-      vi.fn(async () => ({
+    const cockpit = createGatewayStub({
+      getWatchlist: vi.fn(async () => ({
         ...data,
         items: [{ ...data.items[0], invalidationLevel: null }]
+      })),
+      getTradingAccounts: vi.fn(async () => ({
+        accounts: [{ id: 'A1', name: 'Primary', baseCurrency: 'CAD' }]
       }))
-    );
+    });
     render(<Watchlist gateway={cockpit} />);
     fireEvent.click(await screen.findByRole('button', { name: 'View BOX details' }));
     await screen.findByRole('option', { name: 'Primary · A1 · CAD' });

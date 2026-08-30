@@ -1,14 +1,22 @@
 import type {
+  AnalyticsDto,
+  AddMomentumCandidateToWatchlistRequest,
+  AddMomentumCandidateToWatchlistResponse,
   CreateTradePlanRequest,
   CreateTradePlanResponse,
   ClosePositionRequest,
   ClosePositionResponse,
+  DashboardDto,
   DashboardSummaryDto,
+  RecordCapitalTransactionRequest,
+  RecordCapitalTransactionResponse,
   ExecuteTradePlanRequest,
   ExecuteTradePlanResponse,
+  MomentumRankingDto,
   OpenPositionsDto,
   JournalDto,
   TradePlansDto,
+  TradingConfigDto,
   TradingAccountsDto,
   UpdateTradePlanPlanningRequest,
   UpdateTradePlanPlanningResponse,
@@ -25,6 +33,15 @@ function failureMessage(error: unknown): string {
 }
 
 export class AppsScriptCockpitGateway implements CockpitGateway {
+  getDashboard(): Promise<DashboardDto> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .getDashboard();
+    });
+  }
+
   getDashboardSummary(): Promise<DashboardSummaryDto> {
     return new Promise((resolve, reject) => {
       google.script.run
@@ -43,12 +60,151 @@ export class AppsScriptCockpitGateway implements CockpitGateway {
     });
   }
 
+  getMomentumRanking(): Promise<MomentumRankingDto> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .getMomentumRanking();
+    });
+  }
+
+  refreshFinviz(): Promise<number> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .refreshFinviz();
+    });
+  }
+
+  refreshMomentumRanking(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .refreshMomentumRanking();
+    });
+  }
+
+  addMomentumCandidateToWatchlist(
+    request: AddMomentumCandidateToWatchlistRequest
+  ): Promise<AddMomentumCandidateToWatchlistResponse> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .addMomentumCandidateToWatchlist(request);
+    });
+  }
+
+  getAnalytics(): Promise<AnalyticsDto> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .getAnalytics();
+    });
+  }
+
   getTradingAccounts(): Promise<TradingAccountsDto> {
     return new Promise((resolve, reject) => {
       google.script.run
         .withSuccessHandler(resolve)
         .withFailureHandler((error) => reject(new Error(failureMessage(error))))
         .getTradingAccounts();
+    });
+  }
+
+  getTradingConfig(): Promise<TradingConfigDto> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .getTradingConfig();
+    });
+  }
+
+  setupMomentumRanking(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .setupMomentumRanking();
+    });
+  }
+
+  setupStrategies(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .setupStrategies();
+    });
+  }
+
+  validateStrategies(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .validateStrategies();
+    });
+  }
+
+  setupCockpitConfig(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .setupCockpitConfig();
+    });
+  }
+
+  setupTradingAccounts(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .setupTradingAccounts();
+    });
+  }
+
+  recordCapitalTransaction(
+    request: RecordCapitalTransactionRequest
+  ): Promise<RecordCapitalTransactionResponse> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .recordCapitalTransaction(request);
+    });
+  }
+
+  checkFinvizAuth(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .checkFinvizAuth();
+    });
+  }
+
+  setFinvizToken(token: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .setFinvizToken(token);
+    });
+  }
+
+  deleteFinvizToken(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
+        .deleteFinvizToken();
     });
   }
 

@@ -1,10 +1,10 @@
 import { TRADE_PLAN_HEADERS } from './trade-plan-mapper';
 import { readSheetHeaders, requireColumn } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
+import { themeTradePlans } from '../../../inbound/google-sheets/theme/theme';
 
 const SHEET_NAME = 'Trade Plans';
 const HISTORICAL_HEADERS = TRADE_PLAN_HEADERS.slice(0, 29);
-declare function themeTradePlans(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet): void;
 
 export function getOrCreateTradePlansSheet(): GoogleAppsScript.Spreadsheet.Sheet {
   const spreadsheet = getTradingCockpitSpreadsheet();

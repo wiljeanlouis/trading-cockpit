@@ -2,6 +2,7 @@ import { buildSignalKey } from '../../../../core/domain/market-signal';
 import type { SignalSnapshot } from '../../../../core/domain/market-signal';
 import type { SignalHistoryRepository } from '../../../../ports/outbound/signal-history-repository';
 import { readSheetHeaders, requireColumn } from '../sheet-headers';
+import { themeTechnicalSheet } from '../../../inbound/google-sheets/theme/theme';
 
 const SHEET_NAME = 'Signals History';
 const REQUIRED_HEADERS = [
@@ -12,11 +13,6 @@ const REQUIRED_HEADERS = [
   'Strategy Version',
   'Ticker'
 ];
-
-declare function themeTechnicalSheet(
-  spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet,
-  sheetName: string
-): void;
 
 function formatDate(value: unknown): string {
   if (!value) return '';

@@ -22,7 +22,11 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.CockpitBundle?.onOpen).toBeTypeOf('function');
     expect(context.CockpitBundle?.doGet).toBeTypeOf('function');
     expect(context.CockpitBundle?.getDashboardSummary).toBeTypeOf('function');
+    expect(context.CockpitBundle?.getDashboard).toBeTypeOf('function');
+    expect(context.CockpitBundle?.refreshDashboard).toBeTypeOf('function');
     expect(context.CockpitBundle?.getWatchlist).toBeTypeOf('function');
+    expect(context.CockpitBundle?.getMomentumRanking).toBeTypeOf('function');
+    expect(context.CockpitBundle?.addMomentumCandidateToWatchlist).toBeTypeOf('function');
     expect(context.CockpitBundle?.getTradingAccounts).toBeTypeOf('function');
     expect(context.CockpitBundle?.createTradePlan).toBeTypeOf('function');
     expect(context.CockpitBundle?.getTradePlans).toBeTypeOf('function');
@@ -32,6 +36,7 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.CockpitBundle?.closePosition).toBeTypeOf('function');
     expect(context.CockpitBundle?.getJournal).toBeTypeOf('function');
     expect(context.CockpitBundle?.refreshFinviz).toBeTypeOf('function');
+    expect(context.CockpitBundle?.refreshAnalytics).toBeTypeOf('function');
     expect(context.CockpitBundle?.refreshMomentumRanking).toBeTypeOf('function');
     expect(context.CockpitBundle?.setupMomentumRanking).toBeTypeOf('function');
     expect(context.CockpitBundle?.setupStrategies).toBeTypeOf('function');
@@ -64,7 +69,11 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.onOpen).toBeTypeOf('function');
     expect(context.doGet).toBeTypeOf('function');
     expect(context.getDashboardSummary).toBeTypeOf('function');
+    expect(context.getDashboard).toBeTypeOf('function');
+    expect(context.refreshDashboard).toBeTypeOf('function');
     expect(context.getWatchlist).toBeTypeOf('function');
+    expect(context.getMomentumRanking).toBeTypeOf('function');
+    expect(context.addMomentumCandidateToWatchlist).toBeTypeOf('function');
     expect(context.getTradingAccounts).toBeTypeOf('function');
     expect(context.createTradePlan).toBeTypeOf('function');
     expect(context.getTradePlans).toBeTypeOf('function');
@@ -74,6 +83,7 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.closePosition).toBeTypeOf('function');
     expect(context.getJournal).toBeTypeOf('function');
     expect(context.refreshFinviz).toBeTypeOf('function');
+    expect(context.refreshAnalytics).toBeTypeOf('function');
     expect(context.refreshMomentumRanking).toBeTypeOf('function');
     expect(context.setupMomentumRanking).toBeTypeOf('function');
     expect(context.setupStrategies).toBeTypeOf('function');

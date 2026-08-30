@@ -275,6 +275,10 @@ describe('Trade Plan domain', () => {
       { entryPrice: 52, stopPrice: 52, targetPrice: null, positionSize: null },
       'supérieur au Stop Price'
     ],
+    [
+      { entryPrice: 57, stopPrice: 52, targetPrice: 56, positionSize: null },
+      'supérieur au Planned Entry'
+    ],
     [{ entryPrice: 57, stopPrice: 52, targetPrice: null, positionSize: 1.5 }, 'Position Size'],
     [
       { entryPrice: 57, stopPrice: 52, targetPrice: null, positionSize: 21 },

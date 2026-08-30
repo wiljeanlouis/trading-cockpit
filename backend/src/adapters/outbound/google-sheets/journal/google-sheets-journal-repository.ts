@@ -14,7 +14,7 @@ import {
 } from './journal-sheet';
 import { readSheetHeaders } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
-declare function themeJournal(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet): void;
+import { themeJournal } from '../../../inbound/google-sheets/theme/theme';
 
 export class GoogleSheetsJournalRepository implements JournalRepository {
   private sheet: GoogleAppsScript.Spreadsheet.Sheet | null = null;

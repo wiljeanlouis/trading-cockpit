@@ -1,11 +1,10 @@
 import { JOURNAL_HEADERS } from './journal-mapper';
 import { readSheetHeaders, requireColumn } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
+import { themeJournal } from '../../../inbound/google-sheets/theme/theme';
 
 const SHEET_NAME = 'Journal';
 const HISTORICAL_HEADERS = JOURNAL_HEADERS.slice(0, -1);
-
-declare function themeJournal(spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet): void;
 
 export function getOrCreateJournalSheet(): GoogleAppsScript.Spreadsheet.Sheet {
   const spreadsheet = getTradingCockpitSpreadsheet();

@@ -1,8 +1,8 @@
-import { setupMomentumRankingInSheets } from '../adapters/inbound/google-sheets/setup-momentum-ranking';
+import { setupMomentumRankingInSheets } from '../adapters/inbound/google-sheets/ui/setup-momentum-ranking';
 import {
   setupStrategiesInSheets,
   validateStrategiesInSheets
-} from '../adapters/inbound/google-sheets/setup-strategies';
+} from '../adapters/inbound/google-sheets/ui/setup-strategies';
 
 export function runSetupMomentumRanking(): void {
   setupMomentumRankingInSheets();

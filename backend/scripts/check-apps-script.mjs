@@ -3,11 +3,26 @@ import { Script } from 'node:vm';
 
 const repositoryRoot = new URL('../', import.meta.url);
 
-const legacySourceFileNames = readdirSync(repositoryRoot, {
-  withFileTypes: true
-})
-  .filter((entry) => entry.isFile() && entry.name.endsWith('.js'))
-  .map((entry) => entry.name);
+const ignoredRuntimeDirectories = new Set([
+  'build',
+  'scripts',
+  'tests',
+  'node_modules',
+  'coverage'
+]);
+
+function runtimeJavaScriptFiles(directoryUrl, prefix = '') {
+  return readdirSync(directoryUrl, { withFileTypes: true }).flatMap((entry) => {
+    const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      if (ignoredRuntimeDirectories.has(entry.name)) return [];
+      return runtimeJavaScriptFiles(new URL(`${entry.name}/`, directoryUrl), relativePath);
+    }
+    return entry.isFile() && entry.name.endsWith('.js') ? [relativePath] : [];
+  });
+}
+
+const legacySourceFileNames = runtimeJavaScriptFiles(repositoryRoot);
 
 const buildRoot = new URL('../build/', import.meta.url);
 const bundleFileNames = existsSync(buildRoot)

@@ -102,16 +102,55 @@ export function TradePlanDetail({ plan, gateway, onClose, onExecuted }: TradePla
 
   async function savePlanning() {
     if (savingPlanning || submitting) return;
+    const parsedEntryPrice = Number(entryPrice);
+    const parsedStopPrice = Number(stopPrice);
+    const parsedTargetPrice = targetPrice.trim() ? Number(targetPrice) : null;
+    const parsedPositionSize = positionSize.trim() ? Number(positionSize) : null;
+
+    if (!Number.isFinite(parsedEntryPrice) || parsedEntryPrice <= 0) {
+      setPlanningError('Planned Entry doit être supérieur à 0.');
+      setPlanningSaved(false);
+      return;
+    }
+    if (!Number.isFinite(parsedStopPrice) || parsedStopPrice <= 0) {
+      setPlanningError('Stop Price doit être supérieur à 0.');
+      setPlanningSaved(false);
+      return;
+    }
+    if (parsedStopPrice >= parsedEntryPrice) {
+      setPlanningError('Pour un trade LONG, le Stop doit être inférieur au Planned Entry.');
+      setPlanningSaved(false);
+      return;
+    }
+    if (
+      parsedTargetPrice !== null &&
+      (!Number.isFinite(parsedTargetPrice) || parsedTargetPrice <= parsedEntryPrice)
+    ) {
+      setPlanningError('Pour un trade LONG, le Target doit être supérieur au Planned Entry.');
+      setPlanningSaved(false);
+      return;
+    }
+    if (
+      parsedPositionSize !== null &&
+      (!Number.isFinite(parsedPositionSize) ||
+        parsedPositionSize <= 0 ||
+        !Number.isInteger(parsedPositionSize))
+    ) {
+      setPlanningError('Position Size doit être un nombre entier supérieur à 0.');
+      setPlanningSaved(false);
+      return;
+    }
+
     setSavingPlanning(true);
     setPlanningError(null);
     setPlanningSaved(false);
     try {
       await gateway.updateTradePlanPlanning({
         tradePlanId: plan.id,
-        entryPrice: Number(entryPrice),
-        stopPrice: Number(stopPrice),
-        targetPrice: targetPrice.trim() ? Number(targetPrice) : null,
-        positionSize: positionSize.trim() ? Number(positionSize) : null
+        entryPrice: parsedEntryPrice,
+        stopPrice: parsedStopPrice,
+        targetPrice: parsedTargetPrice,
+        positionSize: parsedPositionSize
       });
       await onExecuted();
       setPlanningSaved(true);

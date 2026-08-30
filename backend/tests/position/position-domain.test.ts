@@ -182,6 +182,19 @@ describe('Position domain', () => {
     expect(() => requirePositionExecutionData(source)).toThrow();
   });
 
+  it('rejects LONG execution when persisted prices do not satisfy Stop < Entry < Target', () => {
+    expect(() =>
+      requirePositionExecutionData(
+        normalizePositionSource({ ...tradePlan, entryPrice: 57, stopPrice: 57, targetPrice: 67 })
+      )
+    ).toThrow('Stop < Entry');
+    expect(() =>
+      requirePositionExecutionData(
+        normalizePositionSource({ ...tradePlan, entryPrice: 57, stopPrice: 52, targetPrice: 56 })
+      )
+    ).toThrow('Entry < Target');
+  });
+
   it.each(['OPEN', ' open ', 'open'])('recognizes open Position status %s', (status) => {
     expect(isOpenPositionStatus(status)).toBe(true);
   });

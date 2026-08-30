@@ -2,8 +2,8 @@ import {
   checkFinvizAuthFromSheets,
   configureFinvizTokenFromSheets,
   deleteFinvizTokenFromSheets
-} from '../adapters/inbound/google-sheets/manage-finviz-token';
-import { refreshFinvizFromSheets } from '../adapters/inbound/google-sheets/refresh-finviz';
+} from '../adapters/inbound/google-sheets/ui/manage-finviz-token';
+import { refreshFinvizFromSheets } from '../adapters/inbound/google-sheets/ui/refresh-finviz';
 import { AppsScriptRuntime } from '../adapters/outbound/apps-script/apps-script-runtime';
 import { RuntimeLogger } from '../adapters/outbound/apps-script/runtime-logger';
 import { formatAppsScriptSignalDate } from '../adapters/outbound/apps-script/apps-script-signal-date-formatter';
@@ -42,7 +42,7 @@ function tokenService(): FinvizTokenService {
   return new FinvizTokenService(new AppsScriptFinvizTokenStorage());
 }
 
-export function runRefreshFinviz(): void {
+export function runRefreshFinviz(): number {
   const logger = new RuntimeLogger('refresh-market-signals');
   logger.start();
   const runtime = new AppsScriptRuntime();
@@ -85,7 +85,7 @@ export function runRefreshFinviz(): void {
       now: () => runtime.now(),
       observe
     });
-    refreshFinvizFromSheets(() => {
+    return refreshFinvizFromSheets(() => {
       const archived = refresh();
       logger.success({ archived });
       return archived;

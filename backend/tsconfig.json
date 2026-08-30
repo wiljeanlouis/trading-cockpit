@@ -5,12 +5,10 @@
     "moduleResolution": "Bundler",
     "lib": ["ES2020"],
     "types": ["google-apps-script"],
-    "allowJs": true,
-    "checkJs": false,
     "noEmit": true,
     "strict": false,
     "skipLibCheck": true
   },
-  "include": ["*.js"],
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "tests", "scripts", "docs"]
 }

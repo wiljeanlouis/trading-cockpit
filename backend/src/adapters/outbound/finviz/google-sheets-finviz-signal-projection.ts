@@ -1,10 +1,6 @@
 import type { MarketSignalBatch } from '../../../core/domain/market-signal';
 import type { MarketSignalProjection } from '../../../ports/outbound/market-signal-projection';
-
-declare function themeSimpleSheet(
-  spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet,
-  sheetName: string
-): void;
+import { themeSimpleSheet } from '../../inbound/google-sheets/theme/theme';
 
 export class GoogleSheetsFinvizSignalProjection implements MarketSignalProjection {
   constructor(

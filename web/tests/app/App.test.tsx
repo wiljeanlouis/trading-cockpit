@@ -1,12 +1,12 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
-import type { CockpitGateway } from '../../src/infrastructure/cockpit-gateway';
 import { App } from '../../src/app/App';
+import { createGatewayStub } from '../support/cockpit-gateway';
 
 describe('App navigation', () => {
   it('opens the Watchlist screen from the existing cockpit navigation', async () => {
-    const gateway: CockpitGateway = {
+    const gateway = createGatewayStub({
       getDashboardSummary: vi.fn(async () => ({
         generatedAt: '2026-08-28T16:04:00.000Z',
         signals: 0,
@@ -17,15 +17,8 @@ describe('App navigation', () => {
         closedTrades: 0
       })),
       getWatchlist: vi.fn(async () => ({ generatedAt: '2026-08-28T16:04:00.000Z', items: [] })),
-      getTradingAccounts: vi.fn(async () => ({ accounts: [] })),
-      createTradePlan: vi.fn(),
-      getTradePlans: vi.fn(async () => ({ generatedAt: '2026-08-28T16:04:00.000Z', items: [] })),
-      executeTradePlan: vi.fn(),
-      getOpenPositions: vi.fn(),
-      closePosition: vi.fn(),
-      getJournal: vi.fn(),
-      updateTradePlanPlanning: vi.fn()
-    };
+      getTradePlans: vi.fn(async () => ({ generatedAt: '2026-08-28T16:04:00.000Z', items: [] }))
+    });
     render(
       <MemoryRouter>
         <App gateway={gateway} />
@@ -38,22 +31,33 @@ describe('App navigation', () => {
     expect(gateway.getWatchlist).toHaveBeenCalledOnce();
   });
 
+  it('opens the Discovery workspace from navigation', async () => {
+    const gateway = createGatewayStub({
+      getMomentumRanking: vi.fn(async () => ({
+        generatedAt: '2026-08-28T16:04:00.000Z',
+        items: []
+      }))
+    });
+    render(
+      <MemoryRouter>
+        <App gateway={gateway} />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('link', { name: 'Discovery' }));
+
+    expect(await screen.findByRole('heading', { name: 'Discovery' })).toBeInTheDocument();
+    expect(gateway.getMomentumRanking).toHaveBeenCalledOnce();
+  });
+
   it('opens the Watchlist directly from its route', async () => {
-    const gateway: CockpitGateway = {
-      getDashboardSummary: vi.fn(),
+    const gateway = createGatewayStub({
       getWatchlist: vi.fn(async () => ({
         generatedAt: '2026-08-28T16:04:00.000Z',
         items: []
       })),
-      getTradingAccounts: vi.fn(async () => ({ accounts: [] })),
-      createTradePlan: vi.fn(),
-      getTradePlans: vi.fn(async () => ({ generatedAt: '2026-08-28T16:04:00.000Z', items: [] })),
-      executeTradePlan: vi.fn(),
-      getOpenPositions: vi.fn(),
-      closePosition: vi.fn(),
-      getJournal: vi.fn(),
-      updateTradePlanPlanning: vi.fn()
-    };
+      getTradePlans: vi.fn(async () => ({ generatedAt: '2026-08-28T16:04:00.000Z', items: [] }))
+    });
 
     render(
       <MemoryRouter initialEntries={['/watchlist']}>
@@ -67,21 +71,12 @@ describe('App navigation', () => {
   });
 
   it('opens the Trade Plans workspace from navigation', async () => {
-    const gateway: CockpitGateway = {
-      getDashboardSummary: vi.fn(),
-      getWatchlist: vi.fn(),
-      getTradingAccounts: vi.fn(),
-      createTradePlan: vi.fn(),
+    const gateway = createGatewayStub({
       getTradePlans: vi.fn(async () => ({
         generatedAt: '2026-08-28T16:04:00.000Z',
         items: []
-      })),
-      executeTradePlan: vi.fn(),
-      getOpenPositions: vi.fn(),
-      closePosition: vi.fn(),
-      getJournal: vi.fn(),
-      updateTradePlanPlanning: vi.fn()
-    };
+      }))
+    });
     render(
       <MemoryRouter>
         <App gateway={gateway} />
@@ -95,21 +90,12 @@ describe('App navigation', () => {
   });
 
   it('opens the Positions workspace from navigation', async () => {
-    const gateway: CockpitGateway = {
-      getDashboardSummary: vi.fn(),
-      getWatchlist: vi.fn(),
-      getTradingAccounts: vi.fn(),
-      createTradePlan: vi.fn(),
-      getTradePlans: vi.fn(),
-      executeTradePlan: vi.fn(),
+    const gateway = createGatewayStub({
       getOpenPositions: vi.fn(async () => ({
         generatedAt: '2026-08-28T16:04:00.000Z',
         items: []
-      })),
-      closePosition: vi.fn(),
-      getJournal: vi.fn(),
-      updateTradePlanPlanning: vi.fn()
-    };
+      }))
+    });
     render(
       <MemoryRouter>
         <App gateway={gateway} />
@@ -123,21 +109,12 @@ describe('App navigation', () => {
   });
 
   it('opens the Journal workspace from navigation', async () => {
-    const gateway: CockpitGateway = {
-      getDashboardSummary: vi.fn(),
-      getWatchlist: vi.fn(),
-      getTradingAccounts: vi.fn(),
-      createTradePlan: vi.fn(),
-      getTradePlans: vi.fn(),
-      executeTradePlan: vi.fn(),
-      getOpenPositions: vi.fn(),
-      closePosition: vi.fn(),
+    const gateway = createGatewayStub({
       getJournal: vi.fn(async () => ({
         generatedAt: '2026-08-28T16:04:00.000Z',
         items: []
-      })),
-      updateTradePlanPlanning: vi.fn()
-    };
+      }))
+    });
     render(
       <MemoryRouter>
         <App gateway={gateway} />

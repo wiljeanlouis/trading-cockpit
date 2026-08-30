@@ -3,7 +3,7 @@ import {
   closePositionCommand,
   selectedPositionForClose,
   selectedPositionId
-} from '../../src/adapters/inbound/google-sheets/position-close-selection-mapper';
+} from '../../src/adapters/inbound/google-sheets/ui/position-close-selection-mapper';
 
 const headers = ['Position ID', 'Watchlist ID', 'Strategy ID', 'Ticker', 'Status'];
 
