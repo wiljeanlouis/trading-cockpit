@@ -6,7 +6,7 @@ import type {
   DashboardTradePlanSnapshot,
   DashboardWatchlistSnapshot
 } from '../../../../ports/outbound/dashboard-repository';
-import { readSheetHeaders, requireColumn } from '../sheet-headers';
+import { readSheetTable, requireColumn } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 
 const SHEETS = {
@@ -15,20 +15,6 @@ const SHEETS = {
   tradePlans: 'Trade Plans',
   positions: 'Positions'
 } as const;
-
-function dataRows(sheet: GoogleAppsScript.Spreadsheet.Sheet | null, headerRow = 1): unknown[][] {
-  if (!sheet || sheet.getLastRow() <= headerRow) return [];
-  return sheet
-    .getRange(headerRow + 1, 1, sheet.getLastRow() - headerRow, sheet.getLastColumn())
-    .getValues();
-}
-
-function headersAt(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number): string[] {
-  return sheet
-    .getRange(row, 1, 1, sheet.getLastColumn())
-    .getValues()[0]
-    .map((value) => String(value).trim());
-}
 
 function valueByHeader(headers: string[], row: unknown[], name: string): unknown {
   return row[requireColumn(headers, name)];
@@ -54,8 +40,8 @@ function readMomentumCandidates(
   sheet: GoogleAppsScript.Spreadsheet.Sheet | null
 ): DashboardMomentumCandidateSnapshot[] {
   if (!sheet || sheet.getLastRow() < 6) return [];
-  const headers = headersAt(sheet, 5);
-  return dataRows(sheet, 5)
+  const { headers, rows } = readSheetTable(sheet, 5);
+  return rows
     .map((row) => ({
       rank: nullableNumber(valueByHeader(headers, row, 'Rank')),
       ticker: textValue(valueByHeader(headers, row, 'Ticker')).toUpperCase(),
@@ -73,9 +59,8 @@ function readWatchlist(
   sheet: GoogleAppsScript.Spreadsheet.Sheet | null
 ): DashboardWatchlistSnapshot[] {
   if (!sheet) return [];
-  const rows = dataRows(sheet);
+  const { headers, rows } = readSheetTable(sheet);
   if (rows.length === 0) return [];
-  const headers = readSheetHeaders(sheet);
   return rows
     .map((row) => ({
       ticker: textValue(valueByHeader(headers, row, 'Ticker')).toUpperCase(),
@@ -94,9 +79,8 @@ function readTradePlans(
   sheet: GoogleAppsScript.Spreadsheet.Sheet | null
 ): DashboardTradePlanSnapshot[] {
   if (!sheet) return [];
-  const rows = dataRows(sheet);
+  const { headers, rows } = readSheetTable(sheet);
   if (rows.length === 0) return [];
-  const headers = readSheetHeaders(sheet);
   return rows.map((row) => ({
     status: textValue(valueByHeader(headers, row, 'Status')).toUpperCase()
   }));
@@ -106,9 +90,8 @@ function readPositions(
   sheet: GoogleAppsScript.Spreadsheet.Sheet | null
 ): DashboardPositionSnapshot[] {
   if (!sheet) return [];
-  const rows = dataRows(sheet);
+  const { headers, rows } = readSheetTable(sheet);
   if (rows.length === 0) return [];
-  const headers = readSheetHeaders(sheet);
   return rows
     .map((row) => ({
       ticker: textValue(valueByHeader(headers, row, 'Ticker')).toUpperCase(),

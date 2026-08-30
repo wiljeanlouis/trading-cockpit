@@ -146,62 +146,69 @@ function calculateByStrategyVersion(
     );
 }
 
+export function calculateAnalyticsFromJournalEntries(
+  entries: readonly JournalEntry[],
+  generatedAt: string,
+  available = true
+): AnalyticsDto {
+  if (!available) return emptyAnalytics(generatedAt, false);
+
+  const trades = entries
+    .map(tradeFromEntry)
+    .filter((trade): trade is AnalyticsTrade => Boolean(trade));
+  if (trades.length === 0) return emptyAnalytics(generatedAt, true);
+
+  const winners = trades.filter((trade) => trade.pnl > 0);
+  const losers = trades.filter((trade) => trade.pnl < 0);
+  const breakeven = trades.filter((trade) => calculateOutcome(trade.pnl) === 'BREAKEVEN');
+  const totalPnl = sum(trades.map((trade) => trade.pnl));
+  const grossProfit = sum(winners.map((trade) => trade.pnl));
+  const grossLoss = sum(losers.map((trade) => trade.pnl));
+  const winnerR = winners.map((trade) => trade.r);
+  const loserR = losers.map((trade) => trade.r);
+  const averageWinnerR = average(winnerR);
+  const averageLoserR = average(loserR);
+  const winProbability = winners.length / trades.length;
+  const lossProbability = losers.length / trades.length;
+
+  return {
+    generatedAt,
+    available: true,
+    summary: {
+      trades: trades.length,
+      wins: winners.length,
+      losses: losers.length,
+      breakeven: breakeven.length,
+      winRate: winners.length / trades.length,
+      profitFactor: grossLoss < 0 ? grossProfit / Math.abs(grossLoss) : null,
+      totalPnl,
+      averagePnl: average(trades.map((trade) => trade.pnl)),
+      bestPnl: Math.max(...trades.map((trade) => trade.pnl)),
+      grossProfit,
+      grossLoss,
+      worstPnl: Math.min(...trades.map((trade) => trade.pnl)),
+      totalR: sum(trades.map((trade) => trade.r)),
+      averageR: average(trades.map((trade) => trade.r)),
+      expectancyR: winProbability * averageWinnerR + lossProbability * averageLoserR,
+      averageWinnerR,
+      averageLoserR,
+      bestR: Math.max(...trades.map((trade) => trade.r))
+    },
+    byStrategy: calculateByStrategy(trades),
+    byStrategyVersion: calculateByStrategyVersion(trades)
+  };
+}
+
 export function createGetAnalytics({ journalReader, now }: GetAnalyticsDependencies) {
   return (): AnalyticsDto => {
     const generatedAt = now().toISOString();
-    let entries: JournalEntry[];
     try {
-      entries = journalReader.findAll();
+      return calculateAnalyticsFromJournalEntries(journalReader.findAll(), generatedAt);
     } catch (error) {
       if (error instanceof Error && error.message.includes('Journal est absent')) {
-        return emptyAnalytics(generatedAt, false);
+        return calculateAnalyticsFromJournalEntries([], generatedAt, false);
       }
       throw error;
     }
-
-    const trades = entries
-      .map(tradeFromEntry)
-      .filter((trade): trade is AnalyticsTrade => Boolean(trade));
-    if (trades.length === 0) return emptyAnalytics(generatedAt, true);
-
-    const winners = trades.filter((trade) => trade.pnl > 0);
-    const losers = trades.filter((trade) => trade.pnl < 0);
-    const breakeven = trades.filter((trade) => calculateOutcome(trade.pnl) === 'BREAKEVEN');
-    const totalPnl = sum(trades.map((trade) => trade.pnl));
-    const grossProfit = sum(winners.map((trade) => trade.pnl));
-    const grossLoss = sum(losers.map((trade) => trade.pnl));
-    const winnerR = winners.map((trade) => trade.r);
-    const loserR = losers.map((trade) => trade.r);
-    const averageWinnerR = average(winnerR);
-    const averageLoserR = average(loserR);
-    const winProbability = winners.length / trades.length;
-    const lossProbability = losers.length / trades.length;
-
-    return {
-      generatedAt,
-      available: true,
-      summary: {
-        trades: trades.length,
-        wins: winners.length,
-        losses: losers.length,
-        breakeven: breakeven.length,
-        winRate: winners.length / trades.length,
-        profitFactor: grossLoss < 0 ? grossProfit / Math.abs(grossLoss) : null,
-        totalPnl,
-        averagePnl: average(trades.map((trade) => trade.pnl)),
-        bestPnl: Math.max(...trades.map((trade) => trade.pnl)),
-        grossProfit,
-        grossLoss,
-        worstPnl: Math.min(...trades.map((trade) => trade.pnl)),
-        totalR: sum(trades.map((trade) => trade.r)),
-        averageR: average(trades.map((trade) => trade.r)),
-        expectancyR: winProbability * averageWinnerR + lossProbability * averageLoserR,
-        averageWinnerR,
-        averageLoserR,
-        bestR: Math.max(...trades.map((trade) => trade.r))
-      },
-      byStrategy: calculateByStrategy(trades),
-      byStrategyVersion: calculateByStrategyVersion(trades)
-    };
   };
 }
