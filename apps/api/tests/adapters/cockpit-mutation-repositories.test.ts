@@ -19,7 +19,7 @@ import type { TradePlan } from '@trading-cockpit/core/domain/trade-plan';
 import type { Position } from '@trading-cockpit/core/domain/position';
 import type { JournalEntry } from '@trading-cockpit/core/domain/journal-entry';
 import {
-  MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS,
+  FINVIZ_MOMENTUM_EXPORT_HEADERS,
   SIGNALS_HISTORY_HEADERS
 } from '@trading-cockpit/contracts';
 
@@ -415,48 +415,45 @@ describe('Cloud Run Google Sheets API mutation repositories', () => {
         strategyName: 'Momentum Breakout',
         strategyVersion: 'V1',
         ticker: 'BOX',
-        attributes: {
-          Ticker: 'BOX',
-          Company: 'Box Inc',
-          Sector: 'Technology',
-          Price: 34.98
-        }
+        attributes: Object.fromEntries(
+          FINVIZ_MOMENTUM_EXPORT_HEADERS.map((header) => [
+            header,
+            header === 'Ticker'
+              ? 'BOX'
+              : header === 'Company'
+                ? 'Box Inc'
+                : header === 'Sector'
+                  ? 'Technology'
+                  : header === 'Average Volume'
+                    ? 1_000_000
+                    : header === 'Price'
+                      ? 34.98
+                      : `${header} value`
+          ])
+        )
       }
     ]);
     await context.writer.flush();
 
-    expect(client.appendValues).toHaveBeenCalledWith({
-      spreadsheetId: 'spreadsheet-id',
-      range: SHEET_DEFINITIONS.signalsHistory.range,
-      values: [
-        expect.arrayContaining([
-          '2026-08-28',
-          '2026-08-28 16:04:00',
-          'MOMENTUM_BREAKOUT',
-          'Momentum Breakout',
-          'V1',
-          'BOX',
-          '',
-          'BOX',
-          'Box Inc',
-          'Technology',
-          '',
-          '',
-          '',
-          '',
-          34.98
-        ])
-      ],
-      valueInputOption: 'USER_ENTERED',
-      insertDataOption: 'INSERT_ROWS'
-    });
     const appendValues = vi.mocked(client.appendValues!);
     expect(appendValues).toHaveBeenCalled();
     const request = appendValues.mock.calls[0]?.[0];
+    expect(request).toEqual(
+      expect.objectContaining({
+        spreadsheetId: 'spreadsheet-id',
+        range: SHEET_DEFINITIONS.signalsHistory.range,
+        valueInputOption: 'USER_ENTERED',
+        insertDataOption: 'INSERT_ROWS'
+      })
+    );
     expect(request?.values[0]).toHaveLength(SIGNALS_HISTORY_HEADERS.length);
     expect(new Set(SIGNALS_HISTORY_HEADERS).size).toBe(SIGNALS_HISTORY_HEADERS.length);
     expect(request?.values[0]?.[SIGNALS_HISTORY_HEADERS.indexOf('Ticker')]).toBe('BOX');
     expect(request?.values[0]?.[SIGNALS_HISTORY_HEADERS.indexOf('Finviz Ticker')]).toBe('BOX');
+    expect(request?.values[0]?.[SIGNALS_HISTORY_HEADERS.indexOf('Average Volume')]).toBe(1_000_000);
+    expect(request?.values[0]?.[SIGNALS_HISTORY_HEADERS.indexOf('Earnings Date')]).toBe(
+      'Earnings Date value'
+    );
   });
 
   it('rejects unsupported signal attributes before writing beyond canonical headers', () => {
@@ -464,9 +461,9 @@ describe('Cloud Run Google Sheets API mutation repositories', () => {
     const context = mutationContext(client);
     const repository = new CloudRunSignalHistoryRepository(context);
 
-    expect(() =>
-      repository.ensureReady([...MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS, 'Unexpected'])
-    ).toThrow('Signals History attribut non supporté : Unexpected');
+    expect(() => repository.ensureReady([...FINVIZ_MOMENTUM_EXPORT_HEADERS, 'Unexpected'])).toThrow(
+      'Signals History attribut non supporté : Unexpected'
+    );
     expect(client.appendValues).not.toHaveBeenCalled();
   });
 });

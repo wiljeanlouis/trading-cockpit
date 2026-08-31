@@ -1,5 +1,8 @@
 import { CAPITAL_LEDGER_HEADERS } from '../../../outbound/google-sheets/capital-transaction/capital-transaction-mapper';
-import { SIGNALS_HISTORY_HEADERS } from '@trading-cockpit/contracts';
+import {
+  FINVIZ_MOMENTUM_EXPORT_HEADERS,
+  SIGNALS_HISTORY_HEADERS
+} from '@trading-cockpit/contracts';
 import {
   COCKPIT_CONFIG_HEADERS,
   COCKPIT_CONFIG_ROWS,
@@ -85,7 +88,8 @@ const FINVIZ_MOMENTUM_HEADERS = [
   'Strategy ID',
   'Strategy',
   'Strategy Version',
-  'Refreshed At'
+  'Refreshed At',
+  ...FINVIZ_MOMENTUM_EXPORT_HEADERS
 ] as const;
 
 const OPTIONAL_REPORT_SHEETS = ['Dashboard', 'Analytics', 'Documentation'] as const;

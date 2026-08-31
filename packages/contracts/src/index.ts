@@ -31,9 +31,11 @@ export type {
   MomentumRankingItemDto
 } from './discovery';
 export {
+  FINVIZ_MOMENTUM_EXPORT_HEADERS,
   MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS,
   SIGNAL_HISTORY_BASE_HEADERS,
-  SIGNALS_HISTORY_HEADERS
+  SIGNALS_HISTORY_HEADERS,
+  signalsHistoryHeaderForFinvizHeader
 } from './signal-history';
 export type { WatchlistDto, WatchlistItemDto } from './watchlist';
 export type {

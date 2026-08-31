@@ -4,6 +4,7 @@ import {
   type FinvizFeedConfiguration,
   type FinvizTransport
 } from '../../src/adapters/outbound/finviz/finviz-market-signal-source';
+import { FINVIZ_MOMENTUM_EXPORT_HEADERS } from '@trading-cockpit/contracts';
 
 const config: FinvizFeedConfiguration = {
   id: 'MOMENTUM_V1',
@@ -45,6 +46,34 @@ describe('Finviz market signal adapter', () => {
     });
     expect(value.transport.fetch).toHaveBeenCalledWith(
       'https://elite.finviz.com/export/screener?v=151&f=cap_smallover&auth=a%20token'
+    );
+  });
+
+  it('preserves every configured Finviz CSV field in the provider-neutral signal batch', () => {
+    const values = FINVIZ_MOMENTUM_EXPORT_HEADERS.map((header) =>
+      header === 'Ticker' ? 'box' : `${header} value`
+    );
+    const value = source({ status: 200, content: 'csv' }, [
+      [...FINVIZ_MOMENTUM_EXPORT_HEADERS],
+      values
+    ]);
+
+    const batch = value.source.fetchSignals(config.id);
+
+    expect(batch.attributeNames).toEqual([...FINVIZ_MOMENTUM_EXPORT_HEADERS]);
+    expect(Object.keys(batch.signals[0].attributes)).toEqual([...FINVIZ_MOMENTUM_EXPORT_HEADERS]);
+    expect(batch.signals[0]).toEqual(
+      expect.objectContaining({
+        ticker: 'BOX',
+        attributes: expect.objectContaining({
+          Ticker: 'box',
+          'Average Volume': 'Average Volume value',
+          '200-Day Simple Moving Average': '200-Day Simple Moving Average value',
+          '50-Day Simple Moving Average': '50-Day Simple Moving Average value',
+          'Performance (Week)': 'Performance (Week) value',
+          'Earnings Date': 'Earnings Date value'
+        })
+      })
     );
   });
 

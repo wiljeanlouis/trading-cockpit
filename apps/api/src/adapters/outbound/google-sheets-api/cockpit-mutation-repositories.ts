@@ -33,7 +33,11 @@ import type { SignalHistoryRepository } from '@trading-cockpit/core/ports/outbou
 import type { MarketSignalProjection } from '@trading-cockpit/core/ports/outbound/market-signal-projection';
 import type { TradingStrategyCatalog } from '@trading-cockpit/core/ports/outbound/trading-strategy-catalog';
 import type { MarketSignalBatch, SignalSnapshot } from '@trading-cockpit/core/domain/market-signal';
-import { MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS } from '@trading-cockpit/contracts';
+import {
+  FINVIZ_MOMENTUM_EXPORT_HEADERS,
+  MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS,
+  signalsHistoryHeaderForFinvizHeader
+} from '@trading-cockpit/contracts';
 import type {
   RankedMomentumCandidate,
   MomentumCandidate
@@ -883,15 +887,14 @@ function signalSnapshotToRow(snapshot: SignalSnapshot): unknown[] {
 }
 
 function isSupportedMomentumBreakoutAttribute(header: string): boolean {
-  if (header === 'Ticker') return true;
-  return (MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS as readonly string[]).includes(header);
+  return (FINVIZ_MOMENTUM_EXPORT_HEADERS as readonly string[]).includes(header);
 }
 
 function signalAttributeValue(snapshot: SignalSnapshot, header: string): unknown {
-  if (header === 'Finviz Ticker') {
-    return snapshot.attributes['Finviz Ticker'] ?? snapshot.attributes.Ticker ?? '';
-  }
-  return snapshot.attributes[header] ?? '';
+  const providerHeader = FINVIZ_MOMENTUM_EXPORT_HEADERS.find(
+    (candidate) => signalsHistoryHeaderForFinvizHeader(candidate) === header
+  );
+  return providerHeader ? (snapshot.attributes[providerHeader] ?? '') : '';
 }
 
 function serializeRows(rows: unknown[][]): unknown[][] {

@@ -2,8 +2,10 @@ import { buildSignalKey } from '@trading-cockpit/core/domain/market-signal';
 import type { SignalSnapshot } from '@trading-cockpit/core/domain/market-signal';
 import type { SignalHistoryRepository } from '@trading-cockpit/core/ports/outbound/signal-history-repository';
 import {
+  FINVIZ_MOMENTUM_EXPORT_HEADERS,
   MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS,
-  SIGNALS_HISTORY_HEADERS
+  SIGNALS_HISTORY_HEADERS,
+  signalsHistoryHeaderForFinvizHeader
 } from '@trading-cockpit/contracts';
 import { readSheetHeaders, requireColumn } from '../sheet-headers';
 import { themeTechnicalSheet } from '../../../inbound/google-sheets/theme/theme';
@@ -114,13 +116,12 @@ export class GoogleSheetsSignalHistoryRepository implements SignalHistoryReposit
 }
 
 function isSupportedMomentumBreakoutAttribute(header: string): boolean {
-  if (header === 'Ticker') return true;
-  return (MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS as readonly string[]).includes(header);
+  return (FINVIZ_MOMENTUM_EXPORT_HEADERS as readonly string[]).includes(header);
 }
 
 function signalAttributeValue(snapshot: SignalSnapshot, header: string): unknown {
-  if (header === 'Finviz Ticker') {
-    return snapshot.attributes['Finviz Ticker'] ?? snapshot.attributes.Ticker ?? '';
-  }
-  return snapshot.attributes[header] ?? '';
+  const providerHeader = FINVIZ_MOMENTUM_EXPORT_HEADERS.find(
+    (candidate) => signalsHistoryHeaderForFinvizHeader(candidate) === header
+  );
+  return providerHeader ? (snapshot.attributes[providerHeader] ?? '') : '';
 }

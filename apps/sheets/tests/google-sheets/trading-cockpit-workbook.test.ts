@@ -9,7 +9,10 @@ import {
   MOMENTUM_SCORE_CONFIG_HEADERS,
   MOMENTUM_SCORE_CONFIG_VALUES
 } from '../../src/adapters/inbound/google-sheets/ui/setup-momentum-ranking';
-import { SIGNALS_HISTORY_HEADERS } from '@trading-cockpit/contracts';
+import {
+  FINVIZ_MOMENTUM_EXPORT_HEADERS,
+  SIGNALS_HISTORY_HEADERS
+} from '@trading-cockpit/contracts';
 import { MOMENTUM_RANKING_HEADERS } from '../../src/adapters/outbound/google-sheets/momentum/momentum-ranking-schema';
 import { TRADE_PLAN_HEADERS } from '../../src/adapters/outbound/google-sheets/trade-plan/trade-plan-mapper';
 
@@ -200,8 +203,22 @@ describe('Trading Cockpit workbook setup and validation', () => {
     expect(spreadsheet.getSheetByName('Signals History')?.values[0]).toEqual([
       ...SIGNALS_HISTORY_HEADERS
     ]);
+    expect(spreadsheet.getSheetByName('Finviz - Momentum')?.values[0]).toEqual([
+      'Strategy ID',
+      'Strategy',
+      'Strategy Version',
+      'Refreshed At',
+      ...FINVIZ_MOMENTUM_EXPORT_HEADERS
+    ]);
     expect(new Set(SIGNALS_HISTORY_HEADERS).size).toBe(SIGNALS_HISTORY_HEADERS.length);
     expect(SIGNALS_HISTORY_HEADERS).toContain('Finviz Ticker');
+    expect(SIGNALS_HISTORY_HEADERS).toContain('Average Volume');
+    expect(SIGNALS_HISTORY_HEADERS).toContain('200-Day Simple Moving Average');
+    expect(SIGNALS_HISTORY_HEADERS).toContain('50-Day Simple Moving Average');
+    expect(SIGNALS_HISTORY_HEADERS).toContain('Performance (Week)');
+    expect(SIGNALS_HISTORY_HEADERS).toContain('Earnings Date');
+    expect(SIGNALS_HISTORY_HEADERS).not.toContain('Sales');
+    expect(SIGNALS_HISTORY_HEADERS.length).toBe(6 + FINVIZ_MOMENTUM_EXPORT_HEADERS.length);
     expect(spreadsheet.getSheetByName('Signals History')?.values[1]).toBeUndefined();
     expect(spreadsheet.getSheetByName('Momentum Ranking')?.values[1]).toBeUndefined();
     expect(spreadsheet.getSheetByName('Accounts')?.values).toEqual([

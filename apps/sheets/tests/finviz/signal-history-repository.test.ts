@@ -2,8 +2,10 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  FINVIZ_MOMENTUM_EXPORT_HEADERS,
   MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS,
-  SIGNALS_HISTORY_HEADERS
+  SIGNALS_HISTORY_HEADERS,
+  signalsHistoryHeaderForFinvizHeader
 } from '@trading-cockpit/contracts';
 import { GoogleSheetsSignalHistoryRepository } from '../../src/adapters/outbound/google-sheets/signal-history/google-sheets-signal-history-repository';
 
@@ -132,7 +134,7 @@ describe('Google Sheets Signals History repository', () => {
     installSpreadsheet(spreadsheet);
     const repository = new GoogleSheetsSignalHistoryRepository();
 
-    repository.ensureReady([...MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS]);
+    repository.ensureReady([...FINVIZ_MOMENTUM_EXPORT_HEADERS]);
     repository.append([
       {
         signalDate: '2026-08-28',
@@ -145,6 +147,7 @@ describe('Google Sheets Signals History repository', () => {
           Ticker: 'BOX',
           Company: 'Box Inc',
           Sector: 'Technology',
+          'Average Volume': 1_000_000,
           Price: 34.98
         }
       }
@@ -157,7 +160,41 @@ describe('Google Sheets Signals History repository', () => {
     expect(sheet?.values[1]?.[SIGNALS_HISTORY_HEADERS.indexOf('Ticker')]).toBe('BOX');
     expect(sheet?.values[1]?.[SIGNALS_HISTORY_HEADERS.indexOf('Finviz Ticker')]).toBe('BOX');
     expect(sheet?.values[1]?.[SIGNALS_HISTORY_HEADERS.indexOf('Company')]).toBe('Box Inc');
+    expect(sheet?.values[1]?.[SIGNALS_HISTORY_HEADERS.indexOf('Average Volume')]).toBe(1_000_000);
     expect(sheet?.values[1]?.[SIGNALS_HISTORY_HEADERS.indexOf('Price')]).toBe(34.98);
+  });
+
+  it('maps every configured Finviz CSV field to exactly one Signals History destination', () => {
+    const destinations = FINVIZ_MOMENTUM_EXPORT_HEADERS.map(signalsHistoryHeaderForFinvizHeader);
+
+    expect(FINVIZ_MOMENTUM_EXPORT_HEADERS).toEqual([
+      'No.',
+      'Ticker',
+      'Company',
+      'Sector',
+      'Industry',
+      'Country',
+      'Market Cap',
+      'P/E',
+      'Volume',
+      'Price',
+      'Change',
+      'Average Volume',
+      'Relative Volume',
+      'Relative Strength Index (14)',
+      '52-Week High',
+      '20-Day Simple Moving Average',
+      '200-Day Simple Moving Average',
+      '50-Day Simple Moving Average',
+      'Performance (Week)',
+      'Performance (Month)',
+      'Earnings Date'
+    ]);
+    expect(destinations).toEqual([...MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS]);
+    expect(destinations).toHaveLength(FINVIZ_MOMENTUM_EXPORT_HEADERS.length);
+    expect(new Set(destinations).size).toBe(destinations.length);
+    expect(signalsHistoryHeaderForFinvizHeader('Ticker')).toBe('Finviz Ticker');
+    expect(signalsHistoryHeaderForFinvizHeader('Average Volume')).toBe('Average Volume');
   });
 
   it('rejects incomplete historical headers instead of dynamically extending them', () => {
@@ -169,9 +206,7 @@ describe('Google Sheets Signals History repository', () => {
     installSpreadsheet(spreadsheet);
 
     expect(() =>
-      new GoogleSheetsSignalHistoryRepository().ensureReady([
-        ...MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS
-      ])
+      new GoogleSheetsSignalHistoryRepository().ensureReady([...FINVIZ_MOMENTUM_EXPORT_HEADERS])
     ).toThrow('Signals History utilise un ancien schéma. Colonne absente : No.');
   });
 
@@ -181,7 +216,7 @@ describe('Google Sheets Signals History repository', () => {
 
     expect(() =>
       new GoogleSheetsSignalHistoryRepository().ensureReady([
-        ...MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS,
+        ...FINVIZ_MOMENTUM_EXPORT_HEADERS,
         'Unexpected'
       ])
     ).toThrow('Signals History attribut non supporté : Unexpected');
