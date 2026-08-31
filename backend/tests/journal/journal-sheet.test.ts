@@ -38,7 +38,11 @@ function sheetWithHeaders(headers: readonly string[]) {
 
 describe('Journal physical sheet contract', () => {
   it('returns an existing sheet without reinitializing or re-theming it', () => {
-    const existing = {} as GoogleAppsScript.Spreadsheet.Sheet;
+    const existing = {
+      getLastRow: () => 1,
+      getLastColumn: () => 1,
+      getRange: () => ({ getValues: () => [['existing']] })
+    } as unknown as GoogleAppsScript.Spreadsheet.Sheet;
     const insertSheet = vi.fn();
     const themeJournal = vi.fn();
     vi.stubGlobal('themeJournal', themeJournal);
@@ -51,10 +55,12 @@ describe('Journal physical sheet contract', () => {
     vi.unstubAllGlobals();
   });
 
-  it('validates historical A-Z without requiring appended Account ID', () => {
-    const historicalHeaders = JOURNAL_HEADERS.slice(0, -1);
-    expect(validateJournalSchema(sheetWithHeaders(historicalHeaders).sheet)).toBe(true);
-    expect(() => validateJournalSchema(sheetWithHeaders(historicalHeaders.slice(1)).sheet)).toThrow(
+  it('validates the full row-1 DATA schema including Account ID', () => {
+    expect(validateJournalSchema(sheetWithHeaders(JOURNAL_HEADERS).sheet)).toBe(true);
+    expect(() =>
+      validateJournalSchema(sheetWithHeaders(JOURNAL_HEADERS.slice(0, -1)).sheet)
+    ).toThrow('Journal utilise un ancien schéma. Colonne absente : Account ID');
+    expect(() => validateJournalSchema(sheetWithHeaders(JOURNAL_HEADERS.slice(1)).sheet)).toThrow(
       'Journal utilise un ancien schéma. Colonne absente : Journal ID'
     );
   });
@@ -84,7 +90,7 @@ describe('Journal physical sheet contract', () => {
       }
     });
     const validations = new Map<number, unknown>();
-    const headers = JOURNAL_HEADERS.slice(0, -1);
+    const headers = JOURNAL_HEADERS;
     const sheet = {
       getLastColumn: () => headers.length,
       getMaxRows: () => 500,

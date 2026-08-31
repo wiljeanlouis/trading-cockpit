@@ -8,6 +8,7 @@ import type {
 } from '@trading-cockpit/backend-core/ports/outbound/dashboard-repository';
 import { readSheetTable, requireColumn } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
+import { DATA_SHEET_HEADER_ROW } from '../data-sheet';
 
 const SHEETS = {
   momentumRanking: 'Momentum Ranking',
@@ -39,8 +40,8 @@ function nullableNumber(value: unknown): number | null {
 function readMomentumCandidates(
   sheet: GoogleAppsScript.Spreadsheet.Sheet | null
 ): DashboardMomentumCandidateSnapshot[] {
-  if (!sheet || sheet.getLastRow() < 6) return [];
-  const { headers, rows } = readSheetTable(sheet, 5);
+  if (!sheet) return [];
+  const { headers, rows } = readSheetTable(sheet, DATA_SHEET_HEADER_ROW);
   return rows
     .map((row) => ({
       rank: nullableNumber(valueByHeader(headers, row, 'Rank')),

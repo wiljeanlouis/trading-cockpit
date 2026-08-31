@@ -5,6 +5,7 @@ import {
   readMomentumRankingRecords,
   readPositions,
   readTradePlans,
+  readTradingConfig,
   readTradingAccounts,
   readWatchlistEntries,
   SHEET_DEFINITIONS,
@@ -118,6 +119,20 @@ describe('Cloud Run Google Sheets API query readers', () => {
     ]);
   });
 
+  it('rejects Trade Plan sheets missing the current Account ID column', async () => {
+    const headers = SHEET_DEFINITIONS.tradePlans.requiredHeaders.filter(
+      (header) => header !== 'Account ID'
+    );
+
+    await expect(
+      readTradePlans(
+        sheets({
+          [SHEET_DEFINITIONS.tradePlans.range]: [[...headers]]
+        })
+      )
+    ).rejects.toThrow('Trade Plans est incomplet : colonne Account ID absente.');
+  });
+
   it('maps Position rows while preserving formula-backed values as snapshots', async () => {
     const headers = SHEET_DEFINITIONS.positions.requiredHeaders;
     const positions = await readPositions(
@@ -203,6 +218,29 @@ describe('Cloud Run Google Sheets API query readers', () => {
         outcome: 'WIN'
       })
     ]);
+  });
+
+  it('reads normalized Cockpit Config rows directly from row 2+', async () => {
+    const config = await readTradingConfig(
+      sheets({
+        [SHEET_DEFINITIONS.cockpitConfig.range]: [
+          ['Parameter', 'Value', 'Description'],
+          ['Account Name', 'Trading', 'Nom du compte'],
+          ['Account Equity', 20_000, 'Legacy display value'],
+          ['Default Risk %', 0.005, 'Legacy display value'],
+          ['Max Position %', 0.1, 'Legacy display value'],
+          ['Currency', 'cad', 'Legacy display value']
+        ]
+      })
+    );
+
+    expect(config).toEqual({
+      accountName: 'Trading',
+      accountEquity: 20_000,
+      defaultRiskPercent: 0.005,
+      maxPositionPercent: 0.1,
+      currency: 'CAD'
+    });
   });
 
   it('maps Trading Accounts and rejects duplicate account IDs through domain validation', async () => {

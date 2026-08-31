@@ -1180,14 +1180,12 @@ function queryFixtureByRange(
       })
     ],
     [SHEET_DEFINITIONS.cockpitConfig.range]: [
-      ['TRADING COCKPIT CONFIG', ''],
-      ['', ''],
-      ['Parameter', 'Value'],
-      ['Account Name', 'Trading'],
-      ['Account Equity', 20000],
-      ['Default Risk %', 0.005],
-      ['Max Position %', 0.1],
-      ['Currency', 'CAD']
+      ['Parameter', 'Value', 'Description'],
+      ['Account Name', 'Trading', 'Nom du compte utilisé pour le trading actif'],
+      ['Account Equity', 20000, 'Valeur actuelle du compte utilisée pour le position sizing'],
+      ['Default Risk %', 0.005, 'Risque maximal par trade'],
+      ['Max Position %', 0.1, 'Exposition maximale recommandée par position'],
+      ['Currency', 'CAD', 'Devise du compte']
     ]
   };
 }

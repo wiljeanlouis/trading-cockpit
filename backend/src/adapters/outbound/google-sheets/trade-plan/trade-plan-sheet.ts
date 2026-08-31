@@ -2,15 +2,16 @@ import { TRADE_PLAN_HEADERS } from './trade-plan-mapper';
 import { readSheetHeaders, requireColumn, requireSheetHeaders } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 import { themeTradePlans } from '../../../inbound/google-sheets/theme/theme';
+import { isSheetEffectivelyEmpty } from '../data-sheet';
 
 const SHEET_NAME = 'Trade Plans';
-const HISTORICAL_HEADERS = TRADE_PLAN_HEADERS.slice(0, 29);
 
 export function getOrCreateTradePlansSheet(): GoogleAppsScript.Spreadsheet.Sheet {
   const spreadsheet = getTradingCockpitSpreadsheet();
   let sheet = spreadsheet.getSheetByName(SHEET_NAME);
-  if (sheet) return sheet;
-  sheet = spreadsheet.insertSheet(SHEET_NAME);
+  if (sheet && !isSheetEffectivelyEmpty(sheet)) return sheet;
+  sheet = sheet ?? spreadsheet.insertSheet(SHEET_NAME);
+  sheet.clear();
   sheet
     .getRange(1, 1, 1, TRADE_PLAN_HEADERS.length)
     .setValues([[...TRADE_PLAN_HEADERS]])
@@ -27,7 +28,7 @@ export function validateTradePlansSchema(sheet: GoogleAppsScript.Spreadsheet.She
 }
 
 export function validateTradePlansHeaders(headers: readonly unknown[]): true {
-  return requireSheetHeaders(headers, HISTORICAL_HEADERS, 'Trade Plans');
+  return requireSheetHeaders(headers, TRADE_PLAN_HEADERS, 'Trade Plans');
 }
 
 export function refreshTradePlanValidations(sheet: GoogleAppsScript.Spreadsheet.Sheet): void {

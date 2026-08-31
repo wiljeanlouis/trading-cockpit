@@ -22,7 +22,6 @@ import type { TradingConfigDto } from '@trading-cockpit/contracts';
 import {
   nullableText,
   numberOrNull,
-  requireSheetHeaders,
   snapshotValue,
   textValue,
   type RequestScopedSheets,
@@ -56,6 +55,98 @@ export const WATCHLIST_HEADERS = [
   'Closed At'
 ] as const;
 
+const TRADE_PLAN_HEADERS = [
+  'Trade Plan ID',
+  'Watchlist ID',
+  'Strategy ID',
+  'Strategy',
+  'Strategy Version',
+  'Signal Date',
+  'Signal Price',
+  'Ticker',
+  'Reference Price',
+  'Momentum Score',
+  'Setup Status',
+  'Breakout Level',
+  'Invalidation Level',
+  'Event Risk',
+  'Created At',
+  'Entry Type',
+  'Entry Price',
+  'Stop Price',
+  'Target Price',
+  'Risk / Share',
+  'Reward / Share',
+  'Risk : Reward',
+  'Account Equity',
+  'Risk %',
+  'Max Risk $',
+  'Position Size',
+  'Position Value',
+  'Status',
+  'Notes',
+  'Account ID'
+] as const;
+
+const POSITION_HEADERS = [
+  'Position ID',
+  'Trade Plan ID',
+  'Watchlist ID',
+  'Strategy ID',
+  'Strategy',
+  'Strategy Version',
+  'Ticker',
+  'Opened At',
+  'Planned Entry',
+  'Actual Entry',
+  'Planned Quantity',
+  'Actual Quantity',
+  'Initial Stop',
+  'Current Stop',
+  'Target',
+  'Planned Max Risk',
+  'Planned R:R',
+  'Current Price',
+  'Unrealized P&L',
+  'Unrealized P&L %',
+  'Status',
+  'Closed At',
+  'Exit Price',
+  'Realized P&L',
+  'Notes',
+  'Account ID'
+] as const;
+
+const JOURNAL_HEADERS = [
+  'Journal ID',
+  'Position ID',
+  'Trade Plan ID',
+  'Watchlist ID',
+  'Strategy ID',
+  'Strategy',
+  'Strategy Version',
+  'Ticker',
+  'Opened At',
+  'Closed At',
+  'Planned Entry',
+  'Actual Entry',
+  'Exit Price',
+  'Quantity',
+  'Initial Stop',
+  'Target',
+  'Planned Max Risk',
+  'Planned R:R',
+  'Realized P&L',
+  'Return %',
+  'R-Multiple',
+  'Outcome',
+  'Exit Reason',
+  'Execution Notes',
+  'Lessons Learned',
+  'Followed Plan?',
+  'Account ID'
+] as const;
+
 export const SHEET_DEFINITIONS = {
   watchlist: {
     key: 'watchlist',
@@ -68,107 +159,21 @@ export const SHEET_DEFINITIONS = {
     key: 'tradePlans',
     sheetName: 'Trade Plans',
     range: "'Trade Plans'!A:AD",
-    requiredHeaders: [
-      'Trade Plan ID',
-      'Watchlist ID',
-      'Strategy ID',
-      'Strategy',
-      'Strategy Version',
-      'Signal Date',
-      'Signal Price',
-      'Ticker',
-      'Reference Price',
-      'Momentum Score',
-      'Setup Status',
-      'Breakout Level',
-      'Invalidation Level',
-      'Event Risk',
-      'Created At',
-      'Entry Type',
-      'Entry Price',
-      'Stop Price',
-      'Target Price',
-      'Risk / Share',
-      'Reward / Share',
-      'Risk : Reward',
-      'Account Equity',
-      'Risk %',
-      'Max Risk $',
-      'Position Size',
-      'Position Value',
-      'Status',
-      'Notes',
-      'Account ID'
-    ],
+    requiredHeaders: TRADE_PLAN_HEADERS,
     dateHeaders: ['Signal Date', 'Created At']
   },
   positions: {
     key: 'positions',
     sheetName: 'Positions',
     range: "'Positions'!A:Z",
-    requiredHeaders: [
-      'Position ID',
-      'Trade Plan ID',
-      'Watchlist ID',
-      'Strategy ID',
-      'Strategy',
-      'Strategy Version',
-      'Ticker',
-      'Opened At',
-      'Planned Entry',
-      'Actual Entry',
-      'Planned Quantity',
-      'Actual Quantity',
-      'Initial Stop',
-      'Current Stop',
-      'Target',
-      'Planned Max Risk',
-      'Planned R:R',
-      'Current Price',
-      'Unrealized P&L',
-      'Unrealized P&L %',
-      'Status',
-      'Closed At',
-      'Exit Price',
-      'Realized P&L',
-      'Notes',
-      'Account ID'
-    ],
+    requiredHeaders: POSITION_HEADERS,
     dateHeaders: ['Opened At', 'Closed At']
   },
   journal: {
     key: 'journal',
     sheetName: 'Journal',
     range: "'Journal'!A:AA",
-    requiredHeaders: [
-      'Journal ID',
-      'Position ID',
-      'Trade Plan ID',
-      'Watchlist ID',
-      'Strategy ID',
-      'Strategy',
-      'Strategy Version',
-      'Ticker',
-      'Opened At',
-      'Closed At',
-      'Planned Entry',
-      'Actual Entry',
-      'Exit Price',
-      'Quantity',
-      'Initial Stop',
-      'Target',
-      'Planned Max Risk',
-      'Planned R:R',
-      'Realized P&L',
-      'Return %',
-      'R-Multiple',
-      'Outcome',
-      'Exit Reason',
-      'Execution Notes',
-      'Lessons Learned',
-      'Followed Plan?',
-      'Account ID'
-    ],
+    requiredHeaders: JOURNAL_HEADERS,
     dateHeaders: ['Opened At', 'Closed At']
   },
   accounts: {
@@ -195,7 +200,7 @@ export const SHEET_DEFINITIONS = {
   momentumRanking: {
     key: 'momentumRanking',
     sheetName: 'Momentum Ranking',
-    range: "'Momentum Ranking'!A5:U",
+    range: "'Momentum Ranking'!A:U",
     requiredHeaders: [
       'Rank',
       'Strategy ID',
@@ -224,7 +229,8 @@ export const SHEET_DEFINITIONS = {
   cockpitConfig: {
     key: 'cockpitConfig',
     sheetName: 'Cockpit Config',
-    range: "'Cockpit Config'!A:B",
+    range: "'Cockpit Config'!A:C",
+    requiredHeaders: ['Parameter', 'Value', 'Description'],
     required: true
   },
   signalsHistory: {
@@ -367,9 +373,8 @@ export async function readMomentumRankingRecords(
 
 export async function readTradingConfig(sheets: RequestScopedSheets): Promise<TradingConfigDto> {
   const loaded = await sheets.getTable(SHEET_DEFINITIONS.cockpitConfig);
-  const rows = [loaded.table.headers, ...loaded.table.rows].slice(3);
   const values = new Map<string, unknown>();
-  rows.forEach((row) => {
+  loaded.table.rows.forEach((row) => {
     const key = textValue(row[0]);
     if (key) values.set(key, row[1]);
   });

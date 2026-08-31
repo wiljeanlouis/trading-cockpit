@@ -14,6 +14,7 @@ export function installCockpitMenu(): void {
     .addSeparator()
     .addItem('Reconcile Selected Position', 'reconcileSelectedPosition')
     .addItem('Setup Momentum Ranking', 'setupMomentumRanking')
+    .addItem('Migrate Momentum Ranking Data Sheet', 'migrateMomentumRankingToDataSheet')
     .addItem('Setup Cockpit Config', 'setupCockpitConfig')
     .addItem('Setup Trading Accounts', 'setupTradingAccounts')
     .addSeparator()

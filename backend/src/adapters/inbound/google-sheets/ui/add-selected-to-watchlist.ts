@@ -1,7 +1,13 @@
 import type { AddCandidateToWatchlist } from '@trading-cockpit/backend-core/application/watchlist/add-candidate-to-watchlist';
 import { rankingRowToAddCandidateCommand } from './ranking-candidate-mapper';
-
-const MOMENTUM_RANKING_SHEET_NAME = 'Momentum Ranking';
+import {
+  DATA_SHEET_HEADER_ROW,
+  DATA_SHEET_DATA_START_ROW
+} from '../../../outbound/google-sheets/data-sheet';
+import {
+  MOMENTUM_RANKING_HEADERS,
+  MOMENTUM_RANKING_SHEET_NAME
+} from '../../../outbound/google-sheets/momentum/momentum-ranking-schema';
 
 export function addSelectedRankingCandidateToWatchlist(
   addCandidateToWatchlist: AddCandidateToWatchlist
@@ -20,16 +26,14 @@ export function addSelectedRankingCandidateToWatchlist(
   }
 
   const rowNumber = selectedRange.getRow();
-
-  if (rowNumber < 6) {
-    throw new Error('Sélectionne une ligne contenant un candidat.');
-  }
-
   const lastColumn = sourceSheet.getLastColumn();
   const headers = sourceSheet
-    .getRange(5, 1, 1, lastColumn)
+    .getRange(DATA_SHEET_HEADER_ROW, 1, 1, lastColumn)
     .getValues()[0]
     .map((value) => String(value).trim());
+  if (!hasRankingHeaders(headers) || rowNumber < DATA_SHEET_DATA_START_ROW) {
+    throw new Error('Sélectionne une ligne contenant un candidat.');
+  }
   const row: unknown[] = sourceSheet.getRange(rowNumber, 1, 1, lastColumn).getValues()[0];
   const result = addCandidateToWatchlist(rankingRowToAddCandidateCommand(headers, row));
 
@@ -49,4 +53,8 @@ export function addSelectedRankingCandidateToWatchlist(
     'Trading Cockpit',
     5
   );
+}
+
+function hasRankingHeaders(headers: readonly string[]): boolean {
+  return MOMENTUM_RANKING_HEADERS.every((header) => headers.includes(header));
 }

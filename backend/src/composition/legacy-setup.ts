@@ -1,4 +1,7 @@
-import { setupMomentumRankingInSheets } from '../adapters/inbound/google-sheets/ui/setup-momentum-ranking';
+import {
+  migrateMomentumRankingToDataSheet,
+  setupMomentumRankingInSheets
+} from '../adapters/inbound/google-sheets/ui/setup-momentum-ranking';
 import {
   setupStrategiesInSheets,
   validateStrategiesInSheets
@@ -6,6 +9,10 @@ import {
 
 export function runSetupMomentumRanking(): void {
   setupMomentumRankingInSheets();
+}
+
+export function runMigrateMomentumRankingToDataSheet() {
+  return migrateMomentumRankingToDataSheet();
 }
 
 export function runSetupStrategies(): void {

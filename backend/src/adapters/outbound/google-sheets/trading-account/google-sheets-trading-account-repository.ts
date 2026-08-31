@@ -6,6 +6,7 @@ import type { TradingAccountRepository } from '@trading-cockpit/backend-core/por
 import { TRADING_ACCOUNT_HEADERS, tradingAccountFromRow } from './trading-account-mapper';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 import { readSheetTable } from '../sheet-headers';
+import { isSheetEffectivelyEmpty } from '../data-sheet';
 
 const ACCOUNTS_SHEET_NAME = 'Accounts';
 
@@ -31,9 +32,10 @@ export class GoogleSheetsTradingAccountRepository implements TradingAccountRepos
   private getOrCreateSheet(): GoogleAppsScript.Spreadsheet.Sheet {
     const spreadsheet = getTradingCockpitSpreadsheet();
     const existing = spreadsheet.getSheetByName(ACCOUNTS_SHEET_NAME);
-    if (existing) return existing;
+    if (existing && !isSheetEffectivelyEmpty(existing)) return existing;
 
-    const sheet = spreadsheet.insertSheet(ACCOUNTS_SHEET_NAME);
+    const sheet = existing ?? spreadsheet.insertSheet(ACCOUNTS_SHEET_NAME);
+    sheet.clear();
     sheet
       .getRange(1, 1, 1, TRADING_ACCOUNT_HEADERS.length)
       .setValues([[...TRADING_ACCOUNT_HEADERS]])

@@ -38,6 +38,7 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.CockpitBundle?.refreshAnalytics).toBeTypeOf('function');
     expect(context.CockpitBundle?.refreshMomentumRanking).toBeTypeOf('function');
     expect(context.CockpitBundle?.setupMomentumRanking).toBeTypeOf('function');
+    expect(context.CockpitBundle?.migrateMomentumRankingToDataSheet).toBeTypeOf('function');
     expect(context.CockpitBundle?.setupStrategies).toBeTypeOf('function');
     expect(context.CockpitBundle?.validateStrategies).toBeTypeOf('function');
     expect(context.CockpitBundle?.setupCockpitConfig).toBeTypeOf('function');
@@ -84,6 +85,7 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.refreshAnalytics).toBeTypeOf('function');
     expect(context.refreshMomentumRanking).toBeTypeOf('function');
     expect(context.setupMomentumRanking).toBeTypeOf('function');
+    expect(context.migrateMomentumRankingToDataSheet).toBeTypeOf('function');
     expect(context.setupStrategies).toBeTypeOf('function');
     expect(context.validateStrategies).toBeTypeOf('function');
     expect(context.setupCockpitConfig).toBeTypeOf('function');
@@ -96,11 +98,11 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.runArchitecturePoc).toBeUndefined();
   });
 
-  it('bundles all 20 menu callbacks with their existing labels', () => {
+  it('bundles all 21 menu callbacks with their existing labels', () => {
     const targets = [...bundleSource.matchAll(/\.addItem\(\s*"[^"]+"\s*,\s*"([^"]+)"/gs)].map(
       (match) => match[1]
     );
-    expect(targets).toHaveLength(20);
+    expect(targets).toHaveLength(21);
     expect(targets).toEqual(
       expect.arrayContaining([
         'refreshFinviz',
@@ -113,6 +115,7 @@ describe('Cockpit Apps Script bundle', () => {
         'closeSelectedPosition',
         'reconcileSelectedPosition',
         'setupMomentumRanking',
+        'migrateMomentumRankingToDataSheet',
         'setupCockpitConfig',
         'setupTradingAccounts',
         'recordInitialFunding',

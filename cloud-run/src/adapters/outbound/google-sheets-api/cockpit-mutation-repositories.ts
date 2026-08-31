@@ -4,13 +4,11 @@ import {
   sameWatchlistIdentity,
   watchlistIdentityOf,
   type WatchlistEntry,
-  type WatchlistIdentity,
-  type WatchlistSnapshotValue
+  type WatchlistIdentity
 } from '@trading-cockpit/backend-core/domain/watchlist';
 import {
   isActiveTradePlanStatus,
-  type TradePlan,
-  type TradePlanSnapshotValue
+  type TradePlan
 } from '@trading-cockpit/backend-core/domain/trade-plan';
 import { isOpenPositionStatus, type Position } from '@trading-cockpit/backend-core/domain/position';
 import type { JournalEntry } from '@trading-cockpit/backend-core/domain/journal-entry';
@@ -18,10 +16,7 @@ import {
   createCapitalTransaction,
   type CapitalTransaction
 } from '@trading-cockpit/backend-core/domain/capital-transaction';
-import {
-  normalizeTradingAccount,
-  type TradingAccount
-} from '@trading-cockpit/backend-core/domain/trading-account';
+import type { TradingAccount } from '@trading-cockpit/backend-core/domain/trading-account';
 import type { TradingAccountRiskPolicy } from '@trading-cockpit/backend-core/domain/trading-account-risk-policy';
 import type { RuntimePort } from '@trading-cockpit/backend-core/ports/outbound/runtime-port';
 import type { StrategyRepository } from '@trading-cockpit/backend-core/ports/outbound/strategy-repository';
@@ -51,7 +46,6 @@ import type {
 import type { SheetsValuesClient } from './google-sheets-api-client';
 import {
   readJournalEntries,
-  readMomentumRankingRecords,
   readPositions,
   readTradingAccounts,
   readTradePlans,
@@ -62,18 +56,8 @@ import {
   requireColumn,
   textValue,
   valueByHeader,
-  type RequestScopedSheets,
-  type SheetTableDefinition
+  type RequestScopedSheets
 } from './sheets-api-table';
-
-const SIGNAL_HISTORY_HEADERS = [
-  'Signal Date',
-  'Detected At',
-  'Strategy ID',
-  'Strategy',
-  'Strategy Version',
-  'Ticker'
-] as const;
 
 export const CAPITAL_LEDGER_HEADERS = [
   'Transaction ID',
@@ -502,7 +486,7 @@ export class CloudRunMomentumRankingProjection implements MomentumRankingProject
       candidate.total,
       'REVIEW'
     ]);
-    this.context.writer.update("'Momentum Ranking'!A5:U", [
+    this.context.writer.update("'Momentum Ranking'!A1:U", [
       [...SHEET_DEFINITIONS.momentumRanking.requiredHeaders],
       ...rows
     ]);
@@ -580,11 +564,14 @@ export class CloudRunMarketSignalProjection implements MarketSignalProjection {
   constructor(private readonly context: MutationContext) {}
   replace(batch: MarketSignalBatch, refreshedAt: Date): void {
     this.context.writer.update("'Finviz - Momentum'!A1:Z", [
-      ['Refreshed At', formatDateTime(refreshedAt)],
-      batch.attributeNames,
-      ...batch.signals.map((signal) =>
-        batch.attributeNames.map((name) => signal.attributes[name] ?? '')
-      )
+      ['Strategy ID', 'Strategy', 'Strategy Version', 'Refreshed At', ...batch.attributeNames],
+      ...batch.signals.map((signal) => [
+        batch.feed.strategyId,
+        batch.feed.strategyName,
+        batch.feed.strategyVersion,
+        formatDateTime(refreshedAt),
+        ...batch.attributeNames.map((name) => signal.attributes[name] ?? '')
+      ])
     ]);
   }
 }

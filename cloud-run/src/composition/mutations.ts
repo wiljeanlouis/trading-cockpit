@@ -24,18 +24,13 @@ import type {
   UpdateTradePlanPlanningResponse
 } from '@trading-cockpit/contracts';
 import {
-  CloudRunCapitalTransactionRepository,
   CloudRunMarketSignalProjection,
-  CloudRunJournalRepository,
   CloudRunMomentumRankingProjection,
   CloudRunMomentumSignalRepository,
-  CloudRunPositionRepository,
   CloudRunSignalHistoryRepository,
   CloudRunTradePlanRepository,
   CloudRunWatchlistRepository,
   LoadedStrategyRepository,
-  LoadedTradingAccountRepository,
-  LoadedTradingAccountRiskPolicyRepository,
   LoadedTradingStrategyCatalog,
   NodeRuntime,
   CAPITAL_LEDGER_HEADERS,
@@ -46,7 +41,6 @@ import {
   LoadedMomentumRankingReader,
   readMomentumRankingRecords,
   readStrategyIds,
-  readTradingAccounts,
   SHEET_DEFINITIONS
 } from '../adapters/outbound/google-sheets-api/cockpit-query-readers';
 import { CloudRunFinvizMarketSignalSource } from '../adapters/outbound/finviz/finviz-market-signal-source';
@@ -292,7 +286,7 @@ export async function setupMomentumRankingForCloudRun({
   mutationContext
 }: MutationDependencies): Promise<{ ok: true }> {
   await ensureSheets(mutationContext, ['Momentum Score Config', 'Momentum Ranking']);
-  mutationContext.writer.update("'Momentum Ranking'!A5:U", [
+  mutationContext.writer.update("'Momentum Ranking'!A1:U", [
     [...SHEET_DEFINITIONS.momentumRanking.requiredHeaders]
   ]);
   return { ok: true };
@@ -328,10 +322,8 @@ export async function setupCockpitConfigForCloudRun({
   mutationContext
 }: MutationDependencies): Promise<{ ok: true }> {
   await ensureSheets(mutationContext, ['Cockpit Config']);
-  if (await tableHasData(mutationContext, SHEET_DEFINITIONS.cockpitConfig)) return { ok: true };
-  mutationContext.writer.update("'Cockpit Config'!A1:C8", [
-    ['TRADING COCKPIT CONFIG', '', ''],
-    ['', '', ''],
+  if (await sheetRangeHasAnyContent(mutationContext, "'Cockpit Config'!A:C")) return { ok: true };
+  mutationContext.writer.update("'Cockpit Config'!A1:C6", [
     ['Parameter', 'Value', 'Description'],
     ['Account Name', 'Trading', 'Nom du compte utilisé pour le trading actif'],
     ['Account Equity', 10000, 'Valeur actuelle du compte utilisée pour le position sizing'],
@@ -363,6 +355,18 @@ async function tableHasData(
   } catch {
     return false;
   }
+}
+
+async function sheetRangeHasAnyContent(context: MutationContext, range: string): Promise<boolean> {
+  const client = context.writer['dependencies'].sheetsClient;
+  const spreadsheetId = context.writer['dependencies'].spreadsheetId;
+  const response = await client.getValues({
+    spreadsheetId,
+    range,
+    valueRenderOption: 'UNFORMATTED_VALUE',
+    dateTimeRenderOption: 'SERIAL_NUMBER'
+  });
+  return (response.values ?? []).some((row) => row.some((value) => textValue(value)));
 }
 
 export interface MutationDependencies {

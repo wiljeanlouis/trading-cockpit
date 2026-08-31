@@ -7,6 +7,7 @@ import {
 } from './capital-transaction-mapper';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 import { readSheetTable } from '../sheet-headers';
+import { isSheetEffectivelyEmpty } from '../data-sheet';
 
 const CAPITAL_LEDGER_SHEET_NAME = 'Capital Ledger';
 
@@ -35,8 +36,9 @@ export class GoogleSheetsCapitalTransactionRepository implements CapitalTransact
   private getOrCreateSheet(): GoogleAppsScript.Spreadsheet.Sheet {
     const spreadsheet = getTradingCockpitSpreadsheet();
     const existing = spreadsheet.getSheetByName(CAPITAL_LEDGER_SHEET_NAME);
-    if (existing) return existing;
-    const sheet = spreadsheet.insertSheet(CAPITAL_LEDGER_SHEET_NAME);
+    if (existing && !isSheetEffectivelyEmpty(existing)) return existing;
+    const sheet = existing ?? spreadsheet.insertSheet(CAPITAL_LEDGER_SHEET_NAME);
+    sheet.clear();
     sheet
       .getRange(1, 1, 1, CAPITAL_LEDGER_HEADERS.length)
       .setValues([[...CAPITAL_LEDGER_HEADERS]])

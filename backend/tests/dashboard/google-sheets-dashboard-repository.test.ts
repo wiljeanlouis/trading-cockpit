@@ -26,22 +26,18 @@ function sheetWith(headers: readonly string[], rows: unknown[][], headerRow = 1)
 
 describe('Google Sheets Dashboard repository reads', () => {
   it('loads each Dashboard source sheet as one validated table read', () => {
-    const momentum = sheetWith(
-      MOMENTUM_RANKING_HEADERS,
-      [
-        rowFor(MOMENTUM_RANKING_HEADERS, {
-          Rank: 1,
-          Ticker: 'BOX',
-          'Momentum Score': 87,
-          Price: 34.98,
-          '52W High': 0.01,
-          'Relative Volume': 1.5,
-          RSI: 61,
-          'Review Status': 'REVIEW'
-        })
-      ],
-      5
-    );
+    const momentum = sheetWith(MOMENTUM_RANKING_HEADERS, [
+      rowFor(MOMENTUM_RANKING_HEADERS, {
+        Rank: 1,
+        Ticker: 'BOX',
+        'Momentum Score': 87,
+        Price: 34.98,
+        '52W High': 0.01,
+        'Relative Volume': 1.5,
+        RSI: 61,
+        'Review Status': 'REVIEW'
+      })
+    ]);
     const watchlist = sheetWith(WATCHLIST_HEADERS, [
       rowFor(WATCHLIST_HEADERS, {
         Ticker: 'BOX',
@@ -88,8 +84,8 @@ describe('Google Sheets Dashboard repository reads', () => {
     expect(snapshot.watchlist).toHaveLength(1);
     expect(snapshot.tradePlans).toHaveLength(1);
     expect(snapshot.positions).toHaveLength(1);
+    expect(momentum.getRange).toHaveBeenCalledWith(1, 1, 2, MOMENTUM_RANKING_HEADERS.length);
     expect(momentum.getRange).toHaveBeenCalledTimes(1);
-    expect(momentum.getRange).toHaveBeenCalledWith(5, 1, 2, MOMENTUM_RANKING_HEADERS.length);
     expect(watchlist.getRange).toHaveBeenCalledTimes(1);
     expect(watchlist.getRange).toHaveBeenCalledWith(1, 1, 2, WATCHLIST_HEADERS.length);
     expect(tradePlans.getRange).toHaveBeenCalledTimes(1);

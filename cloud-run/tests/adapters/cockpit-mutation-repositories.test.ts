@@ -3,6 +3,7 @@ import type { SheetsValuesClient } from '../../src/adapters/outbound/google-shee
 import { createRequestScopedSheets } from '../../src/adapters/outbound/google-sheets-api/sheets-api-table';
 import {
   CloudRunJournalRepository,
+  CloudRunMarketSignalProjection,
   CloudRunPositionRepository,
   CloudRunTradePlanRepository,
   CloudRunWatchlistRepository,
@@ -340,5 +341,60 @@ describe('Cloud Run Google Sheets API mutation repositories', () => {
         valueInputOption: 'USER_ENTERED'
       })
     );
+  });
+
+  it('projects Finviz signals as a deterministic row-1 technical table', async () => {
+    const client = mutableClient({});
+    const context = mutationContext(client);
+
+    new CloudRunMarketSignalProjection(context).replace(
+      {
+        feed: {
+          id: 'MOMENTUM_BREAKOUT_V1',
+          strategyId: 'MOMENTUM_BREAKOUT',
+          strategyName: 'Momentum Breakout',
+          strategyVersion: 'V1'
+        },
+        attributeNames: ['Ticker', 'Company', 'Price'],
+        signals: [
+          {
+            ticker: 'BOX',
+            attributes: {
+              Ticker: 'BOX',
+              Company: 'Box Inc',
+              Price: 34.98
+            }
+          }
+        ]
+      },
+      new Date('2026-08-28T16:04:00.000Z')
+    );
+    await context.writer.flush();
+
+    expect(client.updateValues).toHaveBeenCalledWith({
+      spreadsheetId: 'spreadsheet-id',
+      range: "'Finviz - Momentum'!A1:Z",
+      values: [
+        [
+          'Strategy ID',
+          'Strategy',
+          'Strategy Version',
+          'Refreshed At',
+          'Ticker',
+          'Company',
+          'Price'
+        ],
+        [
+          'MOMENTUM_BREAKOUT',
+          'Momentum Breakout',
+          'V1',
+          '2026-08-28 16:04:00',
+          'BOX',
+          'Box Inc',
+          34.98
+        ]
+      ],
+      valueInputOption: 'USER_ENTERED'
+    });
   });
 });

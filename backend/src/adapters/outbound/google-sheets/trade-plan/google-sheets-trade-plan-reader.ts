@@ -14,6 +14,7 @@ export class GoogleSheetsTradePlanReader implements TradePlanReader {
 
     const { headers, rows } = readSheetTable(sheet);
     validateTradePlansHeaders(headers);
+
     return rows.map((row) => tradePlanFromRow(headers, row)).filter((plan) => Boolean(plan.id));
   }
 }

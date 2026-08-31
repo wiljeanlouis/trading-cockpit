@@ -464,35 +464,28 @@ export function themeRanking(ss: Spreadsheet): void {
 
   prepareSheet(sheet);
 
-  sheet
-    .getRange(1, 1, 1, sheet.getLastColumn())
-    .setBackground(COCKPIT_THEME.navy)
-    .setFontColor(COCKPIT_THEME.white)
-    .setFontWeight('bold')
-    .setFontSize(16);
-
   const lastColumn = sheet.getLastColumn();
 
   if (lastColumn > 0) {
-    styleDataTable(sheet, 5, 1, lastColumn);
+    styleDataTable(sheet, 1, 1, lastColumn);
   }
 
   const lastRow = sheet.getLastRow();
 
-  if (lastRow < 6) {
+  if (lastRow < 2) {
     return;
   }
 
-  applyTableAlternatingRows(sheet, 6, lastRow, 1, lastColumn);
+  applyTableAlternatingRows(sheet, 2, lastRow, 1, lastColumn);
 
   const headers = sheet
-    .getRange(5, 1, 1, lastColumn)
+    .getRange(1, 1, 1, lastColumn)
     .getValues()[0]
     .map((value) => String(value).trim());
 
   const scoreColumn = requireColumn(headers, 'Momentum Score') + 1;
 
-  const scoreRange = sheet.getRange(6, scoreColumn, lastRow - 5, 1);
+  const scoreRange = sheet.getRange(2, scoreColumn, lastRow - 1, 1);
 
   const rules = [
     SpreadsheetApp.newConditionalFormatRule()

@@ -13,7 +13,11 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('Watchlist physical sheet contract', () => {
   it('returns an existing sheet without rebuilding it', () => {
-    const sheet = { getRange: vi.fn() };
+    const sheet = {
+      getLastRow: () => 1,
+      getLastColumn: () => 1,
+      getRange: vi.fn(() => ({ getValues: () => [['existing']] }))
+    };
     vi.stubGlobal('SpreadsheetApp', {
       getActiveSpreadsheet: () => ({ getSheetByName: () => sheet })
     });

@@ -2,23 +2,24 @@ import { POSITION_HEADERS } from './position-mapper';
 import { readSheetHeaders, requireColumn, requireSheetHeaders } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 import { themePositions } from '../../../inbound/google-sheets/theme/theme';
+import { isSheetEffectivelyEmpty } from '../data-sheet';
 
 const SHEET_NAME = 'Positions';
-const HISTORICAL_HEADERS = POSITION_HEADERS.slice(0, -1);
 
 export function getOrCreatePositionsSheet(): GoogleAppsScript.Spreadsheet.Sheet {
   const spreadsheet = getTradingCockpitSpreadsheet();
   const existing = spreadsheet.getSheetByName(SHEET_NAME);
-  if (existing) return existing;
+  if (existing && !isSheetEffectivelyEmpty(existing)) return existing;
 
-  const sheet = spreadsheet.insertSheet(SHEET_NAME);
+  const sheet = existing ?? spreadsheet.insertSheet(SHEET_NAME);
+  sheet.clear();
   sheet
-    .getRange(1, 1, 1, HISTORICAL_HEADERS.length)
-    .setValues([Array.from(HISTORICAL_HEADERS)])
+    .getRange(1, 1, 1, POSITION_HEADERS.length)
+    .setValues([Array.from(POSITION_HEADERS)])
     .setFontWeight('bold');
   sheet.setFrozenRows(1);
   refreshPositionValidations(sheet);
-  sheet.autoResizeColumns(1, HISTORICAL_HEADERS.length);
+  sheet.autoResizeColumns(1, POSITION_HEADERS.length);
   themePositions(spreadsheet);
   return sheet;
 }
@@ -28,7 +29,7 @@ export function validatePositionsSchema(sheet: GoogleAppsScript.Spreadsheet.Shee
 }
 
 export function validatePositionsHeaders(headers: readonly unknown[]): true {
-  return requireSheetHeaders(headers, HISTORICAL_HEADERS, 'Positions');
+  return requireSheetHeaders(headers, POSITION_HEADERS, 'Positions');
 }
 
 export function ensurePositionAccountColumn(sheet: GoogleAppsScript.Spreadsheet.Sheet): void {

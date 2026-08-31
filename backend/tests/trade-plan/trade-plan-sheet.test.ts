@@ -14,7 +14,11 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('Trade Plan physical sheet contract', () => {
   it('returns an existing sheet without rebuilding it', () => {
-    const sheet = { getRange: vi.fn() };
+    const sheet = {
+      getLastRow: () => 1,
+      getLastColumn: () => 1,
+      getRange: vi.fn(() => ({ getValues: () => [['existing']] }))
+    };
     vi.stubGlobal('SpreadsheetApp', {
       getActiveSpreadsheet: () => ({ getSheetByName: () => sheet })
     });
@@ -22,13 +26,18 @@ describe('Trade Plan physical sheet contract', () => {
     expect(sheet.getRange).not.toHaveBeenCalled();
   });
 
-  it('accepts the 29-column historical schema without Account ID', () => {
-    const headers = [...TRADE_PLAN_HEADERS.slice(0, 29)];
+  it('validates the full row-1 DATA schema including Account ID', () => {
+    const headers = [...TRADE_PLAN_HEADERS];
     const sheet = {
       getLastColumn: () => headers.length,
       getRange: () => ({ getValues: () => [headers] })
     };
     expect(validateTradePlansSchema(sheet as never)).toBe(true);
+    headers.splice(headers.indexOf('Account ID'), 1);
+    expect(() => validateTradePlansSchema(sheet as never)).toThrow(
+      'Trade Plans utilise un ancien schéma. Colonne absente : Account ID'
+    );
+    headers.push('Account ID');
     headers.splice(5, 1);
     expect(() => validateTradePlansSchema(sheet as never)).toThrow(
       'Trade Plans utilise un ancien schéma. Colonne absente : Signal Date'

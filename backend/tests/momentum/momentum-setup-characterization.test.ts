@@ -38,10 +38,14 @@ describe('legacy setup data characterization', () => {
     expect(MOMENTUM_SCORE_CONFIG_VALUES[28]).toEqual(['SMA20 Extension', '> 12%', 5, '']);
   });
 
-  it('preserves the legacy 17-column setup schema rather than the 21-column refresh schema', () => {
-    expect(MOMENTUM_RANKING_SETUP_HEADERS).toHaveLength(17);
+  it('uses the normalized DATA-sheet ranking schema in setup', () => {
+    expect(MOMENTUM_RANKING_SETUP_HEADERS).toHaveLength(21);
     expect(MOMENTUM_RANKING_SETUP_HEADERS).toEqual([
       'Rank',
+      'Strategy ID',
+      'Strategy',
+      'Strategy Version',
+      'Signal Date',
       'Ticker',
       'Company',
       'Sector',

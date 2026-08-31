@@ -19,6 +19,7 @@ import {
   runRefreshMomentumRanking
 } from '../composition/momentum';
 import {
+  runMigrateMomentumRankingToDataSheet,
   runSetupMomentumRanking,
   runSetupStrategies,
   runValidateStrategies
@@ -159,6 +160,10 @@ export function refreshMomentumRanking(): void {
 
 export function setupMomentumRanking(): void {
   runSetupMomentumRanking();
+}
+
+export function migrateMomentumRankingToDataSheet() {
+  return runMigrateMomentumRankingToDataSheet();
 }
 
 export function setupStrategies(): void {

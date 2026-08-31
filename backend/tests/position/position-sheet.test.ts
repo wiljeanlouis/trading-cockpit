@@ -38,7 +38,11 @@ function sheetWithHeaders(headers: readonly string[]) {
 
 describe('Position physical sheet contract', () => {
   it('returns an existing sheet without reinitializing or re-theming it', () => {
-    const existing = {} as GoogleAppsScript.Spreadsheet.Sheet;
+    const existing = {
+      getLastRow: () => 1,
+      getLastColumn: () => 1,
+      getRange: () => ({ getValues: () => [['existing']] })
+    } as unknown as GoogleAppsScript.Spreadsheet.Sheet;
     const insertSheet = vi.fn();
     const themePositions = vi.fn();
     vi.stubGlobal('themePositions', themePositions);
@@ -51,11 +55,13 @@ describe('Position physical sheet contract', () => {
     vi.unstubAllGlobals();
   });
 
-  it('validates the historical A-Y schema without requiring appended Account ID', () => {
-    const historicalHeaders = POSITION_HEADERS.slice(0, -1);
-    expect(validatePositionsSchema(sheetWithHeaders(historicalHeaders).sheet)).toBe(true);
+  it('validates the full row-1 DATA schema including Account ID', () => {
+    expect(validatePositionsSchema(sheetWithHeaders(POSITION_HEADERS).sheet)).toBe(true);
     expect(() =>
-      validatePositionsSchema(sheetWithHeaders(historicalHeaders.slice(1)).sheet)
+      validatePositionsSchema(sheetWithHeaders(POSITION_HEADERS.slice(0, -1)).sheet)
+    ).toThrow('Positions utilise un ancien schéma. Colonne absente : Account ID');
+    expect(() =>
+      validatePositionsSchema(sheetWithHeaders(POSITION_HEADERS.slice(1)).sheet)
     ).toThrow('Positions utilise un ancien schéma. Colonne absente : Position ID');
   });
 
@@ -81,7 +87,7 @@ describe('Position physical sheet contract', () => {
       newDataValidation: () => ({ requireValueInList, setAllowInvalid, build })
     });
     const setDataValidation = vi.fn();
-    const headers = POSITION_HEADERS.slice(0, -1);
+    const headers = POSITION_HEADERS;
     const sheet = {
       getLastColumn: () => headers.length,
       getMaxRows: () => 1000,

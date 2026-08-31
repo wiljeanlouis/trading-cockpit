@@ -2,6 +2,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  migrateCockpitConfigSheet,
   mapLegacyCockpitConfiguration,
   readLegacyCockpitConfiguration,
   setupLegacyCockpitConfiguration
@@ -17,7 +18,7 @@ const validRows = [
   ['Currency', ' cad ']
 ];
 
-describe('legacy Cockpit Config compatibility', () => {
+describe('Cockpit Config DATA sheet contract', () => {
   it('preserves mapping and normalization without becoming Trade Plan authority', () => {
     expect(mapLegacyCockpitConfiguration(validRows)).toEqual({
       accountName: 'Trading',
@@ -42,8 +43,13 @@ describe('legacy Cockpit Config compatibility', () => {
 
   it('keeps setup idempotent when the sheet already exists', () => {
     const toast = vi.fn();
+    const existing = {
+      getLastRow: () => 1,
+      getLastColumn: () => 1,
+      getRange: () => ({ getValues: () => [['existing']] })
+    };
     const spreadsheet = {
-      getSheetByName: vi.fn(() => ({})),
+      getSheetByName: vi.fn(() => existing),
       insertSheet: vi.fn(),
       toast
     };
@@ -53,7 +59,7 @@ describe('legacy Cockpit Config compatibility', () => {
     expect(toast).toHaveBeenCalledWith('Cockpit Config existe déjà.', 'Trading Cockpit', 5);
   });
 
-  it('preserves missing and empty sheet errors', () => {
+  it('preserves missing, empty and old-layout sheet errors', () => {
     vi.stubGlobal('SpreadsheetApp', {
       getActiveSpreadsheet: () => ({ getSheetByName: () => null })
     });
@@ -63,13 +69,29 @@ describe('legacy Cockpit Config compatibility', () => {
 
     vi.stubGlobal('SpreadsheetApp', {
       getActiveSpreadsheet: () => ({
-        getSheetByName: () => ({ getLastRow: () => 3 })
+        getSheetByName: () => ({ getLastRow: () => 1 })
       })
     });
     expect(readLegacyCockpitConfiguration).toThrow('Cockpit Config est vide.');
+
+    vi.stubGlobal('SpreadsheetApp', {
+      getActiveSpreadsheet: () => ({
+        getSheetByName: () => ({
+          getLastRow: () => 4,
+          getLastColumn: () => 3,
+          getRange: (row: number) => ({
+            getValues: () =>
+              row === 1 ? [['TRADING COCKPIT CONFIG', '', '']] : [['Account Name', 'Trading']]
+          })
+        })
+      })
+    });
+    expect(readLegacyCockpitConfiguration).toThrow(
+      'Cockpit Config utilise un ancien schéma. Colonne absente : Parameter'
+    );
   });
 
-  it('preserves the physical setup values, formats and layout', () => {
+  it('creates row-1 headers and row-2+ records', () => {
     const range = {
       setValues: vi.fn(),
       merge: vi.fn(),
@@ -79,6 +101,7 @@ describe('legacy Cockpit Config compatibility', () => {
     };
     Object.values(range).forEach((method) => method.mockReturnValue(range));
     const sheet = {
+      clear: vi.fn(),
       getRange: vi.fn(() => range),
       setFrozenRows: vi.fn(),
       autoResizeColumns: vi.fn()
@@ -93,10 +116,8 @@ describe('legacy Cockpit Config compatibility', () => {
     setupLegacyCockpitConfiguration();
 
     expect(spreadsheet.insertSheet).toHaveBeenCalledWith('Cockpit Config');
-    expect(sheet.getRange).toHaveBeenCalledWith(1, 1, 8, 3);
+    expect(sheet.getRange).toHaveBeenCalledWith(1, 1, 6, 3);
     expect(range.setValues.mock.calls[0][0]).toEqual([
-      ['TRADING COCKPIT CONFIG', '', ''],
-      ['', '', ''],
       ['Parameter', 'Value', 'Description'],
       ['Account Name', 'Trading', 'Nom du compte utilisé pour le trading actif'],
       ['Account Equity', 10000, 'Valeur actuelle du compte utilisée pour le position sizing'],
@@ -105,12 +126,69 @@ describe('legacy Cockpit Config compatibility', () => {
       ['Currency', 'CAD', 'Devise du compte']
     ]);
     expect(sheet.getRange).toHaveBeenCalledWith('A1:C1');
-    expect(sheet.getRange).toHaveBeenCalledWith('A3:C3');
+    expect(sheet.getRange).toHaveBeenCalledWith('B3');
+    expect(sheet.getRange).toHaveBeenCalledWith('B4');
     expect(sheet.getRange).toHaveBeenCalledWith('B5');
-    expect(sheet.getRange).toHaveBeenCalledWith('B6');
-    expect(sheet.getRange).toHaveBeenCalledWith('B7');
-    expect(sheet.setFrozenRows).toHaveBeenCalledWith(3);
+    expect(sheet.setFrozenRows).toHaveBeenCalledWith(1);
     expect(sheet.autoResizeColumns).toHaveBeenCalledWith(1, 3);
     expect(spreadsheet.toast).toHaveBeenCalledWith('Cockpit Config créé.', 'Trading Cockpit', 5);
+  });
+
+  it('migrates the old title/header-row layout explicitly and idempotently', () => {
+    const values: unknown[][] = [
+      ['TRADING COCKPIT CONFIG', '', ''],
+      ['', '', ''],
+      ['Parameter', 'Value', 'Description'],
+      ['Account Name', 'Trading', 'Nom'],
+      ['Account Equity', 10000, 'Equity']
+    ];
+    const range = {
+      getValues: vi.fn((() => []) as never),
+      setValues: vi.fn(() => range),
+      setFontWeight: vi.fn(() => range),
+      setNumberFormat: vi.fn(() => range)
+    };
+    const sheet = {
+      getLastRow: () => values.length,
+      getLastColumn: () => 3,
+      clear: vi.fn(() => {
+        values.length = 0;
+      }),
+      setFrozenRows: vi.fn(),
+      autoResizeColumns: vi.fn(),
+      getRange: vi.fn((row: number | string, column?: number, rows?: number, columns?: number) => {
+        if (typeof row === 'string') return range;
+        return {
+          ...range,
+          getValues: () =>
+            Array.from({ length: rows ?? 1 }, (_rowValue, rowOffset) =>
+              Array.from(
+                { length: columns ?? 1 },
+                (_columnValue, columnOffset) =>
+                  values[row - 1 + rowOffset]?.[(column ?? 1) - 1 + columnOffset] ?? ''
+              )
+            ),
+          setValues: (newValues: unknown[][]) => {
+            newValues.forEach((sourceRow, rowOffset) => {
+              values[row - 1 + rowOffset] = [...sourceRow];
+            });
+            return range;
+          }
+        };
+      })
+    };
+
+    expect(migrateCockpitConfigSheet(sheet as never)).toEqual({
+      status: 'MIGRATED',
+      preservedRecords: 2,
+      message: 'Cockpit Config normalisé. 2 paramètre(s) préservé(s).'
+    });
+    expect(values[0]).toEqual(['Parameter', 'Value', 'Description']);
+    expect(values[1]).toEqual(['Account Name', 'Trading', 'Nom']);
+    expect(migrateCockpitConfigSheet(sheet as never)).toEqual({
+      status: 'ALREADY_NORMALIZED',
+      preservedRecords: 2,
+      message: 'Cockpit Config est déjà normalisé.'
+    });
   });
 });

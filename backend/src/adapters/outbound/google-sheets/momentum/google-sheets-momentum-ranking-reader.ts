@@ -4,8 +4,8 @@ import type {
   MomentumRankingRecord
 } from '@trading-cockpit/backend-core/ports/outbound/momentum-ranking-reader';
 import { requireColumn } from '../sheet-headers';
-
-const MOMENTUM_RANKING_SHEET_NAME = 'Momentum Ranking';
+import { DATA_SHEET_HEADER_ROW } from '../data-sheet';
+import { MOMENTUM_RANKING_HEADERS, MOMENTUM_RANKING_SHEET_NAME } from './momentum-ranking-schema';
 
 function valueByHeader(headers: string[], row: unknown[], name: string): unknown {
   return row[requireColumn(headers, name)];
@@ -81,19 +81,40 @@ function sameIdentity(record: MomentumRankingRecord, identity: MomentumRankingId
   );
 }
 
+function normalizeHeaders(row: readonly unknown[]): string[] {
+  return row.map((value) => String(value).trim());
+}
+
+function hasRequiredRankingHeaders(headers: readonly string[]): boolean {
+  return MOMENTUM_RANKING_HEADERS.every((header) => headers.includes(header));
+}
+
+function readRankingTable(
+  sheet: GoogleAppsScript.Spreadsheet.Sheet
+): { headers: string[]; rows: unknown[][] } | null {
+  const lastColumn = sheet.getLastColumn();
+  const lastRow = sheet.getLastRow();
+  if (lastColumn === 0 || lastRow < DATA_SHEET_HEADER_ROW) return null;
+
+  const normalizedHeaders = normalizeHeaders(sheet.getRange(1, 1, 1, lastColumn).getValues()[0]);
+  if (hasRequiredRankingHeaders(normalizedHeaders)) {
+    const rowCount = Math.max(lastRow - DATA_SHEET_HEADER_ROW + 1, 1);
+    const values = sheet.getRange(DATA_SHEET_HEADER_ROW, 1, rowCount, lastColumn).getValues();
+    return { headers: normalizeHeaders(values[0] ?? []), rows: values.slice(1) };
+  }
+  return null;
+}
+
 export class GoogleSheetsMomentumRankingReader implements MomentumRankingReader {
   findAll(): MomentumRankingRecord[] {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(MOMENTUM_RANKING_SHEET_NAME);
-    if (!sheet || sheet.getLastRow() < 6) return [];
+    if (!sheet) return [];
 
-    const headers = sheet
-      .getRange(5, 1, 1, sheet.getLastColumn())
-      .getValues()[0]
-      .map((value) => String(value).trim());
-    const rows = sheet.getRange(6, 1, sheet.getLastRow() - 5, sheet.getLastColumn()).getValues();
+    const table = readRankingTable(sheet);
+    if (!table) return [];
 
-    return rows
-      .map((row) => rowToRecord(headers, row))
+    return table.rows
+      .map((row) => rowToRecord(table.headers, row))
       .filter(
         (record) =>
           record.strategyId && record.strategyVersion && record.signalDate && record.ticker

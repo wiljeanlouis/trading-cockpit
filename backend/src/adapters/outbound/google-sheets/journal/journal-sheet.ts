@@ -2,22 +2,23 @@ import { JOURNAL_HEADERS } from './journal-mapper';
 import { readSheetHeaders, requireColumn, requireSheetHeaders } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 import { themeJournal } from '../../../inbound/google-sheets/theme/theme';
+import { isSheetEffectivelyEmpty } from '../data-sheet';
 
 const SHEET_NAME = 'Journal';
-const HISTORICAL_HEADERS = JOURNAL_HEADERS.slice(0, -1);
 
 export function getOrCreateJournalSheet(): GoogleAppsScript.Spreadsheet.Sheet {
   const spreadsheet = getTradingCockpitSpreadsheet();
   const existing = spreadsheet.getSheetByName(SHEET_NAME);
-  if (existing) return existing;
-  const sheet = spreadsheet.insertSheet(SHEET_NAME);
+  if (existing && !isSheetEffectivelyEmpty(existing)) return existing;
+  const sheet = existing ?? spreadsheet.insertSheet(SHEET_NAME);
+  sheet.clear();
   sheet
-    .getRange(1, 1, 1, HISTORICAL_HEADERS.length)
-    .setValues([Array.from(HISTORICAL_HEADERS)])
+    .getRange(1, 1, 1, JOURNAL_HEADERS.length)
+    .setValues([Array.from(JOURNAL_HEADERS)])
     .setFontWeight('bold');
   sheet.setFrozenRows(1);
   refreshJournalValidations(sheet);
-  sheet.autoResizeColumns(1, HISTORICAL_HEADERS.length);
+  sheet.autoResizeColumns(1, JOURNAL_HEADERS.length);
   themeJournal(spreadsheet);
   return sheet;
 }
@@ -27,7 +28,7 @@ export function validateJournalSchema(sheet: GoogleAppsScript.Spreadsheet.Sheet)
 }
 
 export function validateJournalHeaders(headers: readonly unknown[]): true {
-  return requireSheetHeaders(headers, HISTORICAL_HEADERS, 'Journal');
+  return requireSheetHeaders(headers, JOURNAL_HEADERS, 'Journal');
 }
 
 export function ensureJournalAccountColumn(sheet: GoogleAppsScript.Spreadsheet.Sheet): void {

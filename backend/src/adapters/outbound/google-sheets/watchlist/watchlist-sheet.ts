@@ -2,14 +2,16 @@ import { WATCHLIST_HEADERS } from './watchlist-mapper';
 import { readSheetHeaders, requireColumn, requireSheetHeaders } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 import { themeWatchlist } from '../../../inbound/google-sheets/theme/theme';
+import { isSheetEffectivelyEmpty } from '../data-sheet';
 
 const SHEET_NAME = 'Watchlist';
 
 export function getOrCreateWatchlistSheet(): GoogleAppsScript.Spreadsheet.Sheet {
   const spreadsheet = getTradingCockpitSpreadsheet();
   let sheet = spreadsheet.getSheetByName(SHEET_NAME);
-  if (sheet) return sheet;
-  sheet = spreadsheet.insertSheet(SHEET_NAME);
+  if (sheet && !isSheetEffectivelyEmpty(sheet)) return sheet;
+  sheet = sheet ?? spreadsheet.insertSheet(SHEET_NAME);
+  sheet.clear();
   sheet.getRange(1, 1, 1, WATCHLIST_HEADERS.length).setValues([[...WATCHLIST_HEADERS]]);
   sheet.setFrozenRows(1);
   refreshWatchlistValidations();
