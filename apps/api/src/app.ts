@@ -13,8 +13,7 @@ import { evaluateCors } from './http/cors';
 import { apiErrorResponse } from './http/errors';
 import { handleHealth } from './http/routes/health';
 import { handleMutationRoute, isMutationRoute } from './http/routes/mutations';
-import { handleMigratedQueryRoute, isMigratedQueryRoute } from './http/routes/queries';
-import { handleGetWatchlist } from './http/routes/watchlist';
+import { handleQueryRoute, isQueryRoute } from './http/routes/queries';
 import { createStaticAssetServer, type StaticAssetServer } from './http/static-assets';
 
 export interface CloudRunAppDependencies {
@@ -161,34 +160,26 @@ export async function handleCloudRunRequest(dependencies: {
         verifier: dependencies.tokenVerifier
       });
       const context = { principal };
-      const routeResponse =
-        method === 'GET' && pathname === '/api/watchlist'
-          ? await handleGetWatchlist({
+      const routeResponse = isQueryRoute(method, pathname)
+        ? await handleQueryRoute({
+            context,
+            method,
+            pathname,
+            spreadsheetId: dependencies.spreadsheetId,
+            sheetsClientFactory: dependencies.sheetsClientFactory,
+            now: dependencies.now ?? (() => new Date())
+          })
+        : isMutationRoute(method, pathname)
+          ? await handleMutationRoute({
               context,
+              method,
+              pathname,
+              body: dependencies.body,
               spreadsheetId: dependencies.spreadsheetId,
               sheetsClientFactory: dependencies.sheetsClientFactory,
               now: dependencies.now ?? (() => new Date())
             })
-          : isMigratedQueryRoute(method, pathname)
-            ? await handleMigratedQueryRoute({
-                context,
-                method,
-                pathname,
-                spreadsheetId: dependencies.spreadsheetId,
-                sheetsClientFactory: dependencies.sheetsClientFactory,
-                now: dependencies.now ?? (() => new Date())
-              })
-            : isMutationRoute(method, pathname)
-              ? await handleMutationRoute({
-                  context,
-                  method,
-                  pathname,
-                  body: dependencies.body,
-                  spreadsheetId: dependencies.spreadsheetId,
-                  sheetsClientFactory: dependencies.sheetsClientFactory,
-                  now: dependencies.now ?? (() => new Date())
-                })
-              : jsonResponse(404, { error: 'Not found' });
+          : jsonResponse(404, { error: 'Not found' });
 
       return withCorsHeaders(routeResponse, cors.headers);
     } catch (error) {

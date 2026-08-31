@@ -9,6 +9,7 @@ import {
 } from '../../composition/dashboard';
 import { getMomentumRankingForCloudRun } from '../../composition/discovery';
 import { getTradePlansForCloudRun } from '../../composition/trade-plans';
+import { getWatchlistForCloudRun } from '../../composition/watchlist';
 import { getOpenPositionsForCloudRun } from '../../composition/positions';
 import { getJournalForCloudRun } from '../../composition/journal';
 import { getAnalyticsForCloudRun } from '../../composition/analytics';
@@ -17,11 +18,11 @@ import type { CloudRunHttpResponse } from '../../app';
 import type { SheetsValuesClient } from '../../adapters/outbound/google-sheets-api/google-sheets-api-client';
 import type { RequestContext } from '../request-context';
 
-export function isMigratedQueryRoute(method: string, pathname: string): boolean {
+export function isQueryRoute(method: string, pathname: string): boolean {
   return method === 'GET' && Boolean(routeByPath[pathname]);
 }
 
-export async function handleMigratedQueryRoute(dependencies: {
+export async function handleQueryRoute(dependencies: {
   context: RequestContext;
   method: string;
   pathname: string;
@@ -57,6 +58,12 @@ type QueryRouteHandler = (dependencies: {
 }) => Promise<CloudRunHttpResponse>;
 
 const routeByPath: Record<string, QueryRouteHandler> = {
+  '/api/watchlist': (dependencies) =>
+    handleTimedQuery({
+      ...dependencies,
+      query: getWatchlistForCloudRun,
+      itemCount: (dto) => dto.items.length
+    }),
   '/api/dashboard': (dependencies) =>
     handleTimedQuery({
       ...dependencies,

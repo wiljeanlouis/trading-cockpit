@@ -130,8 +130,10 @@ describe('Cloud Run Trading Cockpit API', () => {
       })
     ]);
     const result = await getWatchlistForCloudRun({
-      sheetsClient: client,
-      spreadsheetId: 'spreadsheet-id',
+      sheets: createQueryContext({
+        sheetsClient: client,
+        spreadsheetId: 'spreadsheet-id'
+      }),
       now: () => new Date('2026-08-28T16:04:00.000Z')
     });
 
@@ -141,7 +143,7 @@ describe('Cloud Run Trading Cockpit API', () => {
       valueRenderOption: 'UNFORMATTED_VALUE',
       dateTimeRenderOption: 'SERIAL_NUMBER'
     });
-    expect(result.dto.items).toEqual([
+    expect(result.items).toEqual([
       expect.objectContaining({
         ticker: 'BOX',
         currentPrice: 34.82,
@@ -149,53 +151,57 @@ describe('Cloud Run Trading Cockpit API', () => {
         status: 'READY'
       })
     ]);
-    expect(result.dto.items[0].signalDate).toBe('2026-08-27T00:00:00.000Z');
+    expect(result.items[0].signalDate).toBe('2026-08-27T00:00:00.000Z');
   });
 
   it('normalizes Sheets serial dates before the existing application use case serializes DTO dates', async () => {
     const result = await getWatchlistForCloudRun({
-      sheetsClient: sheetsClient([
-        [...WATCHLIST_HEADERS],
-        rowFor({
-          'Watchlist ID': 'W1',
-          'Strategy ID': 'MOMENTUM_BREAKOUT',
-          Strategy: 'Momentum Breakout',
-          'Strategy Version': '1.0',
-          'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
-          'Added At': sheetsSerialDate('2026-08-27T14:30:00.000Z'),
-          Ticker: 'BOX',
-          Status: 'WATCHING'
-        })
-      ]),
-      spreadsheetId: 'spreadsheet-id',
+      sheets: createQueryContext({
+        sheetsClient: sheetsClient([
+          [...WATCHLIST_HEADERS],
+          rowFor({
+            'Watchlist ID': 'W1',
+            'Strategy ID': 'MOMENTUM_BREAKOUT',
+            Strategy: 'Momentum Breakout',
+            'Strategy Version': '1.0',
+            'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
+            'Added At': sheetsSerialDate('2026-08-27T14:30:00.000Z'),
+            Ticker: 'BOX',
+            Status: 'WATCHING'
+          })
+        ]),
+        spreadsheetId: 'spreadsheet-id'
+      }),
       now: () => new Date('2026-08-28T16:04:00.000Z')
     });
 
-    expect(result.dto.items[0].signalDate).toBe('2026-08-27T00:00:00.000Z');
-    expect(result.dto.generatedAt).toBe('2026-08-28T16:04:00.000Z');
+    expect(result.items[0].signalDate).toBe('2026-08-27T00:00:00.000Z');
+    expect(result.generatedAt).toBe('2026-08-28T16:04:00.000Z');
   });
 
   it('preserves empty and formula-backed values without inventing financial numbers', async () => {
     const result = await getWatchlistForCloudRun({
-      sheetsClient: sheetsClient([
-        [...WATCHLIST_HEADERS],
-        rowFor({
-          'Watchlist ID': 'W1',
-          'Strategy ID': 'MOMENTUM_BREAKOUT',
-          Strategy: 'Momentum Breakout',
-          'Strategy Version': '1.0',
-          'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
-          Ticker: 'BOX',
-          'Current Price': '',
-          'Momentum Score': '#N/A',
-          Status: 'WATCHING'
-        })
-      ]),
-      spreadsheetId: 'spreadsheet-id',
+      sheets: createQueryContext({
+        sheetsClient: sheetsClient([
+          [...WATCHLIST_HEADERS],
+          rowFor({
+            'Watchlist ID': 'W1',
+            'Strategy ID': 'MOMENTUM_BREAKOUT',
+            Strategy: 'Momentum Breakout',
+            'Strategy Version': '1.0',
+            'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
+            Ticker: 'BOX',
+            'Current Price': '',
+            'Momentum Score': '#N/A',
+            Status: 'WATCHING'
+          })
+        ]),
+        spreadsheetId: 'spreadsheet-id'
+      }),
       now: () => new Date('2026-08-28T16:04:00.000Z')
     });
 
-    expect(result.dto.items[0]).toMatchObject({
+    expect(result.items[0]).toMatchObject({
       currentPrice: null,
       momentumScore: null
     });
