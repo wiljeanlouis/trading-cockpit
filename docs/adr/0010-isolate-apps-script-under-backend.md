@@ -1,6 +1,6 @@
 # ADR 0010: Isolate the Apps Script application under backend
 
-- Status: Accepted
+- Status: Superseded by ADR 0012
 - Date: 2026-08-28
 
 ## Context

@@ -1,6 +1,6 @@
 # ADR 0009: Treat external market signal providers as adapters
 
-- Status: Accepted
+- Status: Accepted, amended by ADR 0012 and ADR 0014
 - Date: 2026-08-28
 
 ## Context

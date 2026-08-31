@@ -1,6 +1,6 @@
 # ADR 0008: TypeScript is the maintained application source
 
-- Status: Accepted
+- Status: Accepted, amended by ADR 0012
 - Date: 2026-08-28
 
 ## Context

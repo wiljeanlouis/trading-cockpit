@@ -1,6 +1,6 @@
 # ADR 0011: Use React as an Apps Script inbound adapter
 
-- Status: Accepted
+- Status: Superseded by ADR 0013
 - Date: 2026-08-28
 
 ## Context

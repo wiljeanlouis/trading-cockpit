@@ -4,6 +4,9 @@
 
 Accepted
 
+Amended by ADR 0012. The modular build decision remains conceptually accepted, but historical
+`backend/` path examples predate the current `apps/sheets` workspace layout.
+
 ## Context
 
 Trading Cockpit is deployed to Google Apps Script with clasp 3.4.0. Clasp no longer transpiles
