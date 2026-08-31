@@ -1,24 +1,27 @@
 # Trading Cockpit
 
 Trading Cockpit is a Google Sheets trading cockpit backed by Google Apps Script. The repository is
-prepared to host more than one user interface while keeping one authoritative backend.
+organized as a small monorepo with one shared runtime-neutral core and multiple application
+surfaces.
 
 ## Repository structure
 
 ```text
 trading-cockpit/
-├── backend/       # Current Google Apps Script application, TypeScript source and tests
-├── web/           # React + TypeScript inbound UI
+├── apps/sheets/       # Current Google Apps Script application, TypeScript source and tests
+├── apps/api/          # Node HTTP API application for Cloud Run
+├── apps/web/           # React + TypeScript inbound UI
 ├── packages/
-│   └── contracts/ # Serializable contracts shared by backend and web
+│   ├── core/           # Runtime-neutral domain/application logic and ports
+│   └── contracts/      # Serializable contracts shared by apps
 ├── docs/          # Architecture documentation and ADRs
 ├── package.json   # Repository-level npm orchestration
 └── README.md
 ```
 
-`backend/` is the complete supported application today. It includes the Google Sheets UI adapters,
-business/application code, Google Sheets persistence, Finviz integration, maintained legacy
-JavaScript, Apps Script manifest, tests and build tooling.
+`apps/sheets/` is the supported Google Sheets / Apps Script application. `apps/api/` is the Node HTTP
+API currently deployable to Google Cloud Run. Both reuse `packages/core` instead of duplicating
+business/application logic.
 
 Run the complete local validation from the repository root:
 
@@ -33,9 +36,9 @@ npm run deploy:prepare
 
 ## Web cockpit
 
-`web/` is a React + TypeScript inbound interface. Its read-only Dashboard calls the backend through
-a typed `CockpitGateway`; it never accesses Google Sheets or Apps Script globals directly. Vite dev
-uses explicit mock data, while the production build uses `google.script.run` behind the gateway.
+`apps/web/` is a React + TypeScript inbound interface. It calls backend capabilities through a typed
+`CockpitGateway`; it never accesses Google Sheets directly. Local development uses explicit mock
+data, while production may use the HTTP API or Apps Script gateway depending on deployment mode.
 
 Start local frontend development with:
 
@@ -46,14 +49,20 @@ npm run dev
 The currently implemented frontend shape is:
 
 ```text
-web/src/
+apps/web/src/
 ├── app/
 ├── features/
-│   └── dashboard/
+│   ├── dashboard/
+│   ├── discovery/
+│   ├── watchlist/
+│   ├── trade-plans/
+│   ├── positions/
+│   ├── journal/
+│   ├── analytics/
+│   └── admin/
 └── infrastructure/
-    └── apps-script/
+    ├── apps-script/
+    └── http/
 ```
-
-Administration will eventually live under `web/src/features/admin/`, not in a separate SPA.
 
 See [development workflow](docs/development.md) and [web cockpit](docs/web-cockpit.md).

@@ -2,6 +2,6 @@
 node_modules/
 coverage/
 build/
-web/dist/
-cloud-run/dist/
+apps/web/dist/
+apps/api/dist/
 .clasprc.json

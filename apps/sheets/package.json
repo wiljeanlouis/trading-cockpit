@@ -1,0 +1,21 @@
+{
+  "name": "@trading-cockpit/sheets",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npm run build:runtime && npm run build:cockpit",
+    "build:runtime": "tsc -p tsconfig.build.json",
+    "build:cockpit": "node scripts/build-cockpit.mjs",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.build.json --noEmit && tsc -p tsconfig.app.json && tsc -p tsconfig.test.json",
+    "test": "npm run build && vitest run --root . --config vitest.config.ts",
+    "test:watch": "vitest --root . --config vitest.config.ts",
+    "check:architecture": "node scripts/check-architecture.mjs",
+    "check:apps-script": "node scripts/check-apps-script.mjs",
+    "check": "npm run typecheck && npm run test && npm run check:architecture && npm run check:apps-script"
+  },
+  "dependencies": {
+    "@trading-cockpit/contracts": "*",
+    "@trading-cockpit/core": "*"
+  }
+}

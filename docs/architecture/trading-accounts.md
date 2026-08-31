@@ -4,13 +4,13 @@
 
 A Trading Account remains identity/configuration only: stable `id`, user-facing `name`, and explicit
 `baseCurrency`. The `Accounts` sheet has `Account ID`, `Name`, `Base Currency`, and
-`Risk % Per Trade`. Setup
-creates headers but no sample or real accounts. `ALL` is rejected as an ID because consolidation is
-a `PortfolioScope`, not a persisted account.
+`Risk % Per Trade`. `Trading Cockpit → Setup → Initialize Trading Cockpit` creates headers but no
+sample or real accounts. `ALL` is rejected as an ID because consolidation is a `PortfolioScope`, not
+a persisted account.
 
 `Risk % Per Trade` is required for new account-aware Trade Plans with the bound
 `0 < risk <= 1`. It is consumed by Trade Plan creation. Cockpit Config Default Risk % remains
-the sole runtime sizing source until Phase 11, so there is no unexplained fallback or dual precedence.
+legacy/historical compatibility only, so there is no unexplained fallback or dual precedence.
 
 External active-trading allocations live in the separate append-only
 [Capital Ledger](capital-ledger.md), never as mutable TradingAccount balances.
@@ -42,10 +42,11 @@ introduce a TradeExecution aggregate or temporarily incorrect financial semantic
 
 ## Migration
 
-Account ID is appended at Z in Positions and AA in Journal. Repository access adds a missing header
-but never fills historical rows. Users create real accounts through `Setup Trading Accounts`, then
-manually attribute legacy rows. New opening prompts for Account ID and validates it against Accounts.
-Close obtains account from Position; reconciliation blocks missing attribution.
+Account ID is column Z in Positions and AA in Journal. The current workbook contract requires those
+headers to exist; repositories no longer add them as a historical fallback. Users create real
+accounts after `Initialize Trading Cockpit`, then manually attribute legacy rows if they restore
+historical data. New opening prompts for Account ID and validates it against Accounts. Close obtains
+account from Position; reconciliation blocks missing attribution.
 
 ## Known semantic gaps
 

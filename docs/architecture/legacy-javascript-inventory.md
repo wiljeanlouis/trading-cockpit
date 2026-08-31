@@ -2,28 +2,22 @@
 
 ## Source and runtime policy
 
-TypeScript under `backend/src/` is the maintained source of truth for migrated behavior. esbuild produces
-the Apps Script-compatible IIFE `backend/build/Cockpit.js`; its footer exposes only stable callbacks and the
+TypeScript under `apps/sheets/src/` is the maintained source of truth for migrated behavior. esbuild produces
+the Apps Script-compatible IIFE `apps/sheets/build/Cockpit.js`; its footer exposes only stable callbacks and the
 small compatibility surface still required by deferred JavaScript. Generated JavaScript is never
 edited manually.
 
-Phase 11.7 removed all TypeScript dependencies on legacy JavaScript except presentation calls into
-`Theme.js`. The remaining six manually maintained JavaScript files are intentionally deferred or
-small compatibility modules.
+The remaining Google Sheets UI/runtime behavior has been migrated into TypeScript source under
+`apps/sheets/src`. No manually maintained production JavaScript files remain at the `apps/sheets`
+root.
 
 ## Active manually maintained JavaScript
 
-| File                       | Remaining responsibility                                     | Dependencies                                       | Classification   | Reason retained                                                      |
-| -------------------------- | ------------------------------------------------------------ | -------------------------------------------------- | ---------------- | -------------------------------------------------------------------- |
-| `backend/Analytics.js`     | Legacy aggregate and strategy analytics                      | Config, Utils, Theme; reads Journal                | KEEP_TEMPORARILY | Not account-aware; requires a future financial redesign              |
-| `backend/Config.js`        | Seven sheet-name constants used only by deferred modules     | Analytics, Dashboard, Theme                        | KEEP_TEMPORARILY | Small shared compatibility surface; duplicating names would be worse |
-| `backend/Dashboard.js`     | Legacy pipeline, performance, and action projection          | Config, Utils, Theme, generated `getTradingConfig` | KEEP_TEMPORARILY | Not account-aware; requires redesign                                 |
-| `backend/Documentation.js` | In-spreadsheet operational documentation                     | Theme/presentation globals                         | KEEP_TEMPORARILY | Active UI feature outside the consolidation boundary                 |
-| `backend/Theme.js`         | Shared Google Sheets presentation and conditional formatting | Config and header helpers in Utils                 | KEEP_TEMPORARILY | Correct adapter concern; visual migration needs dedicated tests      |
-| `backend/Utils.js`         | Header helpers plus Analytics/Dashboard presentation helpers | Deferred modules only                              | KEEP_TEMPORARILY | Reduced to legitimate consumers; no migrated adapter depends on it   |
-| `backend/build/Cockpit.js` | Generated IIFE and stable Apps Script wrappers               | Generated from TypeScript                          | GENERATED        | Never maintained manually                                            |
+| File                           | Remaining responsibility                       | Classification |
+| ------------------------------ | ---------------------------------------------- | -------------- |
+| `apps/sheets/build/Cockpit.js` | Generated IIFE and stable Apps Script wrappers | GENERATED      |
 
-## Removed in Phase 11.7
+## Removed/migrated JavaScript files
 
 | File               | TypeScript owner or disposition                                                          |
 | ------------------ | ---------------------------------------------------------------------------------------- |
@@ -35,6 +29,12 @@ small compatibility modules.
 | `Position.js`      | `position-sheet.ts` and `GoogleSheetsPositionRepository`                                 |
 | `Journal.js`       | `journal-sheet.ts` and `GoogleSheetsJournalRepository`                                   |
 | `Workflow.js`      | Deleted as dead code; the menu already used focused TypeScript reconciliation            |
+| `Analytics.js`     | Migrated to TypeScript analytics query/calculation and Sheets projection                 |
+| `Dashboard.js`     | Migrated to TypeScript dashboard query/calculation and Sheets projection                 |
+| `Theme.js`         | Migrated to Google Sheets inbound UI TypeScript modules                                  |
+| `Documentation.js` | Migrated to Google Sheets inbound UI TypeScript modules                                  |
+| `Config.js`        | Removed after constants moved to their owning modules                                    |
+| `Utils.js`         | Removed after helpers moved to their owning modules                                      |
 
 Dead physical-row finders were not ported: `findActiveWatchlistRow`,
 `findActiveTradePlanByWatchlistId`, `findOpenPositionByTradePlanId`, and
@@ -44,13 +44,12 @@ particular, the account-unaware Trade Plan finder and first-Journal-only lookup 
 ## Current dependency map
 
 ```text
-Dashboard -> Config, Utils, Theme, generated getTradingConfig compatibility wrapper
-Analytics -> Config, Utils, Theme
-Theme -> Config, Utils
-Documentation -> Theme/presentation globals
+apps/sheets -> packages/core -> packages/contracts
+apps/api -> packages/core -> packages/contracts
+apps/web -> packages/contracts
 
-TypeScript adapters -> Theme globals only
-TypeScript Core/ports -> no legacy JavaScript
+packages/core -> no app/infrastructure dependency
+packages/contracts -> no app/core dependency
 ```
 
 The shared TypeScript header helper owns case-insensitive physical header lookup for Google Sheets
@@ -60,15 +59,10 @@ these details.
 
 ## Global surface and deployment
 
-After Phase 11.7, deployment contains six manually maintained JavaScript files, one generated
-bundle, and `backend/appsscript.json`. Apps Script exposes 91 global functions and all 20 menu targets remain
-resolvable. Setup Strategies, Validate Strategies, Setup Momentum Ranking, and Setup Cockpit Config
-are generated wrappers backed by TypeScript.
+The Apps Script deployment contains the generated bundle and `apps/sheets/appsscript.json`. Menu
+targets are generated wrappers backed by TypeScript.
 
 ## Roadmap
 
-1. Redesign Analytics and Dashboard with account-aware query models before migrating them.
-2. Migrate Theme only with visual and conditional-format characterization.
-3. Migrate Documentation independently as a presentation/UI slice.
-4. Remove Config and Utils naturally when their remaining deferred consumers migrate; do not create
-   generic TypeScript dumping grounds to eliminate their filenames.
+Keep Apps Script globals limited to supported Google Sheets UI/menu callbacks and avoid reintroducing
+maintained production JavaScript unless a future Apps Script constraint requires it.

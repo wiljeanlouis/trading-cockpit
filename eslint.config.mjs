@@ -4,7 +4,7 @@ import tseslint from 'typescript-eslint';
 
 const repositoryRoot = new URL('.', import.meta.url);
 
-const backendRoot = new URL('backend/', repositoryRoot);
+const backendRoot = new URL('apps/sheets/', repositoryRoot);
 
 const sourceFileNames = readdirSync(backendRoot, {
   withFileTypes: true
@@ -42,10 +42,10 @@ const nodeGlobals = {
 
 export default tseslint.config(
   {
-    ignores: ['node_modules/**', 'coverage/**', 'backend/build/**']
+    ignores: ['node_modules/**', 'coverage/**', 'apps/sheets/build/**']
   },
   {
-    files: ['backend/*.js'],
+    files: ['apps/sheets/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'script',
@@ -87,7 +87,7 @@ export default tseslint.config(
     }
   },
   {
-    files: ['backend/MomentumScore.ts'],
+    files: ['apps/sheets/MomentumScore.ts'],
     rules: {
       '@typescript-eslint/no-unused-vars': [
         'error',

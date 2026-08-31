@@ -6,72 +6,211 @@
 
 Trading Cockpit is a personal trading workflow and research application.
 
-The system currently combines:
+The core workflow is:
 
-- Google Apps Script as the runtime/backend platform;
-- Google Sheets as the persistence layer and an officially supported user interface;
-- React + TypeScript as the Web Cockpit;
-- Finviz as an external signal/data source;
-- quantitative and workflow logic implemented in the backend.
-
-The application supports trading workflows such as:
-
+```text
 Signal → Watchlist → Trade Plan → Position → Journal → Analytics
+```
 
-The architecture must remain generic enough to support multiple trading strategies over time.
+The system must remain generic enough to support multiple trading strategies over time.
 
-Do not assume that Momentum Breakout is the only strategy the system will ever support.
+Momentum Breakout is one strategy, not the architecture of the application.
+
+Do not introduce assumptions that make Trading Cockpit dependent on one specific strategy unless explicitly required by that strategy.
 
 ---
 
-## 2. Repository Structure
+## 2. Current Repository Structure
 
-The repository is organized approximately as follows:
+The current repository structure is:
 
 ```text
 trading-cockpit/
-├── AGENTS.md
-├── backend/
-│   ├── src/
-│   ├── tests/
-│   ├── scripts/
-│   ├── build/
-│   ├── *.js
-│   ├── appsscript.json
-│   ├── tsconfig*.json
-│   └── vitest.config.ts
-├── web/
-│   ├── src/
-│   ├── tests/
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── vite.config.ts
+├── apps/
+│   ├── api/
+│   ├── sheets/
+│   └── web/
 ├── packages/
-│   └── contracts/
+│   ├── contracts/
+│   └── core/
 ├── docs/
+├── AGENTS.md
 ├── package.json
 ├── package-lock.json
 ├── eslint.config.mjs
 ├── .clasp.json
-└── .claspignore
+├── .claspignore
+└── .dockerignore
 ```
 
-Always inspect the real repository before assuming that this structure is completely up to date.
+Do not restore historical paths such as:
 
-The repository itself is the source of truth.
+```text
+backend/
+web/
+cloud-run/
+packages/backend-core/
+```
+
+Always inspect the real repository before assuming that any deeper internal directory layout is unchanged.
+
+The repository code and tests are the technical source of truth.
 
 ---
 
-## 3. Architectural Principles
+## 3. Workspace Responsibilities
 
-Trading Cockpit follows a ports-and-adapters / clean architecture direction.
+### apps/web
 
-The main dependency direction is:
+React + TypeScript Web Cockpit.
+
+This is the primary user-facing application.
+
+Responsibilities include:
+
+- rendering;
+- navigation;
+- forms and interaction;
+- presentation state;
+- calling application capabilities through the typed `CockpitGateway`.
+
+React must not own authoritative trading or financial business rules.
+
+### apps/api
+
+Node HTTP API application.
+
+This is the production HTTP backend and is currently deployed using Google Cloud Run.
+
+Responsibilities include:
+
+- `/api/*` HTTP routes;
+- authentication and authorization;
+- request validation;
+- invoking application/core behavior;
+- Google Sheets API adapters;
+- external-provider adapters;
+- Secret Manager integration;
+- serving the production React static build;
+- `/health`.
+
+Cloud Run is a deployment runtime, not an architectural layer.
+
+Do not introduce Cloud-Run-specific concepts into the domain/core unless genuinely required.
+
+### apps/sheets
+
+Google Apps Script application associated with the Trading Cockpit Spreadsheet.
+
+Responsibilities include:
+
+- the Trading Cockpit Sheets menu;
+- workbook initialization/setup;
+- workbook validation;
+- supported Google Sheets workflows;
+- Apps Script-specific adapters;
+- spreadsheet formatting/projections where intentionally supported.
+
+`apps/sheets` is not the production HTTP backend for React.
+
+React must not depend on Apps Script to function in production.
+
+### packages/core
+
+Runtime-neutral shared backend core.
+
+It contains reusable domain/application behavior and ports that can be used by `apps/api` and `apps/sheets`.
+
+It must remain independent of:
+
+- React;
+- Google Apps Script runtime globals;
+- Cloud Run;
+- Express/HTTP-specific concerns;
+- concrete Google Sheets infrastructure.
+
+Do not move runtime-specific infrastructure into `packages/core`.
+
+### packages/contracts
+
+Runtime-neutral serializable contracts shared across boundaries.
+
+It must not depend on any application workspace.
+
+Contracts should contain plain serializable application data, not runtime objects.
+
+---
+
+## 4. Current Dependency Graph
+
+Preserve this workspace dependency direction:
 
 ```text
-Inbound adapters
+apps/web
+  └── @trading-cockpit/contracts
+
+apps/api
+  ├── @trading-cockpit/core
+  ├── @trading-cockpit/contracts
+  ├── googleapis
+  └── google-auth-library
+
+apps/sheets
+  ├── @trading-cockpit/core
+  └── @trading-cockpit/contracts
+
+packages/core
+  └── @trading-cockpit/contracts
+
+packages/contracts
+  └── no application dependency
+```
+
+Current package names are:
+
+```text
+@trading-cockpit/web
+@trading-cockpit/api
+@trading-cockpit/sheets
+@trading-cockpit/core
+@trading-cockpit/contracts
+```
+
+Do not reintroduce historical package names:
+
+```text
+@trading-cockpit/backend-core
+@trading-cockpit/cloud-run
+```
+
+Infrastructure depends inward.
+
+Never introduce dependencies such as:
+
+```text
+core → api
+core → sheets
+core → web
+
+contracts → core
+contracts → any app
+
+web → sheets
+web → API implementation modules
+```
+
+---
+
+## 5. Architectural Direction
+
+Trading Cockpit follows a pragmatic ports-and-adapters / Clean Architecture direction.
+
+Conceptually:
+
+```text
+Inbound adapter
       ↓
-Application
+Application/use case
       ↓
 Domain
       ↑
@@ -80,113 +219,79 @@ Ports
 Outbound adapters
 ```
 
-Infrastructure must depend on the application/domain, not the opposite.
+Keep business behavior independent from infrastructure.
 
-Do not move infrastructure concerns into the domain.
+Do not bypass established application use cases merely because directly calling a persistence adapter is easier.
 
-Do not bypass established application use cases simply because directly accessing an adapter would be easier.
+Do not create architecture ceremony solely for purity.
+
+Prefer the smallest useful abstraction that preserves the dependency direction.
 
 ---
 
-## 4. Backend Ownership
+## 6. Business Logic Ownership
 
-The backend owns business behavior.
-
-Business rules must not be duplicated in React.
+Authoritative business behavior belongs in the backend/core side of the architecture, not React.
 
 Examples include:
 
-- trading workflow transitions;
+- workflow transitions;
+- strategy rules;
 - Momentum Score;
-- strategy logic;
+- ranking;
 - position sizing;
 - risk calculations;
 - capital calculations;
 - stop calculations;
-- trade plan rules;
+- trade-plan rules;
+- position lifecycle;
 - journal rules;
 - analytics calculations;
-- data reconciliation;
-- external provider integration;
-- persistence semantics.
+- reconciliation;
+- persistence semantics;
+- provider integration semantics.
 
-When new behavior is required, first determine whether it belongs in:
+React may perform presentation-only calculations.
 
-- domain;
-- application;
-- inbound adapter;
-- outbound adapter.
-
-Do not place business logic in UI components.
+Do not duplicate authoritative financial or trading rules in React.
 
 ---
 
-## 5. React Web Cockpit
+## 7. React Backend Boundary
 
-The React application is an inbound adapter.
+React communicates through the typed `CockpitGateway`.
 
-The expected direction is:
+Current production direction:
 
 ```text
-React
-  ↓
+React feature
+    ↓
 CockpitGateway
-  ↓
-AppsScriptCockpitGateway
-  ↓
-google.script.run
-  ↓
-Apps Script entrypoint
-  ↓
-Application use case
+    ↓
+HttpCockpitGateway
+    ↓
+same-origin /api/*
+    ↓
+apps/api
+    ↓
+core/use cases
 ```
 
-React must NEVER directly access Google Sheets.
+Development may use `MockCockpitGateway`.
 
-React must NEVER import or use:
+`AppsScriptCockpitGateway` may remain only where intentionally retained for historical/rollback purposes. Do not treat it as the normal production transport.
+
+React components must never directly use:
 
 ```text
+google.script.run
 SpreadsheetApp
-Sheet
-Range
+Google Sheets API clients
 Google Sheets repositories
-backend adapter implementations
+Apps Script runtime globals
 ```
 
-React components must NEVER call:
-
-```text
-google.script.run
-```
-
-directly.
-
-All Apps Script communication must go through the CockpitGateway abstraction.
-
----
-
-## 6. CockpitGateway
-
-The frontend/backend boundary must remain explicit and typed.
-
-Conceptually:
-
-```typescript
-interface CockpitGateway {
-  getDashboardSummary(): Promise<DashboardSummaryDto>;
-}
-```
-
-Future operations should be added to this boundary deliberately.
-
-Do not expose low-level Google Sheets operations through the gateway.
-
-Bad:
-
-```typescript
-getSheetRows('Watchlist');
-updateCell('Trade Plans', 12, 7, 'READY');
-```
+The gateway exposes application capabilities, not spreadsheet primitives.
 
 Good:
 
@@ -196,19 +301,295 @@ createTradePlan(command);
 closePosition(command);
 ```
 
-The gateway represents application capabilities, not spreadsheet capabilities.
+Bad:
+
+```typescript
+getSheetRows('Watchlist');
+updateCell('Trade Plans', 12, 7, 'READY');
+```
 
 ---
 
-## 7. Shared Contracts
+## 8. HTTP API
 
-Serializable frontend/backend contracts may live under:
+`apps/api` owns the production HTTP boundary.
+
+React should use same-origin relative routes:
 
 ```text
-packages/contracts/
+/api/*
 ```
 
-Contracts must contain plain serializable data.
+Do not hard-code the Cloud Run service URL into application logic.
+
+Preserve typed request/response contracts.
+
+Do not change HTTP contracts casually.
+
+When changing a boundary, inspect all affected areas:
+
+- `packages/contracts`;
+- `packages/core`;
+- `apps/api`;
+- `apps/web`;
+- `apps/sheets` when applicable;
+- relevant tests.
+
+---
+
+## 9. Authentication
+
+Production Web Cockpit authentication uses Google Identity Services.
+
+React obtains a Google ID token and sends:
+
+```text
+Authorization: Bearer <token>
+```
+
+`apps/api` verifies the token and authorization policy.
+
+Preserve verification of the configured security properties, including:
+
+- signature;
+- issuer;
+- audience;
+- `email_verified`;
+- authorized-email allowlist.
+
+Do not confuse application GIS authentication with Cloud Run IAM authentication.
+
+The Cloud Run service may be platform-accessible while `/api/*` remains protected by application middleware.
+
+Never log credentials, ID tokens, OAuth secrets, or other secrets.
+
+---
+
+## 10. Google Sheets Role
+
+Google Sheets remains the persistence/source-of-truth layer.
+
+Both `apps/api` and `apps/sheets` may interact with the same workbook through their own adapters.
+
+React never accesses Google Sheets directly.
+
+The workbook is an application data contract, not an informal spreadsheet whose physical layout can be guessed.
+
+Do not introduce a database unless explicitly requested.
+
+---
+
+## 11. Canonical Workbook Data Contract
+
+The project intentionally supports one current canonical workbook schema.
+
+For DATA sheets:
+
+```text
+row 1 = canonical headers
+row 2+ = records
+```
+
+DATA sheets must not contain structural presentation before the table, including:
+
+- title rows;
+- metadata rows;
+- blank spacer rows;
+- merged title cells;
+- decorative structures that move the header away from row 1.
+
+DATA sheets may use non-structural usability formatting:
+
+- frozen row 1;
+- filters;
+- column widths;
+- number/date/currency/percent formats;
+- validations;
+- checkboxes;
+- useful conditional formatting;
+- restrained header styling.
+
+CONFIG sheets should also be deterministic. Prefer row-1 headers and row-2+ records when the configuration is naturally tabular.
+
+An explicit CONFIG exception is acceptable only when the current design genuinely requires a different structure.
+
+---
+
+## 12. No Legacy Workbook Fallback
+
+Historical workbook data has been backed up and the current workbook may be rebuilt using the canonical schema.
+
+Do not preserve or introduce fallback chains solely to support obsolete layouts.
+
+Do not implement behavior such as:
+
+```text
+try headers on row 1
+else row 3
+else row 5
+else guess historical schema
+```
+
+Expected behavior:
+
+```text
+canonical existing sheet
+→ use it
+
+missing sheet during explicit setup
+→ create canonical sheet
+
+empty existing sheet during explicit setup
+→ initialize canonical sheet
+
+non-empty incompatible sheet
+→ fail safely with a clear schema error
+```
+
+Do not silently destroy unknown content.
+
+Do not automatically migrate historical schemas unless explicitly requested.
+
+---
+
+## 13. Reproducible Workbook Setup
+
+Trading Cockpit should be installable/reconstructable from code while preserving the Spreadsheet ID.
+
+The intended Apps Script menu is:
+
+```text
+Trading Cockpit
+  → Setup
+    → Initialize Trading Cockpit
+    → Validate Trading Cockpit
+```
+
+The initialization flow should create all CURRENT required workbook structures from an empty/clean Spreadsheet.
+
+No manual creation of required:
+
+- sheets;
+- headers;
+- config rows;
+- validations;
+- structural formatting
+
+should be necessary.
+
+Initialization must be idempotent.
+
+Repeated initialization must not:
+
+- duplicate sheets;
+- duplicate headers;
+- duplicate seeded configuration;
+- erase valid business records;
+- reset valid user configuration unnecessarily;
+- accumulate filters or formatting artifacts.
+
+The canonical workbook inventory must be derived from current runtime requirements, not from the historical list of tabs.
+
+---
+
+## 14. Workbook Validation
+
+Workbook validation must be read-only.
+
+It must not:
+
+- create sheets;
+- repair sheets;
+- migrate layouts;
+- rewrite headers;
+- seed configuration;
+- change formatting.
+
+It should report `VALID` only when the workbook satisfies the current structural requirements of the applications.
+
+Schema problems should be explicit.
+
+Example:
+
+```text
+INVALID
+
+Trade Plans:
+  Missing header: Account ID
+
+Momentum Ranking:
+  Expected canonical headers on row 1
+```
+
+Prefer validation errors over obscure downstream HTTP 500 errors.
+
+---
+
+## 15. Sheet Classification
+
+When working on setup or persistence, classify workbook tabs according to current code:
+
+```text
+DATA
+CONFIG
+TECHNICAL
+OPTIONAL_REPORT
+LEGACY_UNUSED
+```
+
+Do not assume the old 16-sheet workbook is still the canonical target.
+
+In particular, determine current runtime need before recreating historical sheets such as:
+
+- Dashboard;
+- Analytics;
+- Documentation;
+- Finviz - Momentum;
+- Lists.
+
+React is now the primary UI.
+
+A Sheets report should exist only when it still provides an intentional supported capability.
+
+---
+
+## 16. Sheets Concurrency and Mutation Safety
+
+Google Sheets is not a transactional database.
+
+Multi-sheet mutations are not atomic and may partially succeed.
+
+`apps/api` and `apps/sheets` may access the same workbook concurrently.
+
+Consider race conditions when changing mutations.
+
+Do not introduce automatic mutation retries unless the operation is demonstrably idempotent.
+
+Where stable idempotency is required, prefer a durable operation/business identifier.
+
+Cloud Run instance or concurrency limits are risk-reduction settings, not transaction guarantees.
+
+---
+
+## 17. Sheets Performance
+
+Avoid unnecessary Google Sheets API/Apps Script round trips.
+
+For `apps/api`:
+
+- preserve request-scoped table/data reuse where useful;
+- preserve efficient batch reads where appropriate;
+- keep Google API client memoization where useful;
+- do not introduce persistent business-data caching without an explicit design decision;
+- requests should observe appropriately fresh workbook state.
+
+Do not sacrifice correctness merely to reduce calls.
+
+---
+
+## 18. Contracts
+
+`packages/contracts` contains serializable application contracts.
 
 Prefer:
 
@@ -219,330 +600,274 @@ Prefer:
 - arrays;
 - plain objects.
 
-Avoid passing Apps Script runtime objects.
-
-Never expose objects such as:
+Do not expose runtime/infrastructure objects such as:
 
 ```text
 Spreadsheet
 Sheet
 Range
 Properties
-Date objects with ambiguous serialization
+Request
+Response
 ```
 
-Normalize dates/times explicitly when crossing the boundary.
+Normalize dates and times explicitly across application boundaries.
 
-Contracts should represent application concepts rather than Google Sheets implementation details.
-
----
-
-## 8. Google Sheets
-
-Google Sheets currently serves two purposes:
-
-1. persistence/data store;
-2. officially supported UI.
-
-Do not remove or intentionally break the existing Google Sheets UI unless explicitly requested.
-
-The React Cockpit and Google Sheets UI must be able to coexist.
-
-Conceptually:
-
-```text
-Google Sheets UI ──────┐
-                       ↓
-                    Backend
-                       ↑
-React Cockpit ─────────┘
-```
-
-Do not describe Google Sheets as deprecated or legacy unless the project explicitly makes that decision later.
+Contracts describe application concepts, not physical spreadsheet operations.
 
 ---
 
-## 9. Apps Script Runtime
+## 19. Multi-Strategy Design
 
-Google Apps Script remains the runtime backend.
+Trading Cockpit must remain capable of supporting multiple strategies.
 
-clasp uses:
-
-```text
-backend/
-```
-
-as its deployment root.
-
-Only runtime artifacts required by Apps Script should be deployable.
-
-Source TypeScript, React source code, tests, development scripts, Vite configuration and other development-only files must not be pushed to Apps Script.
-
-Always preserve this boundary.
-
----
-
-## 10. Generated Files
-
-Files under build directories are generated artifacts unless the repository clearly indicates otherwise.
-
-Do not manually edit generated artifacts when the source file can be modified instead.
-
-Use the appropriate build command to regenerate them.
-
-For example:
-
-```text
-backend/build/Cockpit.js
-backend/build/CockpitWeb.html
-```
-
-should normally be produced by the build pipeline.
-
----
-
-## 11. React Build and Apps Script
-
-The React application is built using Vite.
-
-The production Web Cockpit must remain compatible with Apps Script HtmlService.
-
-The current strategy produces a self-contained HTML artifact suitable for Apps Script.
-
-Do not assume that a normal multi-asset Vite `dist/` deployment can be served by Apps Script.
-
-Preserve the existing single-file/inlined build strategy unless there is a demonstrated reason to change it.
-
-Avoid unnecessary external runtime assets.
-
----
-
-## 12. Local Frontend Development
-
-Local React development must not require a `clasp push` after every UI change.
-
-The frontend may use a mock CockpitGateway during local development.
-
-Conceptually:
-
-```text
-Vite development
-      ↓
-MockCockpitGateway
-
-Apps Script production
-      ↓
-AppsScriptCockpitGateway
-```
-
-Mock data must remain clearly identifiable as development data.
-
-Do not allow mock behavior to leak into production builds.
-
----
-
-## 13. Frontend Organization
-
-Prefer feature-oriented organization.
-
-Example:
-
-```text
-web/src/
-├── app/
-├── components/
-│   └── ui/
-├── features/
-│   ├── dashboard/
-│   ├── watchlist/
-│   ├── trade-plans/
-│   ├── positions/
-│   ├── journal/
-│   ├── analytics/
-│   └── admin/
-└── infrastructure/
-    └── apps-script/
-```
-
-Only create features when they are actually needed.
-
-Avoid empty speculative architecture.
-
-Apply YAGNI.
-
----
-
-## 14. Administration
-
-Administration belongs inside the Web Cockpit.
-
-The intended location is:
-
-```text
-web/src/features/admin/
-```
-
-Do not create a separate `admin/` application unless explicitly requested in the future.
-
-Potential administrative areas may eventually include:
-
-- strategies;
-- accounts;
-- risk;
-- data sources;
-- system health;
-- configuration.
-
-Do not implement these ahead of actual requirements.
-
----
-
-## 15. Frontend Design
-
-Preserve the established Trading Cockpit visual identity.
-
-Current direction:
-
-- dark navy / dark trading interface;
-- green/mint accent;
-- clear information hierarchy;
-- professional desktop-oriented layout;
-- compact financial/trading information;
-- readable cards and tables.
-
-Do not replace the existing visual identity with a generic component-library theme.
-
-If shadcn/ui is introduced, use it as a collection of UI primitives, not as the visual identity of Trading Cockpit.
-
-Only install components that are actually required.
-
-Avoid adding dozens of unused UI components.
-
----
-
-## 16. shadcn/ui and Tailwind
-
-shadcn/ui may be introduced when it provides concrete value for interactive UI features such as:
-
-- tables;
-- dialogs;
-- dropdown menus;
-- forms;
-- badges;
-- selects;
-- tooltips;
-- tabs;
-- sheets/drawers;
-- notifications.
-
-Before relying heavily on it, ensure that its generated CSS and dependencies remain compatible with the Apps Script single-file Vite build.
-
-Preserve the existing Cockpit theme when adopting shadcn/ui.
-
-Do not perform a wholesale visual rewrite merely to adopt shadcn/ui.
-
----
-
-## 17. Trading Strategies
-
-The system must remain capable of supporting multiple strategies.
-
-Do not introduce assumptions such as:
+Do not encode:
 
 ```text
 Trading Cockpit = Momentum Breakout
 ```
 
-Momentum Breakout is one strategy.
-
-Future strategies may have different:
+Different strategies may have different:
 
 - signals;
-- scoring;
+- scores;
 - filters;
-- ranking;
+- rankings;
 - entry criteria;
 - exit criteria;
-- metadata.
+- metadata;
+- provider requirements.
 
-Prefer strategy-aware abstractions where appropriate.
+Use strategy-aware abstractions when current requirements justify them.
 
-Avoid generic abstractions that provide no current value, however.
+Avoid speculative strategy frameworks.
 
 ---
 
-## 18. Workflow
+## 20. Workflow and Financial Correctness
 
-The core trading workflow is conceptually:
+Preserve workflow integrity:
 
 ```text
-Signal
-  ↓
-Watchlist
-  ↓
-Trade Plan
-  ↓
-Position
-  ↓
-Journal
-  ↓
-Analytics
+Signal → Watchlist → Trade Plan → Position → Journal → Analytics
 ```
 
-Changes must preserve workflow integrity.
+Do not bypass workflow transitions with direct persistence mutations unless implementing an explicit maintenance/reconciliation capability.
 
-Do not bypass workflow transitions by directly mutating persistence unless the architecture explicitly requires reconciliation or maintenance behavior.
-
----
-
-## 19. Financial Correctness
-
-Trading Cockpit handles financial information.
-
-Correctness is more important than displaying additional metrics.
+Financial correctness has priority over displaying more metrics.
 
 Never invent financial values.
 
-If semantics are ambiguous, do not expose the metric until the correct interpretation is established.
-
-Examples requiring particular care:
+Treat carefully:
 
 - available capital;
 - deployed capital;
 - open risk;
 - realized P&L;
 - unrealized P&L;
-- multi-account aggregation;
+- account aggregation;
 - FX conversion;
 - position sizing;
-- portfolio exposure.
+- portfolio exposure;
+- stops;
+- return calculations.
 
-Prefer an omitted metric over a misleading metric.
+If semantics are uncertain, establish them before exposing or changing a metric.
+
+Prefer omitting an uncertain metric over presenting a misleading one.
 
 ---
 
-## 20. Tests During Development
+## 21. React UI
 
-The user performs final repository validation manually.
+Preserve the established Trading Cockpit identity:
+
+- dark navy/dark trading interface;
+- green/mint accent;
+- professional desktop-oriented layout;
+- compact financial information;
+- clear information hierarchy;
+- readable cards and tables.
+
+Prefer feature-oriented organization.
+
+Do not create empty speculative features.
+
+Apply YAGNI.
+
+UI libraries such as shadcn/ui should provide useful primitives, not replace the product's visual identity.
+
+Do not add large sets of unused components.
+
+---
+
+## 22. Local Web Development
+
+Local React development must not require `clasp push`.
+
+Development may use `MockCockpitGateway`.
+
+Production uses `HttpCockpitGateway`.
+
+Mock data and mock transport selection must remain clearly development-only.
+
+Do not allow mock behavior to leak into production builds.
+
+---
+
+## 23. Apps Script Build and Deployment Boundary
+
+clasp is configured for the `apps/sheets` application.
+
+The deployment surface should contain only Apps Script runtime artifacts.
+
+The current expected deployable artifacts include the Apps Script manifest and generated bundle, such as:
+
+```text
+apps/sheets/appsscript.json
+apps/sheets/build/Cockpit.js
+```
+
+Always verify the actual build and clasp configuration before assuming exact files.
+
+Development source files under `apps/sheets` may exist locally without being part of `filesToPush`.
+
+Do not manually edit generated bundles when source files exist.
+
+Preserve globally visible Apps Script entrypoints and menu handlers.
+
+Do not rename them casually.
+
+---
+
+## 24. API Build Boundary
+
+The production `apps/api` artifact must run as JavaScript without runtime dependency on repository TypeScript source files.
+
+Internal workspace code such as `@trading-cockpit/core` must be bundled/packaged so production does not attempt to load:
+
+```text
+packages/core/src/*.ts
+```
+
+Do not restore broad externalization behavior that externalizes internal workspace packages.
+
+External dependencies such as Google libraries may remain external when intentionally packaged in the runtime image.
+
+Preserve the plain-Node `/health` smoke capability.
+
+---
+
+## 25. Docker and Runtime
+
+The Docker build must use the current monorepo structure:
+
+```text
+apps/api
+apps/web
+packages/core
+packages/contracts
+```
+
+The Dockerfile currently belongs to the API application and must be discovered at its actual current path before editing.
+
+Preserve required React/Vite build-time configuration, including the configured Google OAuth client ID build argument.
+
+Remember:
+
+```text
+VITE_* values are browser-visible
+```
+
+Never place secrets in Vite variables.
+
+Use `.dockerignore` to keep the Docker build context appropriately small.
+
+A Node version warning from a dependency must not be “fixed” opportunistically during unrelated work; handle runtime upgrades as a deliberate change.
+
+---
+
+## 26. Secrets and External Providers
+
+Never hard-code:
+
+- Finviz tokens;
+- OAuth secrets;
+- Google credentials;
+- service-account credentials;
+- authentication tokens.
+
+Use the project's established secret/configuration mechanisms.
+
+Production Finviz credentials use the established Google Secret Manager integration.
+
+Do not expose secret values to React.
+
+Do not log secrets.
+
+External-provider details should remain behind appropriate ports/adapters.
+
+---
+
+## 27. Dependencies
+
+Before adding a dependency, determine whether it provides enough current value to justify:
+
+- maintenance;
+- bundle size;
+- runtime compatibility;
+- Apps Script compatibility where relevant;
+- Docker/build complexity.
+
+Do not introduce Nx, Turborepo, another monorepo framework, another backend framework, or another state-management framework without a demonstrated requirement.
+
+Use the existing stack unless the requested task requires otherwise.
+
+---
+
+## 28. Scope and Refactoring Discipline
+
+Implement the requested task only.
+
+Do not automatically implement future phases.
+
+Avoid broad unrelated refactors while implementing a feature.
+
+Before changing existing behavior:
+
+1. inspect the current implementation;
+2. inspect relevant tests;
+3. understand the current reason/contract;
+4. make the smallest coherent change.
+
+Preserve existing behavior unless the task explicitly changes it.
+
+---
+
+## 29. Testing During Development
+
+The user performs final repository validation manually unless explicitly delegated.
 
 During implementation:
 
-1. run only targeted tests needed to develop and verify the changed feature;
-2. iterate using those targeted tests;
-3. run targeted TypeScript, lint, or build checks only when they are useful to the current change;
-4. do not run the complete repository test suite unless explicitly requested.
+- run targeted tests needed for the changed behavior;
+- run targeted typecheck/lint/build checks when useful;
+- iterate using focused validation;
+- do not repeatedly run the entire repository suite without reason.
 
-This is important for development efficiency and agent token/tool usage.
+Do not weaken or remove tests merely to make a change pass.
 
-Do not weaken or delete tests merely to make a change pass.
+If a prompt explicitly asks for broader validation, follow that prompt.
 
 ---
 
-## 21. Final Validation
+## 30. Final Validation
 
-Final repository validation is performed by the user unless explicitly delegated to the agent.
+Do not assume final global validation is delegated to the agent.
 
-Do not run the following commands unless explicitly requested:
+At completion, inspect the actual root `package.json` and report the appropriate commands for the user to run.
+
+Current common validation commands include:
 
 ```bash
 npm run check
@@ -552,266 +877,162 @@ git status
 clasp status
 ```
 
-At completion, report the exact validation commands the user should run manually.
-
-Typical final validation commands may include:
-
-```bash
-npm run check
-npm run deploy:prepare
-git diff --check
-git status
-```
-
-Use the actual scripts available in `package.json`.
-
-Do not invent commands without inspecting the repository.
+Use actual repository scripts. Do not invent commands.
 
 ---
 
-## 22. Apps Script Validation
+## 31. Deployment Safety
 
-Changes affecting Apps Script must preserve:
+Never execute any deployment action unless explicitly authorized.
 
-- required global functions;
-- menu handlers;
-- Apps Script entrypoints;
-- manifest validity;
-- absence of global function collisions.
-
-Do not rename Apps Script globals casually.
-
-Remember that Apps Script depends on globally visible entrypoints.
-
----
-
-## 23. Deployment Safety
-
-Never execute:
+This includes:
 
 ```bash
 clasp push
-```
-
-unless the user explicitly asks for or authorizes deployment.
-
-Never execute:
-
-```bash
 clasp pull
+gcloud run deploy
+gcloud builds submit
 ```
 
-unless explicitly requested.
+or equivalent deployment commands.
 
-Before an authorized deployment:
+Before an authorized Apps Script deployment:
 
-1. run the required build;
-2. run validation;
+1. build;
+2. validate;
 3. inspect the clasp deployment surface;
-4. confirm only expected runtime files will be sent.
+4. confirm only expected runtime files will be pushed.
 
-Do not deploy source React/TypeScript files.
+Before an authorized API/Cloud Run deployment:
 
----
+1. build the production artifact/image;
+2. verify the API artifact;
+3. smoke-test `/health` when appropriate;
+4. verify configuration;
+5. deploy only after explicit authorization.
 
-## 24. Git Safety
-
-Never push to GitHub unless explicitly requested.
-
-Do not overwrite existing user changes.
-
-Before significant modifications, inspect:
-
-```bash
-git status
-```
-
-If unrelated uncommitted changes exist, preserve them.
-
-Do not silently reset, checkout, stash or discard user changes.
-
-Do not combine unrelated architectural phases into one commit.
-
-Only create commits when requested or when the task explicitly authorizes it.
+Implementation completion never implies deployment authorization.
 
 ---
 
-## 25. Scope Discipline
+## 32. Git Safety
 
-Implement the requested phase only.
+Never commit or push unless explicitly requested.
 
-Do not opportunistically implement future phases.
+Never discard user changes.
 
-For example, when implementing Watchlist, do not automatically implement:
-
-- Trade Plan creation;
-- Positions;
-- Journal;
-- Analytics;
-- Administration.
-
-A small amount of infrastructure preparation is acceptable when necessary for the current feature.
-
-Avoid speculative frameworks and abstractions.
-
----
-
-## 26. Refactoring Discipline
-
-Do not combine a feature implementation with a broad unrelated refactor.
-
-Prefer:
+Do not silently run destructive Git operations such as:
 
 ```text
-small architectural extension
-+
-requested feature
+reset
+checkout
+restore
+stash
+clean
 ```
 
-over:
+against user work.
 
-```text
-rewrite existing system
-+
-requested feature
-+
-future architecture
-```
+Preserve unrelated uncommitted changes.
 
-Preserve existing behavior unless the task explicitly changes it.
+Large structural moves may appear as delete/add before staging; do not assume files were lost merely from unstaged rename detection.
 
 ---
 
-## 27. Dependencies
+## 33. Documentation
 
-Before adding a dependency, determine whether it provides enough value to justify:
+Do not update documentation during every implementation task unless:
 
-- bundle size;
-- maintenance;
-- Apps Script compatibility;
-- build complexity.
+- explicitly requested;
+- documentation is part of acceptance criteria;
+- active documentation would otherwise become materially dangerous or incorrect.
 
-Avoid unnecessary dependencies.
+Prefer dedicated documentation phases for broad documentation refreshes.
 
-Do not introduce:
+Historical ADRs may intentionally retain old names and paths because they describe decisions at that time.
 
-- Nx;
-- Turborepo;
-- another monorepo framework;
-- another state management framework;
-- another backend framework;
+Do not rewrite historical ADRs solely to make historical terminology match the current repository.
 
-without a demonstrated requirement.
+Current operational documentation must use current names.
 
 ---
 
-## 28. Documentation Policy
+## 34. Agent Reporting
 
-Do NOT update project documentation during every implementation task unless:
+Keep normal completion reports concise.
 
-- the user explicitly requests documentation;
-- a change would otherwise leave critical developer instructions dangerously incorrect;
-- documentation is part of the acceptance criteria.
-
-The project already contains detailed documentation.
-
-Prioritize implementation and validation.
-
-Documentation will periodically be refreshed in dedicated documentation phases by inspecting the actual codebase.
-
-Do not generate new ADRs for routine feature work unless explicitly requested.
-
-Do not spend implementation time producing extensive Markdown reports.
-
-The code and automated tests are the primary source of truth between documentation refresh phases.
-
----
-
-## 29. Agent Reporting
-
-Keep completion reports concise.
-
-Do not produce long phase reports unless explicitly requested.
-
-For normal implementation work, report:
+Report:
 
 1. what changed;
 2. important architectural decisions;
-3. tests/validation results;
-4. limitations or remaining manual steps;
-5. git status if relevant.
+3. targeted tests/checks actually executed;
+4. limitations or manual steps;
+5. final validation commands for the user.
 
-Avoid repeating the original prompt.
+Do not repeat the entire prompt.
 
-Avoid listing every modified file unless useful.
+Do not claim commands/tests were executed when they were not.
 
----
-
-## 30. Efficient Agent Usage
-
-Optimize implementation work for useful progress rather than exhaustive narration.
-
-During exploration:
-
-- inspect the files relevant to the requested feature first;
-- follow imports/dependencies as needed;
-- avoid repeatedly scanning the entire repository without reason.
-
-During testing:
-
-- use targeted tests while iterating;
-- use the full suite at the end.
-
-During reporting:
-
-- summarize;
-- do not generate extensive documentation unless requested.
-
-Do not sacrifice correctness for token efficiency, but avoid unnecessary work.
+Do not generate extensive phase documentation unless requested.
 
 ---
 
-## 31. Existing Behavior
-
-Existing behavior is presumed intentional unless evidence shows otherwise.
-
-Before changing behavior:
-
-- inspect implementation;
-- inspect tests;
-- understand why it exists.
-
-Do not "clean up" business rules merely because another implementation appears simpler.
-
----
-
-## 32. Source of Truth Priority
+## 35. Source of Truth Priority
 
 When information conflicts, use this priority:
 
 1. explicit current user instruction;
 2. current repository code and tests;
-3. this AGENTS.md;
-4. project documentation;
-5. historical assumptions.
+3. this `AGENTS.md`;
+4. current operational documentation;
+5. historical ADRs and assumptions.
 
-The current repository must always be inspected before making architectural assumptions.
+Inspect current code before relying on historical project knowledge.
 
 ---
 
-## 33. Definition of Done
+## 36. Definition of Done
 
-Unless the task defines stricter criteria, implementation work is complete when:
+Unless the task provides stricter acceptance criteria, implementation is complete when:
 
 - requested behavior is implemented;
-- architecture boundaries are preserved;
+- architectural boundaries are preserved;
 - relevant targeted tests executed by the agent pass;
-- no unrelated functionality was intentionally changed;
+- unrelated behavior was not intentionally changed;
 - no unauthorized deployment occurred;
-- no unauthorized GitHub push occurred;
-- remaining limitations are clearly stated;
-- the agent provides the final validation commands for the user to execute manually.
+- no unauthorized commit/push occurred;
+- remaining limitations/manual steps are stated;
+- final validation commands are provided for the user.
 
-Full repository validation is performed by the user unless explicitly delegated to the agent.
+Do not automatically begin another phase.
 
-Do not start the next phase automatically.
+---
+
+## 37. Guiding Principle
+
+Prefer:
+
+```text
+explicit
+deterministic
+testable
+reproducible
+runtime-neutral core
+strict boundaries
+one canonical workbook schema
+simple architecture where possible
+```
+
+over:
+
+```text
+historical assumptions
+implicit spreadsheet layouts
+legacy fallback chains
+duplicated business logic
+manual workbook setup knowledge
+technology-specific core code
+speculative abstractions
+```
+
+When uncertain, inspect the current repository and choose the simplest design that correctly satisfies the current requirement.

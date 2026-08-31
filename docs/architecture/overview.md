@@ -2,44 +2,40 @@
 
 ## Current shape
 
-Trading Cockpit is in a progressive migration from a global Google Apps Script application to a
-modular TypeScript application. Both forms run together in the same Apps Script project. Legacy
-JavaScript under `backend/` continues to own the remaining inventoried workflows. TypeScript owns the
-migrated Watchlist, Trade Plan, Position, Journal, account capital, Momentum, Market Signals, and
-Signals History slices.
+Trading Cockpit is organized as a monorepo with a runtime-neutral TypeScript core and multiple
+application surfaces. `apps/sheets` supports the Google Sheets / Apps Script UI and projections,
+`apps/api` exposes the Node HTTP API, and `apps/web` contains the React Cockpit. TypeScript owns the
+migrated Watchlist, Trade Plan, Position, Journal, account capital, Momentum, Market Signals,
+Signals History, Analytics, and Dashboard slices.
 The multi-account foundation adds explicit Trading Account identity to new Positions and Journals.
 
-The repository root is an orchestration boundary. `backend/` contains the supported Apps Script
-application and Google Sheets inbound UI. `web/` is a second, React-based inbound UI. It calls
-backend application capabilities through a typed gateway and never reads Google Sheets directly.
-Backend domain rules, sizing, risk, scoring, state transitions, persistence and provider
-integrations remain authoritative.
+The repository root is an orchestration boundary. React calls backend application capabilities
+through a typed gateway and never reads Google Sheets directly. Domain rules, sizing, risk, scoring,
+state transitions, persistence and provider integrations remain backend-owned.
 
 ```text
-React Dashboard
+React Cockpit
       |
       v
-CockpitGateway -> AppsScriptCockpitGateway -> google.script.run
-                                              |
-                                              v
-                                      Apps Script entrypoint
-                                              |
-                                              v
-                                      application use case
-                                              |
-                                              v
-                                  Google Sheets outbound adapter
+CockpitGateway -> HttpCockpitGateway -> apps/api route
+                                    |
+                                    v
+                              application use case
+                                    |
+                                    v
+                         Google Sheets API outbound adapter
 ```
 
-The shared `packages/contracts` package contains only serializable boundary DTOs. It contains no
-Google Sheets or Apps Script types. See [Web cockpit](../web-cockpit.md) and ADR 0011.
+`packages/core` contains runtime-neutral domain/application logic and outbound ports.
+`packages/contracts` contains only serializable boundary DTOs. Neither package contains Google
+Sheets, Apps Script, Express, or React types. See [Web cockpit](../web-cockpit.md) and ADR 0011.
 
 ```text
 Google Sheets menu
         |
         | stable global wrappers
         v
-backend/build/Cockpit.js
+apps/sheets/build/Cockpit.js
   entrypoint -> composition root -> inbound Google Sheets adapter
                                       |
                                       v
@@ -60,20 +56,21 @@ backend/build/Cockpit.js
 
 ## Layer responsibilities
 
-- `backend/src/core/domain` contains Watchlist, Trade Plan, Position, Journal Entry, Momentum, and market
-  signal business values,
-  validations, identities, lifecycle transitions, and calculations.
-- `backend/src/core/application` orchestrates migrated trading, capital, Momentum, and market signal use
-  cases without knowing Google Sheets, Apps Script APIs, or external provider details.
-- `backend/src/ports/outbound` declares the minimum capabilities the use cases need: strategy existence,
-  Watchlist and Trade Plan persistence, trading configuration, current time, and ID generation.
-- `backend/src/adapters/inbound` translates active spreadsheet selections into application commands and
+- `packages/core/src/domain` contains Watchlist, Trade Plan, Position, Journal Entry, Momentum, and
+  market signal business values, validations, identities, lifecycle transitions, and calculations.
+- `packages/core/src/application` orchestrates migrated trading, capital, Momentum, market signal,
+  Analytics, and Dashboard use cases without knowing Google Sheets, Apps Script APIs, HTTP, or
+  external provider details.
+- `packages/core/src/ports/outbound` declares the minimum capabilities the use cases need.
+- `apps/sheets/src/adapters/inbound` translates active spreadsheet selections into application commands and
   translates results into the existing spreadsheet toasts.
-- `backend/src/adapters/outbound` implements ports with Google Sheets and Apps Script. The Watchlist mapper
+- `apps/sheets/src/adapters/outbound` implements ports with Google Sheets and Apps Script. The Watchlist mapper
   is the explicit boundary between the 22-column sheet schema and domain entries.
-- `backend/src/composition` manually wires the use case and concrete adapters.
-- `backend/src/entrypoints` exposes functions to the generated bundle. It does not itself create Apps Script
+- `apps/sheets/src/composition` manually wires the use case and concrete adapters.
+- `apps/sheets/src/entrypoints` exposes functions to the generated bundle. It does not itself create Apps Script
   globals.
+- `apps/api/src` wires the same `packages/core` use cases to HTTP routes and Google Sheets API
+  outbound adapters.
 
 ## External market signal provider boundary
 
@@ -84,9 +81,11 @@ strategy, replaces the current projection, and archives the signal snapshot.
 
 Finviz is an outbound adapter implementing that capability. Its URL, screener query, authentication
 token, Script Properties storage, HTTP behavior, CSV parsing, response shape, error translation, and
-transport-to-signal mapping stay under `backend/src/adapters/outbound/finviz`. The composition root selects
-this implementation. The inbound adapter, public callbacks, menu label `Refresh Finviz`, and physical
-sheet `Finviz - Momentum` remain provider-specific compatibility surfaces.
+transport-to-signal mapping stay under adapter implementations. Apps Script uses
+`apps/sheets/src/adapters/outbound/finviz`; the HTTP API uses `apps/api/src/adapters/outbound/finviz`.
+The composition roots select these implementations. The inbound adapter, public callbacks, menu label
+`Refresh Finviz`, and physical sheet `Finviz - Momentum` remain provider-specific compatibility
+surfaces.
 
 ```text
 Google Sheets: Refresh Finviz
@@ -109,9 +108,9 @@ adapter types. See ADR 0009.
 ## Build and runtime boundary
 
 `npm run build:cockpit` bundles TypeScript modules into the Apps Script-compatible IIFE
-`backend/build/Cockpit.js`. The build appends stable global functions for migrated menu actions,
+`apps/sheets/build/Cockpit.js`. The build appends stable global functions for migrated menu actions,
 `onOpen`, `doGet`, and the React Dashboard endpoint. Vite produces a second generated runtime file,
-`backend/build/CockpitWeb.html`, with its JavaScript and CSS inlined for HtmlService.
+`apps/web/dist` static assets served by `apps/api`.
 The menu definition itself is maintained in a TypeScript inbound adapter. The Sheets menu therefore
 keeps its existing labels and callback names while implementations change behind them. Watchlist,
 Trade Plan, Position, Journal, Strategy, setup, and Cockpit Config physical infrastructure are now
@@ -322,7 +321,7 @@ selected Positions row.
 
 ## Architecture POC retirement
 
-The greeting-based `backend/src/poc` demonstration and its tests were removed after three real Cockpit
+The greeting-based `apps/sheets/src/poc` demonstration and its tests were removed after three real Cockpit
 slices validated the modular runtime. No build, runtime, or architectural check depended on them.
 The bundle smoke test still asserts that the obsolete `runArchitecturePoc` global is absent.
 

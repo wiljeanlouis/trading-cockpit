@@ -1,6 +1,6 @@
 {
   "scriptId": "1TI329ogbN3Cwezl20RBesSIxjNWoe6jlMXpf31gO1_CylZ0CiG8nQgV3",
-  "rootDir": "backend",
+  "rootDir": "apps/sheets",
   "scriptExtensions": [
     ".js",
     ".gs"

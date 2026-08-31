@@ -29,12 +29,12 @@ Esbuild does not typecheck TypeScript, so `npm run typecheck` continues to run `
 
 ```text
 SOURCE
-  backend/src/**/*.ts
+  apps/sheets/src/**/*.ts
        |
        | npm run build:cockpit
        v
 BUILD OUTPUT
-  backend/build/Cockpit.js
+  apps/sheets/build/Cockpit.js
        |
        | clasp push (manual only)
        v
@@ -42,12 +42,12 @@ DEPLOYMENT
   Google Apps Script V8
 ```
 
-`backend/src/` is versioned and excluded from clasp. `backend/build/` is generated and ignored by Git, but it is
+`apps/sheets/src/` is versioned and excluded from clasp. `apps/sheets/build/` is generated and ignored by Git, but it is
 intentionally not excluded from clasp.
 
-The root `.clasp.json` points `rootDir` to `backend`. This confines clasp discovery to the Apps
+The root `.clasp.json` points `rootDir` to `apps/sheets`. This confines clasp discovery to the Apps
 Script application. `.claspignore` excludes TypeScript, tests, scripts, configuration and transient
-tooling caches, while retaining the six maintained JavaScript files, generated bundle and manifest.
+tooling caches, while retaining the generated bundle and manifest.
 
 ## Migrated slice module graph
 
@@ -66,18 +66,17 @@ entrypoints/apps-script.ts
        -> adapters/outbound/google-sheets/google-sheets-trading-configuration.ts
        -> adapters/outbound/google-sheets/google-sheets-position-repository.ts
             -> adapters/outbound/google-sheets/position-mapper.ts
-       -> core/application/watchlist/add-candidate-to-watchlist.ts
-            -> core/domain/watchlist.ts
-            -> ports/outbound/runtime-port.ts
-            -> ports/outbound/strategy-repository.ts
-            -> ports/outbound/watchlist-repository.ts
-       -> core/application/trade-plan/create-trade-plan-from-watchlist.ts
-            -> core/domain/trade-plan.ts
-            -> ports/outbound/trade-plan-repository.ts
-            -> ports/outbound/trading-configuration-port.ts
-       -> core/application/position/open-position-from-trade-plan.ts
-            -> core/domain/position.ts
-            -> ports/outbound/position-repository.ts
+       -> @trading-cockpit/core/application/watchlist/add-candidate-to-watchlist
+            -> @trading-cockpit/core/domain/watchlist
+            -> @trading-cockpit/core/ports/outbound/runtime-port
+            -> @trading-cockpit/core/ports/outbound/strategy-repository
+            -> @trading-cockpit/core/ports/outbound/watchlist-repository
+       -> @trading-cockpit/core/application/trade-plan/create-trade-plan-from-watchlist
+            -> @trading-cockpit/core/domain/trade-plan
+            -> @trading-cockpit/core/ports/outbound/trade-plan-repository
+       -> @trading-cockpit/core/application/position/open-position-from-trade-plan
+            -> @trading-cockpit/core/domain/position
+            -> @trading-cockpit/core/ports/outbound/position-repository
 ```
 
 Ports are interfaces and are erased from the runtime. The use case depends only on these
@@ -139,9 +138,8 @@ separate manual command.
 
 The expected clasp runtime is:
 
-- 6 hand-maintained legacy JavaScript files under `backend/`;
-- `backend/build/Cockpit.js`;
-- `backend/appsscript.json`.
+- `apps/sheets/build/Cockpit.js`;
+- `apps/sheets/appsscript.json`.
 
 ## Source maps
 
@@ -151,10 +149,10 @@ error-reporting workflow maps generated stack traces back to TypeScript.
 
 ## Future migration
 
-Watchlist, Trade Plan, Position, Journal, Strategy/setup, account capital/equity, Momentum, and
-market-signal workflows are migrated under `core/`, `ports/`, and `adapters/`. Their physical Sheets
-schemas and formulas are adapter-owned. Analytics, Dashboard, Theme, and Documentation remain
-independent future migrations behind characterization tests.
+Watchlist, Trade Plan, Position, Journal, Strategy/setup, account capital/equity, Momentum,
+market-signal, Analytics, and Dashboard workflows are TypeScript-owned. Runtime-neutral
+business/application logic lives in `packages/core`; physical Sheets schemas, formulas, and
+presentation projections are adapter-owned by `apps/sheets`.
 
 Each future slice should keep its stable Apps Script menu or trigger wrapper, introduce only the
 ports required by its use case, and preserve spreadsheet schemas and observable behavior during the

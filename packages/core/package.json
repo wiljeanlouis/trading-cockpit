@@ -1,0 +1,19 @@
+{
+  "name": "@trading-cockpit/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./application/*": "./src/application/*.ts",
+    "./domain/*": "./src/domain/*.ts",
+    "./ports/*": "./src/ports/*.ts"
+  },
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@trading-cockpit/contracts": "*"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  }
+}

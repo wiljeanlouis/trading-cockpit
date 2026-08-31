@@ -1,7 +1,7 @@
 node_modules/
 coverage/
 build/
-cloud-run/dist/
-/backend/*.js
+apps/api/dist/
+/apps/sheets/*.js
 .clasp.json
-backend/appsscript.json
+apps/sheets/appsscript.json
