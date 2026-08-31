@@ -434,18 +434,14 @@ async function readStrategiesForCatalog(context: MutationContext) {
 
 async function readExistingSignalKeys(context: MutationContext): Promise<Set<string>> {
   const keys = new Set<string>();
-  try {
-    const table = (await context.sheets.getTable(SHEET_DEFINITIONS.signalsHistory)).table;
-    for (const row of table.rows) {
-      const signalDate = normalizeSignalDate(valueByHeader(table.headers, row, 'Signal Date'));
-      const strategyId = textValue(valueByHeader(table.headers, row, 'Strategy ID')).toUpperCase();
-      const strategyVersion = textValue(valueByHeader(table.headers, row, 'Strategy Version'));
-      const ticker = textValue(valueByHeader(table.headers, row, 'Ticker')).toUpperCase();
-      if (!signalDate || !strategyId || !ticker) continue;
-      keys.add(buildSignalKey(signalDate, strategyId, strategyVersion, ticker));
-    }
-  } catch {
-    return keys;
+  const table = (await context.sheets.getTable(SHEET_DEFINITIONS.signalsHistory)).table;
+  for (const row of table.rows) {
+    const signalDate = normalizeSignalDate(valueByHeader(table.headers, row, 'Signal Date'));
+    const strategyId = textValue(valueByHeader(table.headers, row, 'Strategy ID')).toUpperCase();
+    const strategyVersion = textValue(valueByHeader(table.headers, row, 'Strategy Version'));
+    const ticker = textValue(valueByHeader(table.headers, row, 'Ticker')).toUpperCase();
+    if (!signalDate || !strategyId || !ticker) continue;
+    keys.add(buildSignalKey(signalDate, strategyId, strategyVersion, ticker));
   }
   return keys;
 }

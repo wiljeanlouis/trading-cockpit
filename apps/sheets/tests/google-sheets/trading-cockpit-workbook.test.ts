@@ -9,6 +9,7 @@ import {
   MOMENTUM_SCORE_CONFIG_HEADERS,
   MOMENTUM_SCORE_CONFIG_VALUES
 } from '../../src/adapters/inbound/google-sheets/ui/setup-momentum-ranking';
+import { SIGNALS_HISTORY_HEADERS } from '@trading-cockpit/contracts';
 import { MOMENTUM_RANKING_HEADERS } from '../../src/adapters/outbound/google-sheets/momentum/momentum-ranking-schema';
 import { TRADE_PLAN_HEADERS } from '../../src/adapters/outbound/google-sheets/trade-plan/trade-plan-mapper';
 
@@ -196,6 +197,12 @@ describe('Trading Cockpit workbook setup and validation', () => {
       ...MOMENTUM_RANKING_HEADERS
     ]);
     expect(spreadsheet.getSheetByName('Trade Plans')?.values[0]).toEqual([...TRADE_PLAN_HEADERS]);
+    expect(spreadsheet.getSheetByName('Signals History')?.values[0]).toEqual([
+      ...SIGNALS_HISTORY_HEADERS
+    ]);
+    expect(new Set(SIGNALS_HISTORY_HEADERS).size).toBe(SIGNALS_HISTORY_HEADERS.length);
+    expect(SIGNALS_HISTORY_HEADERS).toContain('Finviz Ticker');
+    expect(spreadsheet.getSheetByName('Signals History')?.values[1]).toBeUndefined();
     expect(spreadsheet.getSheetByName('Momentum Ranking')?.values[1]).toBeUndefined();
     expect(spreadsheet.getSheetByName('Accounts')?.values).toEqual([
       ['Account ID', 'Name', 'Base Currency', 'Risk % Per Trade']
@@ -281,17 +288,9 @@ describe('Trading Cockpit workbook setup and validation', () => {
     expect(malformedTradePlans.values[0]).toEqual(['TRADING PLAN TITLE']);
   });
 
-  it('allows current dynamic signal attribute headers but rejects extra business headers', () => {
+  it('rejects Signals History when canonical signal attribute headers are missing', () => {
     const signalsHistory = new FakeSheet('Signals History', [
-      [
-        'Signal Date',
-        'Detected At',
-        'Strategy ID',
-        'Strategy',
-        'Strategy Version',
-        'Ticker',
-        'Company'
-      ]
+      ['Signal Date', 'Detected At', 'Strategy ID', 'Strategy', 'Strategy Version', 'Ticker']
     ]);
     const tradePlans = new FakeSheet('Trade Plans', [[...TRADE_PLAN_HEADERS, 'Unexpected']]);
     const spreadsheet = new FakeSpreadsheet([signalsHistory, tradePlans]);
@@ -301,7 +300,7 @@ describe('Trading Cockpit workbook setup and validation', () => {
 
     expect(report.items).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ sheetName: 'Signals History', status: 'ALREADY_VALID' }),
+        expect.objectContaining({ sheetName: 'Signals History', status: 'SCHEMA_MISMATCH' }),
         expect.objectContaining({ sheetName: 'Trade Plans', status: 'SCHEMA_MISMATCH' })
       ])
     );

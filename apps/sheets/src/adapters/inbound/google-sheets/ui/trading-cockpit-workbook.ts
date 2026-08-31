@@ -1,4 +1,5 @@
 import { CAPITAL_LEDGER_HEADERS } from '../../../outbound/google-sheets/capital-transaction/capital-transaction-mapper';
+import { SIGNALS_HISTORY_HEADERS } from '@trading-cockpit/contracts';
 import {
   COCKPIT_CONFIG_HEADERS,
   COCKPIT_CONFIG_ROWS,
@@ -78,14 +79,6 @@ interface TableSheetDefinition {
 }
 
 const SIGNALS_HISTORY_SHEET_NAME = 'Signals History';
-const SIGNALS_HISTORY_HEADERS = [
-  'Signal Date',
-  'Detected At',
-  'Strategy ID',
-  'Strategy',
-  'Strategy Version',
-  'Ticker'
-] as const;
 
 const FINVIZ_MOMENTUM_SHEET_NAME = 'Finviz - Momentum';
 const FINVIZ_MOMENTUM_HEADERS = [
@@ -159,7 +152,8 @@ function tableDefinitions(): TableSheetDefinition[] {
       classification: 'DATA',
       headers: SIGNALS_HISTORY_HEADERS,
       initialize: () => initializeSimpleTable(SIGNALS_HISTORY_SHEET_NAME, SIGNALS_HISTORY_HEADERS),
-      allowAdditionalHeaders: true
+      validateHeaders: (headers) =>
+        requireSheetHeaders(headers, SIGNALS_HISTORY_HEADERS, SIGNALS_HISTORY_SHEET_NAME)
     },
     {
       sheetName: 'Accounts',

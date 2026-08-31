@@ -1,18 +1,14 @@
 import { buildSignalKey } from '@trading-cockpit/core/domain/market-signal';
 import type { SignalSnapshot } from '@trading-cockpit/core/domain/market-signal';
 import type { SignalHistoryRepository } from '@trading-cockpit/core/ports/outbound/signal-history-repository';
+import {
+  MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS,
+  SIGNALS_HISTORY_HEADERS
+} from '@trading-cockpit/contracts';
 import { readSheetHeaders, requireColumn } from '../sheet-headers';
 import { themeTechnicalSheet } from '../../../inbound/google-sheets/theme/theme';
 
 const SHEET_NAME = 'Signals History';
-const REQUIRED_HEADERS = [
-  'Signal Date',
-  'Detected At',
-  'Strategy ID',
-  'Strategy',
-  'Strategy Version',
-  'Ticker'
-];
 
 function formatDate(value: unknown): string {
   if (!value) return '';
@@ -25,34 +21,30 @@ function formatDate(value: unknown): string {
 
 export class GoogleSheetsSignalHistoryRepository implements SignalHistoryRepository {
   ensureReady(attributeNames: string[]): void {
+    const unsupportedAttribute = attributeNames.find(
+      (header) => !isSupportedMomentumBreakoutAttribute(header)
+    );
+    if (unsupportedAttribute) {
+      throw new Error(`Signals History attribut non supporté : ${unsupportedAttribute}`);
+    }
+
     const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     let sheet = spreadsheet.getSheetByName(SHEET_NAME);
     if (!sheet) sheet = spreadsheet.insertSheet(SHEET_NAME);
     if (this.isEmpty(sheet)) {
-      const headers = [...REQUIRED_HEADERS, ...attributeNames];
-      sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+      sheet
+        .getRange(1, 1, 1, SIGNALS_HISTORY_HEADERS.length)
+        .setValues([[...SIGNALS_HISTORY_HEADERS]]);
       sheet.setFrozenRows(1);
       themeTechnicalSheet(spreadsheet, SHEET_NAME);
       return;
     }
     const headers = readSheetHeaders(sheet);
-    REQUIRED_HEADERS.forEach((header) => {
+    SIGNALS_HISTORY_HEADERS.forEach((header) => {
       if (!headers.includes(header)) {
         throw new Error(`Signals History utilise un ancien schéma. Colonne absente : ${header}`);
       }
     });
-    const missingAttributeNames = attributeNames.filter((header) => !headers.includes(header));
-    if (missingAttributeNames.length > 0) {
-      if (sheet.getLastRow() > 1) {
-        throw new Error(
-          `Signals History utilise un schéma incomplet. Colonne absente : ${missingAttributeNames[0]}`
-        );
-      }
-      sheet
-        .getRange(1, headers.length + 1, 1, missingAttributeNames.length)
-        .setValues([missingAttributeNames])
-        .setFontWeight('bold');
-    }
   }
 
   loadExistingKeys(): Set<string> {
@@ -90,12 +82,14 @@ export class GoogleSheetsSignalHistoryRepository implements SignalHistoryReposit
       snapshot.strategyName,
       snapshot.strategyVersion,
       snapshot.ticker,
-      ...Object.values(snapshot.attributes)
+      ...MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS.map((header) =>
+        signalAttributeValue(snapshot, header)
+      )
     ]);
     const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = this.sheet();
     const startRow = sheet.getLastRow() + 1;
-    sheet.getRange(startRow, 1, rows.length, rows[0].length).setValues(rows);
+    sheet.getRange(startRow, 1, rows.length, SIGNALS_HISTORY_HEADERS.length).setValues(rows);
     sheet.getRange(startRow, 1, rows.length, 1).setNumberFormat('yyyy-mm-dd');
     sheet.getRange(startRow, 2, rows.length, 1).setNumberFormat('yyyy-mm-dd hh:mm:ss');
     themeTechnicalSheet(spreadsheet, SHEET_NAME);
@@ -117,4 +111,16 @@ export class GoogleSheetsSignalHistoryRepository implements SignalHistoryReposit
       .getValues()[0]
       .every((value) => !String(value || '').trim());
   }
+}
+
+function isSupportedMomentumBreakoutAttribute(header: string): boolean {
+  if (header === 'Ticker') return true;
+  return (MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS as readonly string[]).includes(header);
+}
+
+function signalAttributeValue(snapshot: SignalSnapshot, header: string): unknown {
+  if (header === 'Finviz Ticker') {
+    return snapshot.attributes['Finviz Ticker'] ?? snapshot.attributes.Ticker ?? '';
+  }
+  return snapshot.attributes[header] ?? '';
 }

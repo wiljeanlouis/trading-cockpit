@@ -30,6 +30,11 @@ export type {
   MomentumRankingDto,
   MomentumRankingItemDto
 } from './discovery';
+export {
+  MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS,
+  SIGNAL_HISTORY_BASE_HEADERS,
+  SIGNALS_HISTORY_HEADERS
+} from './signal-history';
 export type { WatchlistDto, WatchlistItemDto } from './watchlist';
 export type {
   CreateTradePlanRequest,

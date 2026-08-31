@@ -16,6 +16,7 @@ import type { TradePlanReader } from '@trading-cockpit/core/ports/outbound/trade
 import type { TradingAccountRepository } from '@trading-cockpit/core/ports/outbound/trading-account-repository';
 import type { WatchlistReader } from '@trading-cockpit/core/ports/outbound/watchlist-reader';
 import type { TradingConfigDto } from '@trading-cockpit/contracts';
+import { SIGNALS_HISTORY_HEADERS } from '@trading-cockpit/contracts';
 import {
   nullableText,
   numberOrNull,
@@ -233,15 +234,8 @@ export const SHEET_DEFINITIONS = {
   signalsHistory: {
     key: 'signalsHistory',
     sheetName: 'Signals History',
-    range: "'Signals History'!A:Z",
-    requiredHeaders: [
-      'Signal Date',
-      'Detected At',
-      'Strategy ID',
-      'Strategy',
-      'Strategy Version',
-      'Ticker'
-    ],
+    range: "'Signals History'!A:AA",
+    requiredHeaders: SIGNALS_HISTORY_HEADERS,
     dateHeaders: ['Detected At']
   }
 } as const satisfies Record<string, SheetTableDefinition>;

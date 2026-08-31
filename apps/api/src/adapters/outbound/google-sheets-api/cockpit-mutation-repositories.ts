@@ -33,6 +33,7 @@ import type { SignalHistoryRepository } from '@trading-cockpit/core/ports/outbou
 import type { MarketSignalProjection } from '@trading-cockpit/core/ports/outbound/market-signal-projection';
 import type { TradingStrategyCatalog } from '@trading-cockpit/core/ports/outbound/trading-strategy-catalog';
 import type { MarketSignalBatch, SignalSnapshot } from '@trading-cockpit/core/domain/market-signal';
+import { MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS } from '@trading-cockpit/contracts';
 import type {
   RankedMomentumCandidate,
   MomentumCandidate
@@ -542,15 +543,23 @@ export class CloudRunSignalHistoryRepository implements SignalHistoryRepository 
     private readonly context: MutationContext,
     private readonly keys = new Set<string>()
   ) {}
-  ensureReady(): void {
-    // Schema setup is handled by dedicated setup endpoints; refresh validates via append/read.
+  ensureReady(attributeNames: string[]): void {
+    const unsupportedAttribute = attributeNames.find(
+      (header) => !isSupportedMomentumBreakoutAttribute(header)
+    );
+    if (unsupportedAttribute) {
+      throw new Error(`Signals History attribut non supporté : ${unsupportedAttribute}`);
+    }
   }
   loadExistingKeys(): Set<string> {
     return new Set(this.keys);
   }
   append(snapshots: SignalSnapshot[]): void {
     if (snapshots.length === 0) return;
-    this.context.writer.append("'Signals History'!A:Z", snapshots.map(signalSnapshotToRow));
+    this.context.writer.append(
+      SHEET_DEFINITIONS.signalsHistory.range,
+      snapshots.map(signalSnapshotToRow)
+    );
   }
 }
 
@@ -867,8 +876,22 @@ function signalSnapshotToRow(snapshot: SignalSnapshot): unknown[] {
     snapshot.strategyName,
     snapshot.strategyVersion,
     snapshot.ticker,
-    ...Object.values(snapshot.attributes)
+    ...MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS.map((header) =>
+      signalAttributeValue(snapshot, header)
+    )
   ];
+}
+
+function isSupportedMomentumBreakoutAttribute(header: string): boolean {
+  if (header === 'Ticker') return true;
+  return (MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS as readonly string[]).includes(header);
+}
+
+function signalAttributeValue(snapshot: SignalSnapshot, header: string): unknown {
+  if (header === 'Finviz Ticker') {
+    return snapshot.attributes['Finviz Ticker'] ?? snapshot.attributes.Ticker ?? '';
+  }
+  return snapshot.attributes[header] ?? '';
 }
 
 function serializeRows(rows: unknown[][]): unknown[][] {

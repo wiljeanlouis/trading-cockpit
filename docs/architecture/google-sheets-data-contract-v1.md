@@ -27,25 +27,25 @@ layouts or perform automatic migrations.
 
 ## Canonical workbook inventory
 
-| Sheet                 | Classification  | Contract                      | Notes                                                                                                                     |
-| --------------------- | --------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Momentum Ranking      | DATA            | row 1 headers / row 2 records | Normalized data projection for ranked Momentum candidates.                                                                |
-| Watchlist             | DATA            | row 1 headers / row 2 records | Authoritative Watchlist persistence with Sheet validations/formulas.                                                      |
-| Trade Plans           | DATA            | row 1 headers / row 2 records | Authoritative Trade Plan persistence.                                                                                     |
-| Positions             | DATA            | row 1 headers / row 2 records | Authoritative Position persistence.                                                                                       |
-| Journal               | DATA            | row 1 headers / row 2 records | Authoritative closed-trade history.                                                                                       |
-| Capital Ledger        | DATA            | row 1 headers / row 2 records | Append-only capital transactions.                                                                                         |
-| Signals History       | DATA            | row 1 headers / row 2 records | Signal archive. Base headers are created at setup; current provider attributes are added before the first signal archive. |
-| Strategies            | CONFIG          | row 1 headers / row 2 records | Seeds the default Momentum Breakout strategy once.                                                                        |
-| Accounts              | CONFIG          | row 1 headers / row 2 records | Creates headers only. The user must enter real accounts and `Risk % Per Trade`.                                           |
-| Cockpit Config        | CONFIG          | row 1 headers / row 2 records | Legacy/global compatibility configuration.                                                                                |
-| Momentum Score Config | CONFIG          | row 1 headers / row 2 records | Human-readable scoring reference with contiguous `Component`, `Condition`, `Points`, `Max` rows.                          |
-| Finviz - Momentum     | TECHNICAL       | row 1 headers / row 2 records | Current provider projection, not a business source of truth.                                                              |
-| Dashboard             | OPTIONAL_REPORT | generated report              | Not required for React/API correctness.                                                                                   |
-| Analytics             | OPTIONAL_REPORT | generated report              | Not required for React/API correctness.                                                                                   |
-| Documentation         | OPTIONAL_REPORT | generated utility             | Not required for React/API correctness.                                                                                   |
-| Lists                 | LEGACY_UNUSED   | none                          | Not recreated by canonical setup.                                                                                         |
-| Finviz Screener       | LEGACY_UNUSED   | none                          | Not recreated by canonical setup.                                                                                         |
+| Sheet                 | Classification  | Contract                      | Notes                                                                                                                          |
+| --------------------- | --------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Momentum Ranking      | DATA            | row 1 headers / row 2 records | Normalized data projection for ranked Momentum candidates.                                                                     |
+| Watchlist             | DATA            | row 1 headers / row 2 records | Authoritative Watchlist persistence with Sheet validations/formulas.                                                           |
+| Trade Plans           | DATA            | row 1 headers / row 2 records | Authoritative Trade Plan persistence.                                                                                          |
+| Positions             | DATA            | row 1 headers / row 2 records | Authoritative Position persistence.                                                                                            |
+| Journal               | DATA            | row 1 headers / row 2 records | Authoritative closed-trade history.                                                                                            |
+| Capital Ledger        | DATA            | row 1 headers / row 2 records | Append-only capital transactions.                                                                                              |
+| Signals History       | DATA            | row 1 headers / row 2 records | Signal archive with complete deterministic headers: base signal metadata plus the current Momentum Breakout signal attributes. |
+| Strategies            | CONFIG          | row 1 headers / row 2 records | Seeds the default Momentum Breakout strategy once.                                                                             |
+| Accounts              | CONFIG          | row 1 headers / row 2 records | Creates headers only. The user must enter real accounts and `Risk % Per Trade`.                                                |
+| Cockpit Config        | CONFIG          | row 1 headers / row 2 records | Legacy/global compatibility configuration.                                                                                     |
+| Momentum Score Config | CONFIG          | row 1 headers / row 2 records | Human-readable scoring reference with contiguous `Component`, `Condition`, `Points`, `Max` rows.                               |
+| Finviz - Momentum     | TECHNICAL       | row 1 headers / row 2 records | Current provider projection, not a business source of truth.                                                                   |
+| Dashboard             | OPTIONAL_REPORT | generated report              | Not required for React/API correctness.                                                                                        |
+| Analytics             | OPTIONAL_REPORT | generated report              | Not required for React/API correctness.                                                                                        |
+| Documentation         | OPTIONAL_REPORT | generated utility             | Not required for React/API correctness.                                                                                        |
+| Lists                 | LEGACY_UNUSED   | none                          | Not recreated by canonical setup.                                                                                              |
+| Finviz Screener       | LEGACY_UNUSED   | none                          | Not recreated by canonical setup.                                                                                              |
 
 ## Setup behavior
 
