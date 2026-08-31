@@ -6,6 +6,8 @@ const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 
 // Prevent an obsolete local POC artifact from ever being included by clasp.
 await rm(new URL('../build/ArchitecturePoc.js', import.meta.url), { force: true });
+// React is hosted by Cloud Run, not Apps Script.
+await rm(new URL('../build/CockpitWeb.html', import.meta.url), { force: true });
 
 await build({
   absWorkingDir: repositoryRoot,
@@ -27,10 +29,6 @@ await build({
     js: [
       'function onOpen() {',
       '  return CockpitBundle.onOpen();',
-      '}',
-      '',
-      'function doGet() {',
-      '  return CockpitBundle.doGet();',
       '}',
       '',
       'function getDashboardSummary() {',

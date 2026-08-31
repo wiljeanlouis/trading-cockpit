@@ -1,4 +1,4 @@
-import type { RuntimePort } from '../../../ports/outbound/runtime-port';
+import type { RuntimePort } from '@trading-cockpit/backend-core/ports/outbound/runtime-port';
 
 export class AppsScriptRuntime implements RuntimePort {
   now(): Date {

@@ -1,5 +1,5 @@
-import type { AddCandidateToWatchlistCommand } from '../../../../core/application/watchlist/add-candidate-to-watchlist';
-import type { WatchlistSnapshotValue } from '../../../../core/domain/watchlist';
+import type { AddCandidateToWatchlistCommand } from '@trading-cockpit/backend-core/application/watchlist/add-candidate-to-watchlist';
+import type { WatchlistSnapshotValue } from '@trading-cockpit/backend-core/domain/watchlist';
 
 function requireColumn(headers: string[], name: string): number {
   const expected = name.trim().toLowerCase();

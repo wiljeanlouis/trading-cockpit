@@ -1,7 +1,7 @@
 import type {
   ReconcileClosedPosition,
   ReconcileClosedPositionResult
-} from '../../../../core/application/position/reconcile-closed-position';
+} from '@trading-cockpit/backend-core/application/position/reconcile-closed-position';
 import { selectedPositionId } from './position-close-selection-mapper';
 
 const POSITIONS_SHEET_NAME = 'Positions';

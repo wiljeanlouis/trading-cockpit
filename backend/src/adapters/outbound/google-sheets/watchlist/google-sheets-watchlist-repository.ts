@@ -4,8 +4,8 @@ import {
   watchlistIdentityOf,
   type WatchlistEntry,
   type WatchlistIdentity
-} from '../../../../core/domain/watchlist';
-import type { WatchlistRepository } from '../../../../ports/outbound/watchlist-repository';
+} from '@trading-cockpit/backend-core/domain/watchlist';
+import type { WatchlistRepository } from '@trading-cockpit/backend-core/ports/outbound/watchlist-repository';
 import { watchlistEntryFromRow, watchlistEntryToRow } from './watchlist-mapper';
 import { updateWatchlistStatusInSheet } from './watchlist-status-writer';
 import {

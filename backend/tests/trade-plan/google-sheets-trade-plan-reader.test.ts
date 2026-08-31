@@ -6,7 +6,7 @@ import {
   TRADE_PLAN_HEADERS,
   tradePlanToRow
 } from '../../src/adapters/outbound/google-sheets/trade-plan/trade-plan-mapper';
-import type { TradePlan } from '../../src/core/domain/trade-plan';
+import type { TradePlan } from '@trading-cockpit/backend-core/domain/trade-plan';
 
 afterEach(() => vi.unstubAllGlobals());
 

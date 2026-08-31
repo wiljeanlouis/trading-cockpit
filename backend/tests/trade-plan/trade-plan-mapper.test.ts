@@ -5,7 +5,7 @@ import {
   tradePlanToRow
 } from '../../src/adapters/outbound/google-sheets/trade-plan/trade-plan-mapper';
 import { selectedWatchlistRowToCommand } from '../../src/adapters/inbound/google-sheets/ui/watchlist-selection-mapper';
-import type { TradePlan } from '../../src/core/domain/trade-plan';
+import type { TradePlan } from '@trading-cockpit/backend-core/domain/trade-plan';
 
 const createdAt = new Date('2026-08-27T14:00:00.000Z');
 const tradePlan: TradePlan = {

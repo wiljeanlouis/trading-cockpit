@@ -1,4 +1,4 @@
-import type { StrategyRepository } from '../../../../ports/outbound/strategy-repository';
+import type { StrategyRepository } from '@trading-cockpit/backend-core/ports/outbound/strategy-repository';
 import { GoogleSheetsTradingStrategyReader } from './google-sheets-trading-strategy-reader';
 
 export class GoogleSheetsStrategyRepository implements StrategyRepository {

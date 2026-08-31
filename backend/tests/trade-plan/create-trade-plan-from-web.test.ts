@@ -3,8 +3,8 @@ import {
   createTradePlanFromWeb,
   tradingAccountsToDto
 } from '../../src/adapters/inbound/apps-script/create-trade-plan-from-web';
-import type { CreateTradePlanFromWatchlist } from '../../src/core/application/trade-plan/create-trade-plan-from-watchlist';
-import type { TradePlan } from '../../src/core/domain/trade-plan';
+import type { CreateTradePlanFromWatchlist } from '@trading-cockpit/backend-core/application/trade-plan/create-trade-plan-from-watchlist';
+import type { TradePlan } from '@trading-cockpit/backend-core/domain/trade-plan';
 
 const plan = {
   id: 'TP-1',

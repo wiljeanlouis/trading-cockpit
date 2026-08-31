@@ -3,8 +3,8 @@ import type {
   CreateTradePlanResponse,
   TradingAccountsDto
 } from '@trading-cockpit/contracts';
-import type { CreateTradePlanFromWatchlist } from '../../../core/application/trade-plan/create-trade-plan-from-watchlist';
-import type { TradingAccount } from '../../../core/domain/trading-account';
+import type { CreateTradePlanFromWatchlist } from '@trading-cockpit/backend-core/application/trade-plan/create-trade-plan-from-watchlist';
+import type { TradingAccount } from '@trading-cockpit/backend-core/domain/trading-account';
 
 export function tradingAccountsToDto(accounts: TradingAccount[]): TradingAccountsDto {
   return {

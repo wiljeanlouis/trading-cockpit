@@ -91,7 +91,7 @@ export function App({ gateway, development = false }: AppProps) {
             aria-hidden="true"
           >
             <span className="size-[7px] rounded-full bg-[#4ee1a0] shadow-[0_0_10px_#4ee1a0]" />
-            Apps Script backend
+            {development ? 'Mock backend' : 'Cloud Run backend'}
           </span>
         </nav>
       </aside>

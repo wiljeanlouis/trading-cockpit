@@ -1,4 +1,4 @@
-import type { RefreshMomentumRankingResult } from '../../../../core/application/momentum/refresh-momentum-ranking';
+import type { RefreshMomentumRankingResult } from '@trading-cockpit/backend-core/application/momentum/refresh-momentum-ranking';
 
 export function refreshMomentumRankingFromSheets(
   refresh: () => RefreshMomentumRankingResult

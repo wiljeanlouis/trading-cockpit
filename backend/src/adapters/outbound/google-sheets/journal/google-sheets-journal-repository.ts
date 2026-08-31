@@ -1,5 +1,5 @@
-import type { JournalEntry } from '../../../../core/domain/journal-entry';
-import type { JournalRepository } from '../../../../ports/outbound/journal-repository';
+import type { JournalEntry } from '@trading-cockpit/backend-core/domain/journal-entry';
+import type { JournalRepository } from '@trading-cockpit/backend-core/ports/outbound/journal-repository';
 import {
   journalEntriesFromRowsForAccount,
   journalEntriesFromRowsForPosition,

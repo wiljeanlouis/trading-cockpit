@@ -1,6 +1,6 @@
-import { buildSignalKey } from '../../../../core/domain/market-signal';
-import type { SignalSnapshot } from '../../../../core/domain/market-signal';
-import type { SignalHistoryRepository } from '../../../../ports/outbound/signal-history-repository';
+import { buildSignalKey } from '@trading-cockpit/backend-core/domain/market-signal';
+import type { SignalSnapshot } from '@trading-cockpit/backend-core/domain/market-signal';
+import type { SignalHistoryRepository } from '@trading-cockpit/backend-core/ports/outbound/signal-history-repository';
 import { readSheetHeaders, requireColumn } from '../sheet-headers';
 import { themeTechnicalSheet } from '../../../inbound/google-sheets/theme/theme';
 

@@ -1,5 +1,5 @@
-import type { JournalEntry } from '../../../../core/domain/journal-entry';
-import type { PositionSnapshotValue } from '../../../../core/domain/position';
+import type { JournalEntry } from '@trading-cockpit/backend-core/domain/journal-entry';
+import type { PositionSnapshotValue } from '@trading-cockpit/backend-core/domain/position';
 import { requireColumn } from '../sheet-headers';
 
 export const JOURNAL_HEADERS = [

@@ -2,7 +2,7 @@ import type {
   MomentumRankingIdentity,
   MomentumRankingReader,
   MomentumRankingRecord
-} from '../../../../ports/outbound/momentum-ranking-reader';
+} from '@trading-cockpit/backend-core/ports/outbound/momentum-ranking-reader';
 import { requireColumn } from '../sheet-headers';
 
 const MOMENTUM_RANKING_SHEET_NAME = 'Momentum Ranking';

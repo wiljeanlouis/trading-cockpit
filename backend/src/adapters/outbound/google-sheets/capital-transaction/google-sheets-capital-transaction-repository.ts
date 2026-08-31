@@ -1,5 +1,5 @@
-import type { CapitalTransaction } from '../../../../core/domain/capital-transaction';
-import type { CapitalTransactionRepository } from '../../../../ports/outbound/capital-transaction-repository';
+import type { CapitalTransaction } from '@trading-cockpit/backend-core/domain/capital-transaction';
+import type { CapitalTransactionRepository } from '@trading-cockpit/backend-core/ports/outbound/capital-transaction-repository';
 import {
   CAPITAL_LEDGER_HEADERS,
   capitalTransactionToRow,

@@ -1,5 +1,5 @@
-import type { MarketSignalBatch, MarketSignalFeed } from '../../../core/domain/market-signal';
-import type { MarketSignalSource } from '../../../ports/outbound/market-signal-source';
+import type { MarketSignalBatch, MarketSignalFeed } from '@trading-cockpit/backend-core/domain/market-signal';
+import type { MarketSignalSource } from '@trading-cockpit/backend-core/ports/outbound/market-signal-source';
 
 export interface FinvizFeedConfiguration {
   id: string;

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { Script } from 'node:vm';
 
 const repositoryRoot = new URL('../', import.meta.url);
@@ -25,27 +25,11 @@ function runtimeJavaScriptFiles(directoryUrl, prefix = '') {
 const legacySourceFileNames = runtimeJavaScriptFiles(repositoryRoot);
 
 const buildRoot = new URL('../build/', import.meta.url);
-const bundleFileNames = existsSync(buildRoot)
-  ? readdirSync(buildRoot, { withFileTypes: true })
-      .filter((entry) => entry.isFile() && entry.name.endsWith('.js'))
-      .map((entry) => `build/${entry.name}`)
-  : [];
+const bundleFileNames = readdirSync(buildRoot, { withFileTypes: true })
+  .filter((entry) => entry.isFile() && entry.name.endsWith('.js'))
+  .map((entry) => `build/${entry.name}`);
 
 const sourceFileNames = [...legacySourceFileNames, ...bundleFileNames].sort();
-const webHtmlPath = new URL('../build/CockpitWeb.html', import.meta.url);
-
-if (!existsSync(webHtmlPath)) {
-  throw new Error('Missing generated Apps Script web artifact: build/CockpitWeb.html');
-}
-
-const webHtml = readFileSync(webHtmlPath, 'utf8');
-const reactRootPattern = /<div\b(?=[^>]*\bid=["']root["'])[^>]*>\s*<\/div>/i;
-if (!reactRootPattern.test(webHtml)) {
-  throw new Error('CockpitWeb.html does not contain the React root.');
-}
-if (/<script[^>]+src=|<link[^>]+rel=["']stylesheet["']/i.test(webHtml)) {
-  throw new Error('CockpitWeb.html contains an external runtime asset.');
-}
 
 const sources = new Map(
   sourceFileNames.map((fileName) => [
@@ -130,7 +114,7 @@ if (collisions.length > 0 || reintroducedWorkflowFunctions.length > 0) {
     process.exitCode = 1;
   } else {
     console.log(
-      `Apps Script check passed: ${sourceFileNames.length} JavaScript files and 1 inline HTML file, ` +
+      `Apps Script check passed: ${sourceFileNames.length} JavaScript files, ` +
         `${definitions.size} global functions, ${menuTargets.length} menu targets.`
     );
   }

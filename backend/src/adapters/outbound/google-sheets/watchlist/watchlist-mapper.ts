@@ -1,4 +1,4 @@
-import type { WatchlistEntry, WatchlistSnapshotValue } from '../../../../core/domain/watchlist';
+import type { WatchlistEntry, WatchlistSnapshotValue } from '@trading-cockpit/backend-core/domain/watchlist';
 import { requireColumn } from '../sheet-headers';
 
 export const WATCHLIST_HEADERS = [

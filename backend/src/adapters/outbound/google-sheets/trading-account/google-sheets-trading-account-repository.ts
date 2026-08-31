@@ -1,8 +1,8 @@
 import {
   requireUniqueTradingAccountIds,
   type TradingAccount
-} from '../../../../core/domain/trading-account';
-import type { TradingAccountRepository } from '../../../../ports/outbound/trading-account-repository';
+} from '@trading-cockpit/backend-core/domain/trading-account';
+import type { TradingAccountRepository } from '@trading-cockpit/backend-core/ports/outbound/trading-account-repository';
 import { TRADING_ACCOUNT_HEADERS, tradingAccountFromRow } from './trading-account-mapper';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 import { readSheetTable } from '../sheet-headers';

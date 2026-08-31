@@ -1,4 +1,4 @@
-import type { TradePlan, TradePlanSnapshotValue } from '../../../../core/domain/trade-plan';
+import type { TradePlan, TradePlanSnapshotValue } from '@trading-cockpit/backend-core/domain/trade-plan';
 import { requireColumn } from '../sheet-headers';
 
 export const TRADE_PLAN_HEADERS = [

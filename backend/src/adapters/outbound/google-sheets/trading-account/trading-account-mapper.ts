@@ -1,11 +1,11 @@
 import {
   normalizeTradingAccount,
   type TradingAccount
-} from '../../../../core/domain/trading-account';
+} from '@trading-cockpit/backend-core/domain/trading-account';
 import {
   createTradingAccountRiskPolicy,
   type TradingAccountRiskPolicy
-} from '../../../../core/domain/trading-account-risk-policy';
+} from '@trading-cockpit/backend-core/domain/trading-account-risk-policy';
 import { requireColumn } from '../sheet-headers';
 
 export const TRADING_ACCOUNT_HEADERS = [

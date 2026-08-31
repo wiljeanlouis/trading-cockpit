@@ -1,5 +1,5 @@
-import { isActiveTradePlanStatus, type TradePlan } from '../../../../core/domain/trade-plan';
-import type { TradePlanRepository } from '../../../../ports/outbound/trade-plan-repository';
+import { isActiveTradePlanStatus, type TradePlan } from '@trading-cockpit/backend-core/domain/trade-plan';
+import type { TradePlanRepository } from '@trading-cockpit/backend-core/ports/outbound/trade-plan-repository';
 import { tradePlanFromRow, tradePlanToRow } from './trade-plan-mapper';
 import {
   addTradePlanFormulas,

@@ -5,7 +5,7 @@ import {
   positionFromRow,
   positionToRow
 } from '../../src/adapters/outbound/google-sheets/position/position-mapper';
-import type { Position } from '../../src/core/domain/position';
+import type { Position } from '@trading-cockpit/backend-core/domain/position';
 
 const openedAt = new Date('2026-08-27T14:00:00.000Z');
 const position: Position = {

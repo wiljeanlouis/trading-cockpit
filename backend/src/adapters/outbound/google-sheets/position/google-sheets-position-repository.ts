@@ -1,5 +1,5 @@
-import { isOpenPositionStatus, type Position } from '../../../../core/domain/position';
-import type { PositionRepository } from '../../../../ports/outbound/position-repository';
+import { isOpenPositionStatus, type Position } from '@trading-cockpit/backend-core/domain/position';
+import type { PositionRepository } from '@trading-cockpit/backend-core/ports/outbound/position-repository';
 import { positionFromRow, positionToRow } from './position-mapper';
 import {
   addPositionFormulas,

@@ -1,4 +1,4 @@
-import type { TradingAccount } from '../../../../core/domain/trading-account';
+import type { TradingAccount } from '@trading-cockpit/backend-core/domain/trading-account';
 
 export function setupTradingAccounts(
   listAccounts: () => TradingAccount[],

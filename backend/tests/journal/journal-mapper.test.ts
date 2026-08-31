@@ -5,7 +5,7 @@ import {
   journalEntryFromRow,
   journalEntryToRow
 } from '../../src/adapters/outbound/google-sheets/journal/journal-mapper';
-import { createJournalEntryFromClosedPosition } from '../../src/core/domain/journal-entry';
+import { createJournalEntryFromClosedPosition } from '@trading-cockpit/backend-core/domain/journal-entry';
 import { openPosition } from '../fixtures/position';
 
 describe('Journal mapper', () => {

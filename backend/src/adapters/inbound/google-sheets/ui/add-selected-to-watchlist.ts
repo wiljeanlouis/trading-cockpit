@@ -1,4 +1,4 @@
-import type { AddCandidateToWatchlist } from '../../../../core/application/watchlist/add-candidate-to-watchlist';
+import type { AddCandidateToWatchlist } from '@trading-cockpit/backend-core/application/watchlist/add-candidate-to-watchlist';
 import { rankingRowToAddCandidateCommand } from './ranking-candidate-mapper';
 
 const MOMENTUM_RANKING_SHEET_NAME = 'Momentum Ranking';

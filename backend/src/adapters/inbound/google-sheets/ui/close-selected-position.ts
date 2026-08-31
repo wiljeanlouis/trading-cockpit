@@ -1,4 +1,4 @@
-import type { ClosePosition } from '../../../../core/application/position/close-position';
+import type { ClosePosition } from '@trading-cockpit/backend-core/application/position/close-position';
 import { closePositionCommand, selectedPositionForClose } from './position-close-selection-mapper';
 import { themePositions } from '../theme/theme';
 

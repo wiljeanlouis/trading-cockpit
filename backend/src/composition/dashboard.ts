@@ -2,11 +2,11 @@ import type { DashboardDto, DashboardSummaryDto } from '@trading-cockpit/contrac
 import { GoogleSheetsDashboardRepository } from '../adapters/outbound/google-sheets/dashboard/google-sheets-dashboard-repository';
 import { projectDashboardToSheet } from '../adapters/outbound/google-sheets/dashboard/google-sheets-dashboard-projection';
 import { GoogleSheetsJournalReader } from '../adapters/outbound/google-sheets/journal/google-sheets-journal-reader';
-import { calculateAnalyticsFromJournalEntries } from '../core/application/analytics/get-analytics';
+import { calculateAnalyticsFromJournalEntries } from '@trading-cockpit/backend-core/application/analytics/get-analytics';
 import {
   createGetDashboard,
   dashboardSummaryFrom
-} from '../core/application/dashboard/get-dashboard';
+} from '@trading-cockpit/backend-core/application/dashboard/get-dashboard';
 import { runGetLegacyTradingConfiguration } from './configuration';
 
 function getDashboardAnalytics() {

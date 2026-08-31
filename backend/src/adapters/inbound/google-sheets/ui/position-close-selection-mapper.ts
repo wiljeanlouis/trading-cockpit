@@ -1,4 +1,4 @@
-import type { ClosePositionCommand } from '../../../../core/application/position/close-position';
+import type { ClosePositionCommand } from '@trading-cockpit/backend-core/application/position/close-position';
 
 function requireColumn(headers: string[], name: string): number {
   const expected = name.trim().toLowerCase();

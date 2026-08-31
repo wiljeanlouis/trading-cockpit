@@ -17,12 +17,12 @@ import { GoogleSheetsWatchlistRepository } from '../adapters/outbound/google-she
 import {
   createOpenPositionFromTradePlan,
   type OpenPositionFromTradePlan
-} from '../core/application/position/open-position-from-trade-plan';
+} from '@trading-cockpit/backend-core/application/position/open-position-from-trade-plan';
 import {
   createClosePosition,
   type ClosePosition
-} from '../core/application/position/close-position';
-import { createGetOpenPositions } from '../core/application/position/get-open-positions';
+} from '@trading-cockpit/backend-core/application/position/close-position';
+import { createGetOpenPositions } from '@trading-cockpit/backend-core/application/position/get-open-positions';
 
 export function createOpenPositionUseCase(): OpenPositionFromTradePlan {
   return createOpenPositionFromTradePlan({

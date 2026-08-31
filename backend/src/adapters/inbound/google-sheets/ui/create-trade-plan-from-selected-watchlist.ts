@@ -1,4 +1,4 @@
-import type { CreateTradePlanFromWatchlist } from '../../../../core/application/trade-plan/create-trade-plan-from-watchlist';
+import type { CreateTradePlanFromWatchlist } from '@trading-cockpit/backend-core/application/trade-plan/create-trade-plan-from-watchlist';
 import { selectedWatchlistRowToCommand } from './watchlist-selection-mapper';
 import { themeTradePlans } from '../theme/theme';
 

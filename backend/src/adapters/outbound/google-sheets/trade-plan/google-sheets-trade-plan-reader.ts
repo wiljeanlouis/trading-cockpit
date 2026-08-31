@@ -1,5 +1,5 @@
-import type { TradePlan } from '../../../../core/domain/trade-plan';
-import type { TradePlanReader } from '../../../../ports/outbound/trade-plan-reader';
+import type { TradePlan } from '@trading-cockpit/backend-core/domain/trade-plan';
+import type { TradePlanReader } from '@trading-cockpit/backend-core/ports/outbound/trade-plan-reader';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 import { readSheetTable } from '../sheet-headers';
 import { tradePlanFromRow } from './trade-plan-mapper';

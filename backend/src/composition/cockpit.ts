@@ -18,16 +18,16 @@ import { GoogleSheetsTradingAccountRepository } from '../adapters/outbound/googl
 import { GoogleSheetsCapitalTransactionRepository } from '../adapters/outbound/google-sheets/capital-transaction/google-sheets-capital-transaction-repository';
 import { GoogleSheetsTradingAccountRiskPolicyRepository } from '../adapters/outbound/google-sheets/trading-account/google-sheets-trading-account-risk-policy-repository';
 import { GoogleSheetsWatchlistRepository } from '../adapters/outbound/google-sheets/watchlist/google-sheets-watchlist-repository';
-import { createReconcileClosedPosition } from '../core/application/position/reconcile-closed-position';
-import { createAddCandidateToWatchlist } from '../core/application/watchlist/add-candidate-to-watchlist';
-import { createListTradingAccounts } from '../core/application/trading-account/list-trading-accounts';
+import { createReconcileClosedPosition } from '@trading-cockpit/backend-core/application/position/reconcile-closed-position';
+import { createAddCandidateToWatchlist } from '@trading-cockpit/backend-core/application/watchlist/add-candidate-to-watchlist';
+import { createListTradingAccounts } from '@trading-cockpit/backend-core/application/trading-account/list-trading-accounts';
 import {
   createRecordDeposit,
   createRecordInitialFunding,
   createRecordWithdrawal,
   type RecordCapitalTransactionCommand,
   type RecordCapitalTransactionDependencies
-} from '../core/application/trading-account/record-capital-transaction';
+} from '@trading-cockpit/backend-core/application/trading-account/record-capital-transaction';
 import { createTradePlanUseCase } from './trade-plan';
 import { createClosePositionUseCase, createOpenPositionUseCase } from './position';
 

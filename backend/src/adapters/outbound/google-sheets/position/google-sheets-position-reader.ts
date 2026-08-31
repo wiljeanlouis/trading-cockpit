@@ -1,5 +1,5 @@
-import type { Position } from '../../../../core/domain/position';
-import type { PositionReader } from '../../../../ports/outbound/position-reader';
+import type { Position } from '@trading-cockpit/backend-core/domain/position';
+import type { PositionReader } from '@trading-cockpit/backend-core/ports/outbound/position-reader';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 import { readSheetTable } from '../sheet-headers';
 import { positionFromRow } from './position-mapper';

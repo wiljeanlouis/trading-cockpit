@@ -5,7 +5,7 @@ import {
   watchlistEntryFromRow,
   watchlistEntryToRow
 } from '../../src/adapters/outbound/google-sheets/watchlist/watchlist-mapper';
-import type { WatchlistEntry } from '../../src/core/domain/watchlist';
+import type { WatchlistEntry } from '@trading-cockpit/backend-core/domain/watchlist';
 
 describe('Momentum Ranking candidate mapper', () => {
   it('copies the exact Watchlist snapshot fields by header', () => {

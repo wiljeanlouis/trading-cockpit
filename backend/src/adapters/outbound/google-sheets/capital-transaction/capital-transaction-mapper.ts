@@ -1,7 +1,7 @@
 import {
   createCapitalTransaction,
   type CapitalTransaction
-} from '../../../../core/domain/capital-transaction';
+} from '@trading-cockpit/backend-core/domain/capital-transaction';
 import { requireColumn } from '../sheet-headers';
 
 export const CAPITAL_LEDGER_HEADERS = [

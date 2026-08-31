@@ -1,5 +1,5 @@
-import type { MarketSignalBatch } from '../../../core/domain/market-signal';
-import type { MarketSignalProjection } from '../../../ports/outbound/market-signal-projection';
+import type { MarketSignalBatch } from '@trading-cockpit/backend-core/domain/market-signal';
+import type { MarketSignalProjection } from '@trading-cockpit/backend-core/ports/outbound/market-signal-projection';
 import { themeSimpleSheet } from '../../inbound/google-sheets/theme/theme';
 
 export class GoogleSheetsFinvizSignalProjection implements MarketSignalProjection {

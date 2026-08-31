@@ -2,7 +2,7 @@ import type {
   UpdateTradePlanPlanningRequest,
   UpdateTradePlanPlanningResponse
 } from '@trading-cockpit/contracts';
-import type { UpdateTradePlanPlanning } from '../../../core/application/trade-plan/update-trade-plan-planning';
+import type { UpdateTradePlanPlanning } from '@trading-cockpit/backend-core/application/trade-plan/update-trade-plan-planning';
 
 export function updateTradePlanPlanningFromWeb(
   updatePlanning: UpdateTradePlanPlanning,

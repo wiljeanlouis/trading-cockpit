@@ -1,6 +1,6 @@
 import type { ExecuteTradePlanRequest, ExecuteTradePlanResponse } from '@trading-cockpit/contracts';
-import type { OpenPositionFromTradePlan } from '../../../core/application/position/open-position-from-trade-plan';
-import type { PositionSnapshotValue } from '../../../core/domain/position';
+import type { OpenPositionFromTradePlan } from '@trading-cockpit/backend-core/application/position/open-position-from-trade-plan';
+import type { PositionSnapshotValue } from '@trading-cockpit/backend-core/domain/position';
 
 function serializedDate(value: PositionSnapshotValue): string | null {
   if (value instanceof Date) {

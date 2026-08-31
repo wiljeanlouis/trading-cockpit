@@ -1,6 +1,6 @@
 import type { ClosePositionRequest, ClosePositionResponse } from '@trading-cockpit/contracts';
-import type { ClosePosition } from '../../../core/application/position/close-position';
-import type { PositionSnapshotValue } from '../../../core/domain/position';
+import type { ClosePosition } from '@trading-cockpit/backend-core/application/position/close-position';
+import type { PositionSnapshotValue } from '@trading-cockpit/backend-core/domain/position';
 
 function serializedDate(value: PositionSnapshotValue): string | null {
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString();

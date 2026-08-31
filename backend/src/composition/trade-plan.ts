@@ -23,11 +23,11 @@ import { GoogleSheetsWatchlistRepository } from '../adapters/outbound/google-she
 import {
   createCreateTradePlanFromWatchlist,
   type CreateTradePlanFromWatchlist
-} from '../core/application/trade-plan/create-trade-plan-from-watchlist';
-import { createGetAccountEquity } from '../core/application/trading-account/get-account-equity';
-import { createListTradingAccounts } from '../core/application/trading-account/list-trading-accounts';
-import { createGetTradePlans } from '../core/application/trade-plan/get-trade-plans';
-import { createUpdateTradePlanPlanning } from '../core/application/trade-plan/update-trade-plan-planning';
+} from '@trading-cockpit/backend-core/application/trade-plan/create-trade-plan-from-watchlist';
+import { createGetAccountEquity } from '@trading-cockpit/backend-core/application/trading-account/get-account-equity';
+import { createListTradingAccounts } from '@trading-cockpit/backend-core/application/trading-account/list-trading-accounts';
+import { createGetTradePlans } from '@trading-cockpit/backend-core/application/trade-plan/get-trade-plans';
+import { createUpdateTradePlanPlanning } from '@trading-cockpit/backend-core/application/trade-plan/update-trade-plan-planning';
 import { updateTradePlanPlanningFromWeb } from '../adapters/inbound/apps-script/update-trade-plan-planning-from-web';
 
 type Observe = (event: string, fields: Record<string, unknown>) => void;

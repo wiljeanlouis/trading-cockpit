@@ -1,5 +1,5 @@
-import type { TradingAccountRiskPolicy } from '../../../../core/domain/trading-account-risk-policy';
-import type { TradingAccountRiskPolicyRepository } from '../../../../ports/outbound/trading-account-risk-policy-repository';
+import type { TradingAccountRiskPolicy } from '@trading-cockpit/backend-core/domain/trading-account-risk-policy';
+import type { TradingAccountRiskPolicyRepository } from '@trading-cockpit/backend-core/ports/outbound/trading-account-risk-policy-repository';
 import { tradingAccountRiskPolicyFromRow } from '../trading-account/trading-account-mapper';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 import { readSheetTable } from '../sheet-headers';

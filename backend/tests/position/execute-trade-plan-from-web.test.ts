@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { executeTradePlanFromWeb } from '../../src/adapters/inbound/apps-script/execute-trade-plan-from-web';
-import type { OpenPositionFromTradePlan } from '../../src/core/application/position/open-position-from-trade-plan';
-import type { Position } from '../../src/core/domain/position';
+import type { OpenPositionFromTradePlan } from '@trading-cockpit/backend-core/application/position/open-position-from-trade-plan';
+import type { Position } from '@trading-cockpit/backend-core/domain/position';
 
 const position = {
   id: 'P-1',

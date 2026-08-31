@@ -5,7 +5,7 @@ import type {
   DashboardRepositorySnapshot,
   DashboardTradePlanSnapshot,
   DashboardWatchlistSnapshot
-} from '../../../../ports/outbound/dashboard-repository';
+} from '@trading-cockpit/backend-core/ports/outbound/dashboard-repository';
 import { readSheetTable, requireColumn } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { updateTradePlanPlanningFromWeb } from '../../src/adapters/inbound/apps-script/update-trade-plan-planning-from-web';
-import type { TradePlan } from '../../src/core/domain/trade-plan';
+import type { TradePlan } from '@trading-cockpit/backend-core/domain/trade-plan';
 
 describe('update Trade Plan planning from Web', () => {
   it('normalizes serializable inputs and returns a concise confirmation', () => {

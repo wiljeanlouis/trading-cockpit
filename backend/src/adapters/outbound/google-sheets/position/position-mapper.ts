@@ -1,4 +1,4 @@
-import type { Position, PositionSnapshotValue } from '../../../../core/domain/position';
+import type { Position, PositionSnapshotValue } from '@trading-cockpit/backend-core/domain/position';
 import { requireColumn } from '../sheet-headers';
 
 export const POSITION_HEADERS = [

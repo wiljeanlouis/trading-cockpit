@@ -59,7 +59,6 @@ import type {
   UpdateTradePlanPlanningRequest,
   UpdateTradePlanPlanningResponse
 } from '@trading-cockpit/contracts';
-import { serveReactCockpit } from '../adapters/inbound/apps-script/serve-react-cockpit';
 import {
   runGetDashboard,
   runGetDashboardSummary,
@@ -80,10 +79,6 @@ import {
   runGetOpenPositions
 } from '../composition/position';
 import { runGetJournal } from '../composition/journal';
-
-export function doGet(): GoogleAppsScript.HTML.HtmlOutput {
-  return serveReactCockpit();
-}
 
 export function getDashboardSummary(): DashboardSummaryDto {
   return runGetDashboardSummary();

@@ -1,9 +1,9 @@
-import type { MomentumCandidate } from '../../../../core/domain/momentum';
+import type { MomentumCandidate } from '@trading-cockpit/backend-core/domain/momentum';
 import type {
   MomentumSignalRepository,
   MomentumStrategyRepository,
   MomentumStrategySnapshot
-} from '../../../../ports/outbound/momentum-signal-repository';
+} from '@trading-cockpit/backend-core/ports/outbound/momentum-signal-repository';
 import { GoogleSheetsTradingStrategyReader } from '../trading-strategy/google-sheets-trading-strategy-reader';
 import { requireColumn } from '../sheet-headers';
 

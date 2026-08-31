@@ -1,4 +1,4 @@
-import type { OpenPositionFromTradePlan } from '../../../../core/application/position/open-position-from-trade-plan';
+import type { OpenPositionFromTradePlan } from '@trading-cockpit/backend-core/application/position/open-position-from-trade-plan';
 import { selectedTradePlanRowToCommand } from './trade-plan-selection-mapper';
 import { themePositions } from '../theme/theme';
 

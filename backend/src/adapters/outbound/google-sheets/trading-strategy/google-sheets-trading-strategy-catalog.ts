@@ -1,5 +1,5 @@
-import type { TradingStrategySnapshot } from '../../../../core/domain/trading-strategy';
-import type { TradingStrategyCatalog } from '../../../../ports/outbound/trading-strategy-catalog';
+import type { TradingStrategySnapshot } from '@trading-cockpit/backend-core/domain/trading-strategy';
+import type { TradingStrategyCatalog } from '@trading-cockpit/backend-core/ports/outbound/trading-strategy-catalog';
 import { GoogleSheetsTradingStrategyReader } from './google-sheets-trading-strategy-reader';
 
 export class GoogleSheetsTradingStrategyCatalog implements TradingStrategyCatalog {

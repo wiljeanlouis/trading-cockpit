@@ -17,8 +17,8 @@ import { FinvizTokenService } from '../adapters/outbound/finviz/finviz-token-ser
 import { GoogleSheetsFinvizSignalProjection } from '../adapters/outbound/finviz/google-sheets-finviz-signal-projection';
 import { GoogleSheetsSignalHistoryRepository } from '../adapters/outbound/google-sheets/signal-history/google-sheets-signal-history-repository';
 import { GoogleSheetsTradingStrategyCatalog } from '../adapters/outbound/google-sheets/trading-strategy/google-sheets-trading-strategy-catalog';
-import { createArchiveMarketSignals } from '../core/application/market-signals/archive-market-signals';
-import { createRefreshMarketSignals } from '../core/application/market-signals/refresh-market-signals';
+import { createArchiveMarketSignals } from '@trading-cockpit/backend-core/application/market-signals/archive-market-signals';
+import { createRefreshMarketSignals } from '@trading-cockpit/backend-core/application/market-signals/refresh-market-signals';
 
 const FINVIZ_BASE_URL = 'https://elite.finviz.com/export/screener';
 const MOMENTUM_FEED_ID = 'MOMENTUM_BREAKOUT_V1';

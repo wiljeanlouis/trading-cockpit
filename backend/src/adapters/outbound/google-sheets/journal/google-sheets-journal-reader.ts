@@ -1,5 +1,5 @@
-import type { JournalEntry } from '../../../../core/domain/journal-entry';
-import type { JournalReader } from '../../../../ports/outbound/journal-reader';
+import type { JournalEntry } from '@trading-cockpit/backend-core/domain/journal-entry';
+import type { JournalReader } from '@trading-cockpit/backend-core/ports/outbound/journal-reader';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 import { readSheetTable } from '../sheet-headers';
 import { journalEntryFromRow } from './journal-mapper';

@@ -6,9 +6,9 @@ import {
   type FinvizTransport
 } from '../../src/adapters/outbound/finviz/finviz-market-signal-source';
 import { GoogleSheetsFinvizSignalProjection } from '../../src/adapters/outbound/finviz/google-sheets-finviz-signal-projection';
-import { createArchiveMarketSignals } from '../../src/core/application/market-signals/archive-market-signals';
-import { createRefreshMarketSignals } from '../../src/core/application/market-signals/refresh-market-signals';
-import type { SignalSnapshot } from '../../src/core/domain/market-signal';
+import { createArchiveMarketSignals } from '@trading-cockpit/backend-core/application/market-signals/archive-market-signals';
+import { createRefreshMarketSignals } from '@trading-cockpit/backend-core/application/market-signals/refresh-market-signals';
+import type { SignalSnapshot } from '@trading-cockpit/backend-core/domain/market-signal';
 
 afterEach(() => vi.unstubAllGlobals());
 

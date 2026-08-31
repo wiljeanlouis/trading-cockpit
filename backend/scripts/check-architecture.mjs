@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 const sourceRoot = join(repositoryRoot, 'src');
+const backendCoreRoot = join(repositoryRoot, '../packages/backend-core/src');
 const webRoot = join(repositoryRoot, '../web/src');
 const webTestsRoot = join(repositoryRoot, '../web/tests');
 const forbiddenAppsScriptGlobals = [
@@ -11,7 +12,18 @@ const forbiddenAppsScriptGlobals = [
   'UrlFetchApp',
   'PropertiesService',
   'Utilities',
-  'ScriptApp'
+  'ScriptApp',
+  'LockService',
+  'HtmlService',
+  'Session'
+];
+const forbiddenBackendCoreImports = [
+  'backend/src',
+  'cloud-run',
+  'googleapis',
+  'google-auth-library',
+  'node:http',
+  'node:https'
 ];
 const forbiddenProviderNames = ['Finviz'];
 
@@ -29,6 +41,7 @@ function collectTypeScriptFiles(directory) {
 
 const violations = [];
 const sourceFiles = collectTypeScriptFiles(sourceRoot);
+const backendCoreFiles = collectTypeScriptFiles(backendCoreRoot);
 const webFiles = [...collectTypeScriptFiles(webRoot), ...collectTypeScriptFiles(webTestsRoot)];
 
 for (const filePath of sourceFiles) {
@@ -73,6 +86,44 @@ for (const filePath of sourceFiles) {
   }
 }
 
+for (const filePath of backendCoreFiles) {
+  const source = readFileSync(filePath, 'utf8');
+  const repositoryPath = relative(join(repositoryRoot, '..'), filePath).replaceAll('\\', '/');
+
+  for (const globalName of forbiddenAppsScriptGlobals) {
+    if (new RegExp(`\\b${globalName}\\b`).test(source)) {
+      violations.push(`${repositoryPath}: forbidden runtime global ${globalName}`);
+    }
+  }
+
+  if (/google\.script\.run/.test(source)) {
+    violations.push(`${repositoryPath}: forbidden google.script.run dependency`);
+  }
+
+  for (const providerName of forbiddenProviderNames) {
+    if (
+      new RegExp(`\\b${providerName}\\b`, 'i').test(source) ||
+      repositoryPath.toLowerCase().includes(providerName.toLowerCase())
+    ) {
+      violations.push(
+        `${repositoryPath}: external provider name ${providerName} leaked into backend-core`
+      );
+    }
+  }
+
+  for (const match of source.matchAll(
+    /\b(?:import|export)\s+(?:type\s+)?(?:[^'"]*?\s+from\s+)?['"]([^'"]+)['"]/g
+  )) {
+    const specifier = match[1];
+    if (specifier.includes('adapter')) {
+      violations.push(`${repositoryPath}: forbidden adapter dependency ${specifier}`);
+    }
+    if (forbiddenBackendCoreImports.some((forbidden) => specifier.includes(forbidden))) {
+      violations.push(`${repositoryPath}: forbidden runtime/backend dependency ${specifier}`);
+    }
+  }
+}
+
 for (const filePath of webFiles) {
   const source = readFileSync(filePath, 'utf8');
   const repositoryPath = relative(join(repositoryRoot, '..'), filePath).replaceAll('\\', '/');
@@ -108,8 +159,8 @@ if (violations.length > 0) {
   process.exitCode = 1;
 } else {
   console.log(
-    `Architecture check passed: ${sourceFiles.length} backend and ${webFiles.length} web modules, ` +
+    `Architecture check passed: ${sourceFiles.length} backend, ${backendCoreFiles.length} backend-core, and ${webFiles.length} web modules, ` +
       'no core/port dependency on adapters, Apps Script globals, or external provider names; ' +
-      'no non-theme legacy global dependency.'
+      'no backend-core dependency on runtime infrastructure; no non-theme legacy global dependency.'
   );
 }

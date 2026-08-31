@@ -14,10 +14,10 @@ import type {
   AddMomentumCandidateToWatchlistResponse,
   MomentumRankingDto
 } from '@trading-cockpit/contracts';
-import { createAddRankedMomentumCandidateToWatchlist } from '../core/application/momentum/add-ranked-momentum-candidate-to-watchlist';
-import { createGetMomentumRanking } from '../core/application/momentum/get-momentum-ranking';
-import { createRefreshMomentumRanking } from '../core/application/momentum/refresh-momentum-ranking';
-import { createAddCandidateToWatchlist } from '../core/application/watchlist/add-candidate-to-watchlist';
+import { createAddRankedMomentumCandidateToWatchlist } from '@trading-cockpit/backend-core/application/momentum/add-ranked-momentum-candidate-to-watchlist';
+import { createGetMomentumRanking } from '@trading-cockpit/backend-core/application/momentum/get-momentum-ranking';
+import { createRefreshMomentumRanking } from '@trading-cockpit/backend-core/application/momentum/refresh-momentum-ranking';
+import { createAddCandidateToWatchlist } from '@trading-cockpit/backend-core/application/watchlist/add-candidate-to-watchlist';
 import { RuntimeLogger } from '../adapters/outbound/apps-script/runtime-logger';
 
 export function runRefreshMomentumRanking(): void {

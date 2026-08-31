@@ -1,5 +1,5 @@
-import type { RecordCapitalTransactionCommand } from '../../../../core/application/trading-account/record-capital-transaction';
-import type { CapitalTransaction } from '../../../../core/domain/capital-transaction';
+import type { RecordCapitalTransactionCommand } from '@trading-cockpit/backend-core/application/trading-account/record-capital-transaction';
+import type { CapitalTransaction } from '@trading-cockpit/backend-core/domain/capital-transaction';
 
 type Recorder = (command: RecordCapitalTransactionCommand) => CapitalTransaction;
 

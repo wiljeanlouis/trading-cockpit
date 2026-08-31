@@ -1,5 +1,5 @@
-import type { WatchlistEntry } from '../../../../core/domain/watchlist';
-import type { WatchlistReader } from '../../../../ports/outbound/watchlist-reader';
+import type { WatchlistEntry } from '@trading-cockpit/backend-core/domain/watchlist';
+import type { WatchlistReader } from '@trading-cockpit/backend-core/ports/outbound/watchlist-reader';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 import { readSheetTable } from '../sheet-headers';
 import { watchlistEntryFromRow } from './watchlist-mapper';
