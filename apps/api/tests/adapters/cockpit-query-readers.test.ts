@@ -222,26 +222,24 @@ describe('Cloud Run Google Sheets API query readers', () => {
     ]);
   });
 
-  it('reads normalized Cockpit Config rows directly from row 2+', async () => {
+  it('reads normalized Cockpit Config rows as generic global settings', async () => {
     const config = await readTradingConfig(
       sheets({
         [SHEET_DEFINITIONS.cockpitConfig.range]: [
           ['Parameter', 'Value', 'Description'],
-          ['Account Name', 'Trading', 'Nom du compte'],
-          ['Account Equity', 20_000, 'Legacy display value'],
-          ['Default Risk %', 0.005, 'Legacy display value'],
-          ['Max Position %', 0.1, 'Legacy display value'],
-          ['Currency', 'cad', 'Legacy display value']
+          ['Some Global Setting', 'enabled', 'A valid future global setting']
         ]
       })
     );
 
     expect(config).toEqual({
-      accountName: 'Trading',
-      accountEquity: 20_000,
-      defaultRiskPercent: 0.005,
-      maxPositionPercent: 0.1,
-      currency: 'CAD'
+      settings: [
+        {
+          parameter: 'Some Global Setting',
+          value: 'enabled',
+          description: 'A valid future global setting'
+        }
+      ]
     });
   });
 

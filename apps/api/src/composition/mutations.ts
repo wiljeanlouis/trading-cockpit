@@ -353,14 +353,7 @@ export async function setupCockpitConfigForCloudRun({
 }: MutationDependencies): Promise<{ ok: true }> {
   await ensureSheets(mutationContext, ['Cockpit Config']);
   if (await sheetRangeHasAnyContent(mutationContext, "'Cockpit Config'!A:C")) return { ok: true };
-  mutationContext.writer.update("'Cockpit Config'!A1:C6", [
-    ['Parameter', 'Value', 'Description'],
-    ['Account Name', 'Trading', 'Nom du compte utilisé pour le trading actif'],
-    ['Account Equity', 10000, 'Valeur actuelle du compte utilisée pour le position sizing'],
-    ['Default Risk %', 0.005, 'Risque maximal par trade'],
-    ['Max Position %', 0.1, 'Exposition maximale recommandée par position'],
-    ['Currency', 'CAD', 'Devise du compte']
-  ]);
+  mutationContext.writer.update("'Cockpit Config'!A1:C1", [['Parameter', 'Value', 'Description']]);
   return { ok: true };
 }
 

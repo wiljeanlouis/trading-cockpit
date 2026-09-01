@@ -144,6 +144,25 @@ describe('HttpCockpitGateway', () => {
     expect(calls[1][1]).not.toHaveProperty('body');
   });
 
+  it('serializes account and analytics query scopes as HTTP query parameters', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ ok: true }));
+    const gateway = createGateway(fetchImpl);
+
+    await gateway.getDashboard({ accountId: 'A2' });
+    await gateway.getAnalytics({ accountId: 'A2', strategyId: 'MOMENTUM_BREAKOUT' });
+
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      1,
+      '/api/dashboard?accountId=A2',
+      expect.objectContaining({ method: 'GET' })
+    );
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      2,
+      '/api/analytics?accountId=A2&strategyId=MOMENTUM_BREAKOUT',
+      expect.objectContaining({ method: 'GET' })
+    );
+  });
+
   it('maps HTTP errors and triggers reauthentication for 401 only', async () => {
     const onUnauthorized = vi.fn();
     const gateway = new HttpCockpitGateway({

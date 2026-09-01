@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { AnalyticsDto } from '@trading-cockpit/contracts';
+import type { AnalyticsDto, TradingAccountDto } from '@trading-cockpit/contracts';
 import type { CockpitGateway } from '../../infrastructure/cockpit-gateway';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,6 +33,7 @@ interface AnalyticsProps {
 
 interface AnalyticsState {
   data: AnalyticsDto | null;
+  accounts: TradingAccountDto[];
   loading: boolean;
   error: string | null;
 }
@@ -84,13 +85,26 @@ function monetaryTone(value: number): string | undefined {
 }
 
 export function Analytics({ gateway }: AnalyticsProps) {
-  const [state, setState] = useState<AnalyticsState>({ data: null, loading: true, error: null });
+  const [state, setState] = useState<AnalyticsState>({
+    data: null,
+    accounts: [],
+    loading: true,
+    error: null
+  });
+  const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [selectedStrategyId, setSelectedStrategyId] = useState('');
 
   const load = useCallback(async () => {
     setState((current) => ({ ...current, loading: true, error: null }));
     try {
-      const data = await gateway.getAnalytics();
-      setState({ data, loading: false, error: null });
+      const [data, accounts] = await Promise.all([
+        gateway.getAnalytics({
+          accountId: selectedAccountId || null,
+          strategyId: selectedStrategyId || null
+        }),
+        gateway.getTradingAccounts()
+      ]);
+      setState({ data, accounts: accounts.accounts, loading: false, error: null });
     } catch (error) {
       setState((current) => ({
         ...current,
@@ -98,7 +112,7 @@ export function Analytics({ gateway }: AnalyticsProps) {
         error: error instanceof Error ? error.message : String(error)
       }));
     }
-  }, [gateway]);
+  }, [gateway, selectedAccountId, selectedStrategyId]);
 
   useEffect(() => {
     void load();
@@ -110,6 +124,10 @@ export function Analytics({ gateway }: AnalyticsProps) {
   }
 
   const data = state.data;
+  const strategyOptions = data?.byStrategy ?? [];
+  const selectedStrategyName =
+    strategyOptions.find((strategy) => strategy.strategyId === selectedStrategyId)?.strategy ??
+    selectedStrategyId;
 
   return (
     <PageShell>
@@ -127,6 +145,45 @@ export function Analytics({ gateway }: AnalyticsProps) {
           </Button>
         </PageActions>
       </PageHeader>
+
+      <section
+        className="mb-[18px] grid grid-cols-[repeat(2,minmax(220px,360px))] items-end gap-3 rounded-xl border border-[#1c3447] bg-[rgba(10,24,39,0.82)] p-4 max-[620px]:grid-cols-1 [&_label]:grid [&_label]:gap-[7px] [&_label>span]:text-[9px] [&_label>span]:font-extrabold [&_label>span]:tracking-[0.11em] [&_label>span]:text-[#71869d] [&_label>span]:uppercase [&_select]:min-h-10 [&_select]:min-w-0 [&_select]:rounded-lg [&_select]:border [&_select]:border-[#294256] [&_select]:bg-[#0a1826] [&_select]:px-[11px] [&_select]:text-xs [&_select]:text-[#e5edf7] [&_select]:outline-none focus-within:[&_select]:border-[#4ee1a0] focus-within:[&_select]:ring-2 focus-within:[&_select]:ring-[rgba(78,225,160,0.14)]"
+        aria-label="Analytics filters"
+      >
+        <label>
+          <span>Account Scope</span>
+          <select
+            value={selectedAccountId}
+            onChange={(event) => setSelectedAccountId(event.target.value)}
+            disabled={state.loading && !data}
+          >
+            <option value="">All Accounts</option>
+            {state.accounts.map((account) => (
+              <option key={account.id} value={account.id}>
+                {account.id} — {account.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Strategy</span>
+          <select
+            value={selectedStrategyId}
+            onChange={(event) => setSelectedStrategyId(event.target.value)}
+            disabled={state.loading && !data}
+          >
+            <option value="">All Strategies</option>
+            {selectedStrategyId && strategyOptions.length === 0 && (
+              <option value={selectedStrategyId}>{selectedStrategyName}</option>
+            )}
+            {strategyOptions.map((strategy) => (
+              <option key={strategy.strategyId} value={strategy.strategyId}>
+                {strategy.strategy}
+              </option>
+            ))}
+          </select>
+        </label>
+      </section>
 
       {state.loading && !data && <LoadingState>Loading analytics…</LoadingState>}
 
@@ -249,6 +306,58 @@ export function Analytics({ gateway }: AnalyticsProps) {
                         </TableCell>
                         <TableCell>{formatNumber(row.averageR)}</TableCell>
                         <TableCell>{formatNumber(row.totalR)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableScroll>
+            )}
+          </DataPanel>
+
+          <DataPanel aria-label="Performance by account">
+            <TableSummary>
+              <span>{data.byAccount?.length ?? 0} account row(s)</span>
+              <small>Grouped by Trading Account</small>
+            </TableSummary>
+            {!data.byAccount || data.byAccount.length === 0 ? (
+              <div className="grid min-h-[160px] place-content-center text-center text-[#8294aa]">
+                <strong className="text-[#d7e2ee]">No account analytics yet</strong>
+              </div>
+            ) : (
+              <TableScroll>
+                <Table className="min-w-[1040px] border-collapse tabular-nums">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Account</TableHead>
+                      <TableHead>Trades</TableHead>
+                      <TableHead>Wins</TableHead>
+                      <TableHead>Losses</TableHead>
+                      <TableHead>Breakeven</TableHead>
+                      <TableHead>Win Rate</TableHead>
+                      <TableHead>Realized P&amp;L</TableHead>
+                      <TableHead>Profit Factor</TableHead>
+                      <TableHead>Total R</TableHead>
+                      <TableHead>Average R</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.byAccount.map((row, index) => (
+                      <TableRow key={row.accountId} className={strategyRowClassName(index)}>
+                        <TableCell>
+                          <strong>{row.accountName ?? row.accountId}</strong>
+                          <span className={tableDetailClassName}>{row.accountId}</span>
+                        </TableCell>
+                        <TableCell>{row.trades}</TableCell>
+                        <TableCell>{row.wins}</TableCell>
+                        <TableCell>{row.losses}</TableCell>
+                        <TableCell>{row.breakeven}</TableCell>
+                        <TableCell>{formatPercent(row.winRate)}</TableCell>
+                        <TableCell className={monetaryTone(row.realizedPnl)}>
+                          {formatMoney(row.realizedPnl)}
+                        </TableCell>
+                        <TableCell>{formatNumber(row.profitFactor)}</TableCell>
+                        <TableCell>{formatNumber(row.totalR)}</TableCell>
+                        <TableCell>{formatNumber(row.averageR)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

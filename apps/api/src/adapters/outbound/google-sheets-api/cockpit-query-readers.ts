@@ -1,4 +1,8 @@
 import type { JournalEntry, JournalMetric } from '@trading-cockpit/core/domain/journal-entry';
+import {
+  createCapitalTransaction,
+  type CapitalTransaction
+} from '@trading-cockpit/core/domain/capital-transaction';
 import type { MomentumRankingRecord } from '@trading-cockpit/core/ports/outbound/momentum-ranking-reader';
 import type { Position } from '@trading-cockpit/core/domain/position';
 import type { TradePlan } from '@trading-cockpit/core/domain/trade-plan';
@@ -145,6 +149,15 @@ const JOURNAL_HEADERS = [
   'Account ID'
 ] as const;
 
+const CAPITAL_LEDGER_HEADERS = [
+  'Transaction ID',
+  'Account ID',
+  'Type',
+  'Amount',
+  'Occurred At',
+  'Note'
+] as const;
+
 export const SHEET_DEFINITIONS = {
   watchlist: {
     key: 'watchlist',
@@ -179,6 +192,13 @@ export const SHEET_DEFINITIONS = {
     sheetName: 'Accounts',
     range: "'Accounts'!A:D",
     requiredHeaders: ['Account ID', 'Name', 'Base Currency', 'Risk % Per Trade']
+  },
+  capitalLedger: {
+    key: 'capitalLedger',
+    sheetName: 'Capital Ledger',
+    range: "'Capital Ledger'!A:F",
+    requiredHeaders: CAPITAL_LEDGER_HEADERS,
+    dateHeaders: ['Occurred At']
   },
   strategies: {
     key: 'strategies',
@@ -330,6 +350,24 @@ export async function readTradingAccounts(sheets: RequestScopedSheets): Promise<
   return accounts;
 }
 
+export async function readCapitalTransactions(
+  sheets: RequestScopedSheets
+): Promise<CapitalTransaction[]> {
+  const table = await readTable(sheets, SHEET_DEFINITIONS.capitalLedger);
+  return table.rows
+    .filter((row) => row.some((value) => textValue(value)))
+    .map((row) =>
+      createCapitalTransaction({
+        id: textValue(valueByHeader(table.headers, row, 'Transaction ID')),
+        accountId: textValue(valueByHeader(table.headers, row, 'Account ID')),
+        type: textValue(valueByHeader(table.headers, row, 'Type')) as CapitalTransaction['type'],
+        amount: Number(valueByHeader(table.headers, row, 'Amount')),
+        occurredAt: dateValue(valueByHeader(table.headers, row, 'Occurred At')),
+        note: textValue(valueByHeader(table.headers, row, 'Note'))
+      })
+    );
+}
+
 export async function readStrategyIds(sheets: RequestScopedSheets): Promise<string[]> {
   const strategies = await readStrategies(sheets);
   return strategies.map((strategy) => strategy.id);
@@ -364,38 +402,15 @@ export async function readMomentumRankingRecords(
 
 export async function readTradingConfig(sheets: RequestScopedSheets): Promise<TradingConfigDto> {
   const loaded = await sheets.getTable(SHEET_DEFINITIONS.cockpitConfig);
-  const values = new Map<string, unknown>();
-  loaded.table.rows.forEach((row) => {
-    const key = textValue(row[0]);
-    if (key) values.set(key, row[1]);
-  });
-  const config = {
-    accountName: textValue(values.get('Account Name')),
-    accountEquity: Number(values.get('Account Equity')),
-    defaultRiskPercent: Number(values.get('Default Risk %')),
-    maxPositionPercent: Number(values.get('Max Position %')),
-    currency: textValue(values.get('Currency')).toUpperCase()
+  return {
+    settings: loaded.table.rows
+      .map((row) => ({
+        parameter: textValue(row[0]),
+        value: row[1] === undefined || row[1] === '' ? null : (row[1] as string | number | boolean),
+        description: textValue(row[2])
+      }))
+      .filter((setting) => setting.parameter)
   };
-  if (!config.accountName) throw new Error('Account Name est obligatoire.');
-  if (!Number.isFinite(config.accountEquity) || config.accountEquity <= 0) {
-    throw new Error('Account Equity doit être supérieur à 0.');
-  }
-  if (
-    !Number.isFinite(config.defaultRiskPercent) ||
-    config.defaultRiskPercent <= 0 ||
-    config.defaultRiskPercent > 1
-  ) {
-    throw new Error('Default Risk % doit être compris entre 0% et 100%.');
-  }
-  if (
-    !Number.isFinite(config.maxPositionPercent) ||
-    config.maxPositionPercent <= 0 ||
-    config.maxPositionPercent > 1
-  ) {
-    throw new Error('Max Position % doit être compris entre 0% et 100%.');
-  }
-  if (!config.currency) throw new Error('Currency est obligatoire.');
-  return config;
 }
 
 export async function readDashboardSnapshot(
@@ -441,10 +456,12 @@ export async function readDashboardSnapshot(
       }))
       .filter((entry) => entry.ticker),
     tradePlans: tradePlans.rows.map((row) => ({
+      accountId: textValue(valueByHeader(tradePlans.headers, row, 'Account ID')).toUpperCase(),
       status: textValue(valueByHeader(tradePlans.headers, row, 'Status')).toUpperCase()
     })),
     positions: positions.rows
       .map((row) => ({
+        accountId: textValue(valueByHeader(positions.headers, row, 'Account ID')).toUpperCase(),
         ticker: textValue(valueByHeader(positions.headers, row, 'Ticker')).toUpperCase(),
         actualEntry: numberOrNull(valueByHeader(positions.headers, row, 'Actual Entry')),
         currentPrice: numberOrNull(valueByHeader(positions.headers, row, 'Current Price')),
@@ -625,6 +642,12 @@ function normalizeSignalDate(value: unknown): string {
   if (!value) return '';
   if (value instanceof Date) return value.toISOString().substring(0, 10);
   return String(value).trim().substring(0, 10);
+}
+
+function dateValue(value: unknown): Date {
+  if (value instanceof Date) return value;
+  const parsed = new Date(String(value || ''));
+  return parsed;
 }
 
 async function readStrategies(sheets: RequestScopedSheets) {

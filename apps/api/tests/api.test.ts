@@ -903,6 +903,33 @@ describe('Cloud Run Trading Cockpit API', () => {
     );
   });
 
+  it('sets up Cockpit Config without obsolete account financial fields', async () => {
+    const client = mutableSheetsClientByRange(
+      queryFixtureByRange({
+        cockpitConfig: []
+      })
+    );
+
+    const response = await handleCloudRunRequest({
+      method: 'POST',
+      url: '/api/admin/trading-config/setup',
+      headers: authorizationHeaders(),
+      spreadsheetId: 'spreadsheet-id',
+      auth: testAuthConfig(),
+      cors: testCorsConfig(),
+      sheetsClientFactory: async () => client,
+      tokenVerifier: authorizedTokenVerifier()
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(client.updateValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        range: "'Cockpit Config'!A1:C1",
+        values: [['Parameter', 'Value', 'Description']]
+      })
+    );
+  });
+
   it('sets up Momentum sheets using canonical tabular score config headers', async () => {
     const client = mutableSheetsClientByRange(queryFixtureByRange());
 
@@ -1012,6 +1039,240 @@ describe('Cloud Run Trading Cockpit API', () => {
     );
   });
 
+  it('serves Dashboard scoped to one account from authoritative account data', async () => {
+    const capitalLedgerHeaders = [
+      'Transaction ID',
+      'Account ID',
+      'Type',
+      'Amount',
+      'Occurred At',
+      'Note'
+    ];
+    const client = sheetsClientByRange(
+      queryFixtureByRange({
+        accounts: [
+          rowForHeaders(SHEET_DEFINITIONS.accounts.requiredHeaders, {
+            'Account ID': 'A1',
+            Name: 'Main Account',
+            'Base Currency': 'CAD',
+            'Risk % Per Trade': 0.005
+          }),
+          rowForHeaders(SHEET_DEFINITIONS.accounts.requiredHeaders, {
+            'Account ID': 'A2',
+            Name: 'Secondary Account',
+            'Base Currency': 'CAD',
+            'Risk % Per Trade': 0.01
+          })
+        ],
+        capitalLedger: [
+          rowForHeaders(capitalLedgerHeaders, {
+            'Transaction ID': 'CL-1',
+            'Account ID': 'A1',
+            Type: 'INITIAL_FUNDING',
+            Amount: 20_000,
+            'Occurred At': sheetsSerialDate('2026-08-01T12:00:00.000Z')
+          }),
+          rowForHeaders(capitalLedgerHeaders, {
+            'Transaction ID': 'CL-2',
+            'Account ID': 'A2',
+            Type: 'INITIAL_FUNDING',
+            Amount: 5_000,
+            'Occurred At': sheetsSerialDate('2026-08-01T12:00:00.000Z')
+          })
+        ],
+        tradePlans: [
+          rowForHeaders(SHEET_DEFINITIONS.tradePlans.requiredHeaders, {
+            'Trade Plan ID': 'TP-1',
+            'Strategy ID': 'MOMENTUM_BREAKOUT',
+            Strategy: 'Momentum Breakout',
+            'Strategy Version': '1.0',
+            Ticker: 'BOX',
+            Status: 'READY',
+            'Account ID': 'A1'
+          }),
+          rowForHeaders(SHEET_DEFINITIONS.tradePlans.requiredHeaders, {
+            'Trade Plan ID': 'TP-2',
+            'Strategy ID': 'MOMENTUM_BREAKOUT',
+            Strategy: 'Momentum Breakout',
+            'Strategy Version': '1.0',
+            Ticker: 'DK',
+            Status: 'READY',
+            'Account ID': 'A2'
+          })
+        ],
+        positions: [
+          rowForHeaders(SHEET_DEFINITIONS.positions.requiredHeaders, {
+            'Position ID': 'P-1',
+            Ticker: 'BOX',
+            'Opened At': sheetsSerialDate('2026-08-27T15:00:00.000Z'),
+            'Actual Entry': 34,
+            'Current Stop': 30,
+            Status: 'OPEN',
+            'Account ID': 'A1'
+          }),
+          rowForHeaders(SHEET_DEFINITIONS.positions.requiredHeaders, {
+            'Position ID': 'P-2',
+            Ticker: 'DK',
+            'Opened At': sheetsSerialDate('2026-08-27T15:00:00.000Z'),
+            'Actual Entry': 20,
+            'Current Stop': 18,
+            Status: 'OPEN',
+            'Account ID': 'A2'
+          })
+        ],
+        journal: [
+          rowForHeaders(SHEET_DEFINITIONS.journal.requiredHeaders, {
+            'Journal ID': 'J-1',
+            'Position ID': 'P-CLOSED-1',
+            Ticker: 'BOX',
+            'Realized P&L': 40,
+            'R-Multiple': 2,
+            Outcome: 'WIN',
+            'Account ID': 'A1'
+          }),
+          rowForHeaders(SHEET_DEFINITIONS.journal.requiredHeaders, {
+            'Journal ID': 'J-2',
+            'Position ID': 'P-CLOSED-2',
+            Ticker: 'DK',
+            'Realized P&L': -20,
+            'R-Multiple': -1,
+            Outcome: 'LOSS',
+            'Account ID': 'A2'
+          })
+        ]
+      })
+    );
+
+    const response = await handleCloudRunRequest({
+      method: 'GET',
+      url: '/api/dashboard?accountId=A2',
+      headers: authorizationHeaders(),
+      spreadsheetId: 'spreadsheet-id',
+      auth: testAuthConfig(),
+      cors: testCorsConfig(),
+      sheetsClientFactory: async () => client,
+      tokenVerifier: authorizedTokenVerifier(),
+      now: () => new Date('2026-08-28T16:04:00.000Z')
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        account: expect.objectContaining({
+          scope: { type: 'ACCOUNT', accountId: 'A2' },
+          accountId: 'A2',
+          netExternalCapital: 5_000,
+          realizedPnl: -20,
+          realizedEquity: 4_980
+        }),
+        pipeline: expect.objectContaining({
+          activeTradePlans: 1,
+          openPositions: 1,
+          closedTrades: 1
+        }),
+        performance: expect.objectContaining({
+          realizedPnl: -20,
+          wins: 0,
+          losses: 1,
+          profitFactor: 0
+        })
+      })
+    );
+  });
+
+  it('serves Analytics scoped to one account and rejects unknown accounts', async () => {
+    const client = sheetsClientByRange(
+      queryFixtureByRange({
+        accounts: [
+          rowForHeaders(SHEET_DEFINITIONS.accounts.requiredHeaders, {
+            'Account ID': 'A1',
+            Name: 'Main Account',
+            'Base Currency': 'CAD',
+            'Risk % Per Trade': 0.005
+          }),
+          rowForHeaders(SHEET_DEFINITIONS.accounts.requiredHeaders, {
+            'Account ID': 'A2',
+            Name: 'Secondary Account',
+            'Base Currency': 'CAD',
+            'Risk % Per Trade': 0.01
+          })
+        ],
+        journal: [
+          rowForHeaders(SHEET_DEFINITIONS.journal.requiredHeaders, {
+            'Journal ID': 'J-1',
+            'Position ID': 'P-CLOSED-1',
+            'Strategy ID': 'MOMENTUM_BREAKOUT',
+            Strategy: 'Momentum Breakout',
+            'Strategy Version': '1.0',
+            Ticker: 'BOX',
+            'Realized P&L': 40,
+            'R-Multiple': 2,
+            Outcome: 'WIN',
+            'Account ID': 'A1'
+          }),
+          rowForHeaders(SHEET_DEFINITIONS.journal.requiredHeaders, {
+            'Journal ID': 'J-2',
+            'Position ID': 'P-CLOSED-2',
+            'Strategy ID': 'MOMENTUM_BREAKOUT',
+            Strategy: 'Momentum Breakout',
+            'Strategy Version': '1.0',
+            Ticker: 'DK',
+            'Realized P&L': -20,
+            'R-Multiple': -1,
+            Outcome: 'LOSS',
+            'Account ID': 'A2'
+          })
+        ]
+      })
+    );
+
+    const response = await handleCloudRunRequest({
+      method: 'GET',
+      url: '/api/analytics?accountId=A2',
+      headers: authorizationHeaders(),
+      spreadsheetId: 'spreadsheet-id',
+      auth: testAuthConfig(),
+      cors: testCorsConfig(),
+      sheetsClientFactory: async () => client,
+      tokenVerifier: authorizedTokenVerifier(),
+      now: () => new Date('2026-08-28T16:04:00.000Z')
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toMatchObject(
+      expect.objectContaining({
+        scope: { type: 'ACCOUNT', accountId: 'A2' },
+        summary: expect.objectContaining({
+          trades: 1,
+          losses: 1,
+          realizedPnl: -20
+        }),
+        byAccount: [
+          expect.objectContaining({
+            accountId: 'A2',
+            accountName: 'Secondary Account',
+            trades: 1,
+            realizedPnl: -20
+          })
+        ]
+      })
+    );
+
+    const missing = await handleCloudRunRequest({
+      method: 'GET',
+      url: '/api/analytics?accountId=UNKNOWN',
+      headers: authorizationHeaders(),
+      spreadsheetId: 'spreadsheet-id',
+      auth: testAuthConfig(),
+      cors: testCorsConfig(),
+      sheetsClientFactory: async () => client,
+      tokenVerifier: authorizedTokenVerifier()
+    });
+
+    expect(missing.statusCode).toBe(404);
+    expect(missing.body).toEqual({ error: 'Trading Account introuvable : UNKNOWN' });
+  });
+
   it('reports Finviz auth status without exposing the token value', async () => {
     const response = await handleCloudRunRequest({
       method: 'GET',
@@ -1045,7 +1306,9 @@ function queryFixtureByRange(
     tradePlans?: unknown[][];
     positions?: unknown[][];
     journal?: unknown[][];
+    accounts?: unknown[][];
     capitalLedger?: unknown[][];
+    cockpitConfig?: unknown[][];
   } = {}
 ): Record<string, unknown[][]> {
   const tradePlanHeaders = [...SHEET_DEFINITIONS.tradePlans.requiredHeaders];
@@ -1169,12 +1432,14 @@ function queryFixtureByRange(
     ],
     [SHEET_DEFINITIONS.accounts.range]: [
       accountHeaders,
-      rowForHeaders(accountHeaders, {
-        'Account ID': 'A1',
-        Name: 'Main Account',
-        'Base Currency': 'CAD',
-        'Risk % Per Trade': 0.005
-      })
+      ...(overrides.accounts ?? [
+        rowForHeaders(accountHeaders, {
+          'Account ID': 'A1',
+          Name: 'Main Account',
+          'Base Currency': 'CAD',
+          'Risk % Per Trade': 0.005
+        })
+      ])
     ],
     [SHEET_DEFINITIONS.strategies.range]: [
       strategyHeaders,
@@ -1215,13 +1480,8 @@ function queryFixtureByRange(
         'Review Status': 'REVIEW'
       })
     ],
-    [SHEET_DEFINITIONS.cockpitConfig.range]: [
-      ['Parameter', 'Value', 'Description'],
-      ['Account Name', 'Trading', 'Nom du compte utilisé pour le trading actif'],
-      ['Account Equity', 20000, 'Valeur actuelle du compte utilisée pour le position sizing'],
-      ['Default Risk %', 0.005, 'Risque maximal par trade'],
-      ['Max Position %', 0.1, 'Exposition maximale recommandée par position'],
-      ['Currency', 'CAD', 'Devise du compte']
+    [SHEET_DEFINITIONS.cockpitConfig.range]: overrides.cockpitConfig ?? [
+      ['Parameter', 'Value', 'Description']
     ]
   };
 }

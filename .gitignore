@@ -5,3 +5,6 @@ build/
 apps/web/dist/
 apps/api/dist/
 .clasprc.json
+.env
+.env.local
+.env.production

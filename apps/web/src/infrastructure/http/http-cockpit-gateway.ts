@@ -23,6 +23,7 @@ import type {
   WatchlistDto
 } from '@trading-cockpit/contracts';
 import type { CockpitGateway } from '../cockpit-gateway';
+import type { AccountScopedQuery, AnalyticsQuery } from '../cockpit-gateway';
 
 type TokenProvider = () => string | null | Promise<string | null>;
 
@@ -53,8 +54,8 @@ export class HttpCockpitGateway implements CockpitGateway {
     this.onUnauthorized = options.onUnauthorized;
   }
 
-  getDashboard(): Promise<DashboardDto> {
-    return this.get('/api/dashboard');
+  getDashboard(query?: AccountScopedQuery): Promise<DashboardDto> {
+    return this.get(withQuery('/api/dashboard', query));
   }
 
   getDashboardSummary(): Promise<DashboardSummaryDto> {
@@ -86,8 +87,8 @@ export class HttpCockpitGateway implements CockpitGateway {
     return this.post('/api/discovery/momentum-ranking/watchlist', request);
   }
 
-  getAnalytics(): Promise<AnalyticsDto> {
-    return this.get('/api/analytics');
+  getAnalytics(query?: AnalyticsQuery): Promise<AnalyticsDto> {
+    return this.get(withQuery('/api/analytics', query));
   }
 
   getTradingAccounts(): Promise<TradingAccountsDto> {
@@ -235,4 +236,14 @@ function errorMessage(payload: unknown, status: number): string {
     return String(payload.error || `Trading Cockpit API request failed (${status}).`);
   }
   return `Trading Cockpit API request failed (${status}).`;
+}
+
+function withQuery(path: string, query?: AccountScopedQuery | AnalyticsQuery): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query ?? {})) {
+    const normalized = String(value ?? '').trim();
+    if (normalized) params.set(key, normalized);
+  }
+  const serialized = params.toString();
+  return serialized ? `${path}?${serialized}` : path;
 }

@@ -20,9 +20,9 @@ describe('Cockpit Apps Script bundle', () => {
     new Script(bundleSource, { filename: 'Cockpit.js' }).runInContext(context);
 
     expect(context.CockpitBundle?.onOpen).toBeTypeOf('function');
-    expect(context.CockpitBundle?.getDashboardSummary).toBeTypeOf('function');
-    expect(context.CockpitBundle?.getDashboard).toBeTypeOf('function');
-    expect(context.CockpitBundle?.refreshDashboard).toBeTypeOf('function');
+    expect(context.CockpitBundle?.getDashboardSummary).toBeUndefined();
+    expect(context.CockpitBundle?.getDashboard).toBeUndefined();
+    expect(context.CockpitBundle?.refreshDashboard).toBeUndefined();
     expect(context.CockpitBundle?.getWatchlist).toBeTypeOf('function');
     expect(context.CockpitBundle?.getMomentumRanking).toBeTypeOf('function');
     expect(context.CockpitBundle?.addMomentumCandidateToWatchlist).toBeTypeOf('function');
@@ -35,7 +35,8 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.CockpitBundle?.closePosition).toBeTypeOf('function');
     expect(context.CockpitBundle?.getJournal).toBeTypeOf('function');
     expect(context.CockpitBundle?.refreshFinviz).toBeTypeOf('function');
-    expect(context.CockpitBundle?.refreshAnalytics).toBeTypeOf('function');
+    expect(context.CockpitBundle?.getAnalytics).toBeUndefined();
+    expect(context.CockpitBundle?.refreshAnalytics).toBeUndefined();
     expect(context.CockpitBundle?.refreshMomentumRanking).toBeTypeOf('function');
     expect(context.CockpitBundle?.initializeTradingCockpit).toBeTypeOf('function');
     expect(context.CockpitBundle?.validateTradingCockpit).toBeTypeOf('function');
@@ -62,9 +63,9 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.recordDeposit).toBeTypeOf('function');
     expect(context.recordWithdrawal).toBeTypeOf('function');
     expect(context.onOpen).toBeTypeOf('function');
-    expect(context.getDashboardSummary).toBeTypeOf('function');
-    expect(context.getDashboard).toBeTypeOf('function');
-    expect(context.refreshDashboard).toBeTypeOf('function');
+    expect(context.getDashboardSummary).toBeUndefined();
+    expect(context.getDashboard).toBeUndefined();
+    expect(context.refreshDashboard).toBeUndefined();
     expect(context.getWatchlist).toBeTypeOf('function');
     expect(context.getMomentumRanking).toBeTypeOf('function');
     expect(context.addMomentumCandidateToWatchlist).toBeTypeOf('function');
@@ -77,7 +78,8 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.closePosition).toBeTypeOf('function');
     expect(context.getJournal).toBeTypeOf('function');
     expect(context.refreshFinviz).toBeTypeOf('function');
-    expect(context.refreshAnalytics).toBeTypeOf('function');
+    expect(context.getAnalytics).toBeUndefined();
+    expect(context.refreshAnalytics).toBeUndefined();
     expect(context.refreshMomentumRanking).toBeTypeOf('function');
     expect(context.initializeTradingCockpit).toBeTypeOf('function');
     expect(context.validateTradingCockpit).toBeTypeOf('function');
@@ -90,19 +92,17 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.runArchitecturePoc).toBeUndefined();
   });
 
-  it('bundles all 17 menu callbacks with their current labels', () => {
+  it('bundles supported menu callbacks without retired Dashboard or Analytics actions', () => {
     const targets = [...bundleSource.matchAll(/\.addItem\(\s*"[^"]+"\s*,\s*"([^"]+)"/gs)].map(
       (match) => match[1]
     );
-    expect(targets).toHaveLength(17);
+    expect(targets).toHaveLength(15);
     expect(targets).toEqual(
       expect.arrayContaining([
         'initializeTradingCockpit',
         'validateTradingCockpit',
         'refreshFinviz',
         'refreshMomentumRanking',
-        'refreshDashboard',
-        'refreshAnalytics',
         'addSelectedToWatchlist',
         'createTradePlanFromSelectedWatchlist',
         'executeSelectedTradePlan',
@@ -118,6 +118,8 @@ describe('Cockpit Apps Script bundle', () => {
     );
     expect(targets).not.toEqual(
       expect.arrayContaining([
+        'refreshDashboard',
+        'refreshAnalytics',
         'setupMomentumRanking',
         'setupCockpitConfig',
         'setupTradingAccounts',

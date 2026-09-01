@@ -1,9 +1,11 @@
 export interface TradingConfigDto {
-  accountName: string;
-  accountEquity: number;
-  defaultRiskPercent: number;
-  maxPositionPercent: number;
-  currency: string;
+  settings: TradingConfigSettingDto[];
+}
+
+export interface TradingConfigSettingDto {
+  parameter: string;
+  value: string | number | boolean | null;
+  description: string;
 }
 
 export type CapitalTransactionType = 'INITIAL_FUNDING' | 'DEPOSIT' | 'WITHDRAWAL';

@@ -20,6 +20,7 @@ const EMPTY_ANALYTICS: AnalyticsDto = {
     winRate: 0,
     profitFactor: null,
     totalPnl: 0,
+    realizedPnl: 0,
     averagePnl: 0,
     bestPnl: 0,
     grossProfit: 0,
@@ -82,11 +83,7 @@ const EMPTY_DASHBOARD: DashboardDto = {
 };
 
 const EMPTY_TRADING_CONFIG: TradingConfigDto = {
-  accountName: '',
-  accountEquity: 0,
-  defaultRiskPercent: 0,
-  maxPositionPercent: 0,
-  currency: 'CAD'
+  settings: []
 };
 
 const EMPTY_CAPITAL_TRANSACTION_RESPONSE: RecordCapitalTransactionResponse = {

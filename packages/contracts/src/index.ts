@@ -14,15 +14,18 @@ export type {
 } from './dashboard';
 export type {
   AnalyticsDto,
+  AnalyticsAccountRowDto,
   AnalyticsStrategyRowDto,
   AnalyticsStrategyVersionRowDto,
-  AnalyticsSummaryDto
+  AnalyticsSummaryDto,
+  PortfolioScopeDto
 } from './analytics';
 export type {
   CapitalTransactionType,
   RecordCapitalTransactionRequest,
   RecordCapitalTransactionResponse,
-  TradingConfigDto
+  TradingConfigDto,
+  TradingConfigSettingDto
 } from './admin';
 export type {
   AddMomentumCandidateToWatchlistRequest,

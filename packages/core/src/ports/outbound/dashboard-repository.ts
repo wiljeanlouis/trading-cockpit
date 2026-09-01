@@ -21,10 +21,12 @@ export interface DashboardWatchlistSnapshot {
 }
 
 export interface DashboardTradePlanSnapshot {
+  accountId: string;
   status: string;
 }
 
 export interface DashboardPositionSnapshot {
+  accountId: string;
   ticker: string;
   actualEntry: number | null;
   currentPrice: number | null;

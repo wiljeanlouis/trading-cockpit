@@ -11,11 +11,15 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace @trading-cockpit/web",
+    "dev:web": "./scripts/dev-web.sh",
+    "dev:api": "./scripts/dev-api.sh",
+    "dev": "./scripts/dev.sh",
     "build:sheets": "npm run build --workspace @trading-cockpit/sheets",
     "build:api": "npm run build --workspace @trading-cockpit/api",
     "build:web": "npm run build --workspace @trading-cockpit/web",
     "build": "npm run build:sheets && npm run build:web && npm run build:api",
+    "build:prod": "./scripts/build-prod.sh",
+    "build:cloud": "./scripts/build-cloud.sh",
     "typecheck:core": "npm run typecheck --workspace @trading-cockpit/core",
     "typecheck:sheets": "npm run typecheck --workspace @trading-cockpit/sheets",
     "typecheck:contracts": "tsc -p packages/contracts/tsconfig.json",
@@ -34,7 +38,10 @@
     "check:architecture": "npm run check:architecture --workspace @trading-cockpit/sheets",
     "check:apps-script": "npm run check:apps-script --workspace @trading-cockpit/sheets",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run test && npm run check:architecture && npm run check:apps-script",
-    "deploy:prepare": "npm run build && npm run check && clasp status"
+    "deploy:prepare": "npm run build && npm run check && clasp status",
+    "deploy:api": "./scripts/deploy-api.sh",
+    "deploy:sheets": "./scripts/deploy-sheets.sh",
+    "deploy:all": "npm run deploy:sheets && npm run deploy:api"
   },
   "engines": {
     "node": ">=20.19.0"

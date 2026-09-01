@@ -1,66 +1,25 @@
 import { isSheetEffectivelyEmpty } from '../data-sheet';
+import type { TradingConfigDto } from '@trading-cockpit/contracts';
 
 const SHEET_NAME = 'Cockpit Config';
 export const COCKPIT_CONFIG_SHEET_NAME = SHEET_NAME;
 export const COCKPIT_CONFIG_HEADERS = ['Parameter', 'Value', 'Description'] as const;
 
-const PARAMETERS = {
-  accountName: 'Account Name',
-  accountEquity: 'Account Equity',
-  defaultRiskPercent: 'Default Risk %',
-  maxPositionPercent: 'Max Position %',
-  currency: 'Currency'
-} as const;
-
-export const COCKPIT_CONFIG_ROWS: Array<[string, string | number, string]> = [
-  [PARAMETERS.accountName, 'Trading', 'Nom du compte utilisé pour le trading actif'],
-  [PARAMETERS.accountEquity, 10000, 'Valeur actuelle du compte utilisée pour le position sizing'],
-  [PARAMETERS.defaultRiskPercent, 0.005, 'Risque maximal par trade'],
-  [PARAMETERS.maxPositionPercent, 0.1, 'Exposition maximale recommandée par position'],
-  [PARAMETERS.currency, 'CAD', 'Devise du compte']
-];
-
-export interface LegacyCockpitConfiguration {
-  accountName: string;
-  accountEquity: number;
-  defaultRiskPercent: number;
-  maxPositionPercent: number;
-  currency: string;
-}
-
 export function mapLegacyCockpitConfiguration(
   rows: readonly (readonly unknown[])[]
-): LegacyCockpitConfiguration {
-  const values = new Map<string, unknown>();
-  rows.forEach((row) => {
-    const key = String(row[0] || '').trim();
-    if (key) values.set(key, row[1]);
-  });
-
-  const accountName = String(values.get(PARAMETERS.accountName) || '').trim();
-  const accountEquity = Number(values.get(PARAMETERS.accountEquity));
-  const defaultRiskPercent = Number(values.get(PARAMETERS.defaultRiskPercent));
-  const maxPositionPercent = Number(values.get(PARAMETERS.maxPositionPercent));
-  const currency = String(values.get(PARAMETERS.currency) || '')
-    .trim()
-    .toUpperCase();
-
-  if (!accountName) throw new Error('Account Name est obligatoire.');
-  if (!Number.isFinite(accountEquity) || accountEquity <= 0) {
-    throw new Error('Account Equity doit être supérieur à 0.');
-  }
-  if (!Number.isFinite(defaultRiskPercent) || defaultRiskPercent <= 0 || defaultRiskPercent > 1) {
-    throw new Error('Default Risk % doit être compris entre 0% et 100%.');
-  }
-  if (!Number.isFinite(maxPositionPercent) || maxPositionPercent <= 0 || maxPositionPercent > 1) {
-    throw new Error('Max Position % doit être compris entre 0% et 100%.');
-  }
-  if (!currency) throw new Error('Currency est obligatoire.');
-
-  return { accountName, accountEquity, defaultRiskPercent, maxPositionPercent, currency };
+): TradingConfigDto {
+  return {
+    settings: rows
+      .map((row) => ({
+        parameter: String(row[0] || '').trim(),
+        value: row[1] === undefined || row[1] === '' ? null : (row[1] as string | number | boolean),
+        description: String(row[2] || '').trim()
+      }))
+      .filter((setting) => setting.parameter)
+  };
 }
 
-export function readLegacyCockpitConfiguration(): LegacyCockpitConfiguration {
+export function readLegacyCockpitConfiguration(): TradingConfigDto {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
   if (!sheet) {
     throw new Error(
@@ -68,7 +27,6 @@ export function readLegacyCockpitConfiguration(): LegacyCockpitConfiguration {
     );
   }
   const lastRow = sheet.getLastRow();
-  if (lastRow < 2) throw new Error(`${SHEET_NAME} est vide.`);
   const headers = sheet
     .getRange(1, 1, 1, Math.max(sheet.getLastColumn(), COCKPIT_CONFIG_HEADERS.length))
     .getValues()[0]
@@ -76,7 +34,8 @@ export function readLegacyCockpitConfiguration(): LegacyCockpitConfiguration {
   if (!hasCockpitConfigHeaders(headers)) {
     throw new Error(`${SHEET_NAME} utilise un ancien schéma. Colonne absente : Parameter`);
   }
-  return mapLegacyCockpitConfiguration(sheet.getRange(2, 1, lastRow - 1, 2).getValues());
+  if (lastRow < 2) return { settings: [] };
+  return mapLegacyCockpitConfiguration(sheet.getRange(2, 1, lastRow - 1, 3).getValues());
 }
 
 export function setupLegacyCockpitConfiguration(): void {
@@ -89,12 +48,9 @@ export function setupLegacyCockpitConfiguration(): void {
 
   const sheet = existing ?? spreadsheet.insertSheet(SHEET_NAME);
   sheet.clear();
-  const values = [[...COCKPIT_CONFIG_HEADERS], ...COCKPIT_CONFIG_ROWS];
+  const values = [[...COCKPIT_CONFIG_HEADERS]];
   sheet.getRange(1, 1, values.length, 3).setValues(values);
   sheet.getRange('A1:C1').setFontWeight('bold');
-  sheet.getRange('B3').setNumberFormat('$#,##0.00');
-  sheet.getRange('B4').setNumberFormat('0.00%');
-  sheet.getRange('B5').setNumberFormat('0.00%');
   sheet.setFrozenRows(1);
   sheet.autoResizeColumns(1, 3);
   spreadsheet.toast('Cockpit Config créé.', 'Trading Cockpit', 5);

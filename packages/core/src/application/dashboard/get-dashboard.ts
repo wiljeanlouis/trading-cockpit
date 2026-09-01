@@ -2,8 +2,9 @@ import type {
   AnalyticsDto,
   DashboardDto,
   DashboardSummaryDto,
-  TradingConfigDto
+  PortfolioScopeDto
 } from '@trading-cockpit/contracts';
+import type { PortfolioEquitySummary } from '../trading-account/get-portfolio-equity';
 import type {
   DashboardPositionSnapshot,
   DashboardRepository,
@@ -13,8 +14,12 @@ import type {
 export interface GetDashboardDependencies {
   repository: DashboardRepository;
   getAnalytics: () => AnalyticsDto;
-  getTradingConfig: () => TradingConfigDto;
+  getPortfolioEquity: () => PortfolioEquitySummary;
   now: () => Date;
+}
+
+export interface GetDashboardQuery {
+  scope?: PortfolioScopeDto;
 }
 
 function normalized(value: string | null | undefined): string {
@@ -52,6 +57,11 @@ function isNearBreakout(entry: DashboardWatchlistSnapshot): entry is DashboardWa
   );
 }
 
+function belongsToScope(accountId: string, scope: PortfolioScopeDto): boolean {
+  if (scope.type === 'ALL') return true;
+  return normalized(accountId) === scope.accountId;
+}
+
 function stopDistance(position: DashboardPositionSnapshot): number | null {
   if (
     position.currentPrice !== null &&
@@ -73,16 +83,22 @@ export function dashboardSummaryFrom(dashboard: DashboardDto): DashboardSummaryD
 export function createGetDashboard({
   repository,
   getAnalytics,
-  getTradingConfig,
+  getPortfolioEquity,
   now
 }: GetDashboardDependencies) {
-  return (): DashboardDto => {
+  return (_query: GetDashboardQuery = {}): DashboardDto => {
     const snapshot = repository.readSnapshot();
     const analytics = getAnalytics();
-    const account = getTradingConfig();
+    const equity = getPortfolioEquity();
     const generatedAt = now().toISOString();
     const watchlistWithTicker = snapshot.watchlist.filter((entry) => entry.ticker.trim());
-    const openPositions = snapshot.positions.filter((position) =>
+    const scopedTradePlans = snapshot.tradePlans.filter((plan) =>
+      belongsToScope(plan.accountId, equity.scope)
+    );
+    const scopedPositions = snapshot.positions.filter((position) =>
+      belongsToScope(position.accountId, equity.scope)
+    );
+    const openPositions = scopedPositions.filter((position) =>
       isOpenPositionStatus(position.status)
     );
     const nearBreakout = watchlistWithTicker.filter(isNearBreakout);
@@ -93,7 +109,7 @@ export function createGetDashboard({
       watchlist: watchlistWithTicker.length,
       ready: ready.length,
       nearBreakout: nearBreakout.length,
-      activeTradePlans: snapshot.tradePlans.filter((plan) => isActiveTradePlanStatus(plan.status))
+      activeTradePlans: scopedTradePlans.filter((plan) => isActiveTradePlanStatus(plan.status))
         .length,
       openPositions: openPositions.length,
       closedTrades: analytics.summary.trades
@@ -125,13 +141,31 @@ export function createGetDashboard({
         openPositions: pipeline.openPositions,
         closedTrades: pipeline.closedTrades
       },
-      account,
+      account: {
+        accountName: equity.accountName,
+        accountEquity: equity.realizedEquity,
+        defaultRiskPercent: 0,
+        maxPositionPercent: 0,
+        currency: equity.baseCurrency,
+        scope: equity.scope,
+        accountId: equity.accountId,
+        netExternalCapital: equity.netExternalCapital,
+        realizedPnl: equity.realizedPnl,
+        realizedEquity: equity.realizedEquity,
+        baseCurrency: equity.baseCurrency,
+        accountCount: equity.accountCount
+      },
       pipeline,
       performance: {
         trades: analytics.summary.trades,
         wins: analytics.summary.wins,
+        losses: analytics.summary.losses,
+        breakeven: analytics.summary.breakeven,
         realizedPnl: analytics.summary.totalPnl,
+        netExternalCapital: equity.netExternalCapital,
+        realizedEquity: equity.realizedEquity,
         winRate: analytics.summary.winRate,
+        profitFactor: analytics.summary.profitFactor,
         averageR: analytics.summary.averageR,
         totalR: analytics.summary.totalR
       },

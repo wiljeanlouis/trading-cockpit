@@ -24,13 +24,28 @@ npm install
 Start the React development UI:
 
 ```sh
-npm run dev
+cp .env.example .env
+# Edit .env with local/project values.
+npm run dev:web
+```
+
+By default, local Web uses the mock gateway. To call the local API through the Vite proxy, set:
+
+```text
+VITE_TRADING_COCKPIT_GATEWAY=http
+VITE_TRADING_COCKPIT_API_PROXY_TARGET=http://localhost:8080
 ```
 
 Start the API workspace locally when validating HTTP behavior:
 
 ```sh
-TRADING_COCKPIT_SPREADSHEET_ID=<spreadsheet-id> npm run dev --workspace @trading-cockpit/api
+npm run dev:api
+```
+
+Start the local Web and API processes together:
+
+```sh
+npm run dev
 ```
 
 Local Google Sheets API access uses Application Default Credentials:
@@ -39,6 +54,9 @@ Local Google Sheets API access uses Application Default Credentials:
 gcloud auth application-default login
 gcloud auth application-default set-quota-project <project-id>
 ```
+
+Local Secret Manager access uses the same ADC identity. `TRADING_COCKPIT_FINVIZ_TOKEN_SECRET` must
+be the Secret Manager resource name, not the Finviz token value.
 
 ## 3. Validation
 
@@ -97,7 +115,7 @@ clasp status
 Deploy only after manual review:
 
 ```sh
-clasp push
+npm run deploy:sheets
 ```
 
 Do not run `clasp pull` unless a separate recovery task explicitly requires it.
@@ -124,9 +142,9 @@ From the Google Sheet:
 Trading Cockpit -> Setup -> Validate Trading Cockpit
 ```
 
-Validation is read-only. It checks required sheets, canonical headers, required config rows, and
-known config conventions. A structurally valid workbook may still report manual configuration needs
-for user-owned data such as real accounts or provider credentials.
+Validation is read-only. It checks required sheets, canonical headers, and known config
+conventions. A structurally valid workbook may still report manual configuration needs for
+user-owned data such as real accounts or provider credentials.
 
 Non-empty sheets with incompatible headers are schema mismatches and should be fixed deliberately,
 not silently interpreted through fallback layouts.
@@ -158,8 +176,21 @@ Required runtime configuration includes:
 ```text
 TRADING_COCKPIT_SPREADSHEET_ID=<spreadsheet-id>
 TRADING_COCKPIT_ALLOWED_EMAILS=<comma-separated allowed emails>
+TRADING_COCKPIT_ALLOWED_ORIGINS=<comma-separated allowed origins>
 TRADING_COCKPIT_GOOGLE_CLIENT_ID=<oauth-client-id>
 TRADING_COCKPIT_FINVIZ_TOKEN_SECRET=<secret-resource-name>
+```
+
+Deployment configuration also uses:
+
+```text
+TRADING_COCKPIT_GCP_PROJECT=<google-cloud-project-id>
+TRADING_COCKPIT_GCP_REGION=<cloud-run-region>
+TRADING_COCKPIT_ARTIFACT_REPOSITORY=<artifact-registry-repository>
+TRADING_COCKPIT_CLOUD_RUN_SERVICE=<cloud-run-service-name>
+TRADING_COCKPIT_CLOUD_RUN_SERVICE_ACCOUNT=<runtime-service-account-email>
+TRADING_COCKPIT_CLOUD_RUN_MIN_INSTANCES=0
+TRADING_COCKPIT_CLOUD_RUN_MAX_INSTANCES=1
 ```
 
 Build-time React configuration includes:
@@ -168,8 +199,33 @@ Build-time React configuration includes:
 VITE_TRADING_COCKPIT_GOOGLE_CLIENT_ID=<oauth-client-id>
 ```
 
-Use placeholders in commands and scripts. Never hard-code project-specific secrets into the
-repository.
+The deployment scripts load these values from the root `.env`. Use placeholders in examples and
+scripts. Never hard-code project-specific secrets into the repository.
+
+Build and push an explicit image tag to Artifact Registry:
+
+```sh
+IMAGE_TAG=<tag> npm run build:cloud
+```
+
+Deploy exactly that image tag to Cloud Run:
+
+```sh
+IMAGE_TAG=<tag> npm run deploy:api
+```
+
+For a local production build using `.env`:
+
+```sh
+npm run build:prod
+```
+
+To validate script construction without building or deploying:
+
+```sh
+DRY_RUN=1 IMAGE_TAG=<tag> npm run build:cloud
+DRY_RUN=1 IMAGE_TAG=<tag> npm run deploy:api
+```
 
 ## 9. Authorized Users
 
@@ -195,7 +251,7 @@ A concise end-to-end smoke test after deployment:
 11. Execute the Trade Plan into a Position.
 12. Manage/close the Position with explicit exit data.
 13. Confirm a Journal entry exists.
-14. Confirm Analytics and Dashboard load current backend-calculated data.
+14. Confirm React Analytics and React Dashboard load current backend-calculated data.
 15. If account equity is used, confirm Accounts and Capital Ledger contain the required account
     setup and initial funding.
 

@@ -1,0 +1,22 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --file
+      - apps/api/Dockerfile
+      - --build-arg
+      - VITE_TRADING_COCKPIT_GOOGLE_CLIENT_ID=${_VITE_TRADING_COCKPIT_GOOGLE_CLIENT_ID}
+      - --tag
+      - ${_REGION}-docker.pkg.dev/${_GCP_PROJECT}/${_ARTIFACT_REPOSITORY}/${_SERVICE_NAME}:${_IMAGE_TAG}
+      - .
+
+images:
+  - ${_REGION}-docker.pkg.dev/${_GCP_PROJECT}/${_ARTIFACT_REPOSITORY}/${_SERVICE_NAME}:${_IMAGE_TAG}
+
+substitutions:
+  _GCP_PROJECT: trading-cockpit-poc
+  _REGION: northamerica-northeast1
+  _ARTIFACT_REPOSITORY: trading-cockpit
+  _SERVICE_NAME: trading-cockpit
+  _IMAGE_TAG: manual
+  _VITE_TRADING_COCKPIT_GOOGLE_CLIENT_ID: ''

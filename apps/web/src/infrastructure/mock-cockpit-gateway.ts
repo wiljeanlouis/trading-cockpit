@@ -296,6 +296,7 @@ const DEVELOPMENT_ANALYTICS: AnalyticsDto = {
     winRate: 0.6428571428571429,
     profitFactor: 2.14,
     totalPnl: 1287,
+    realizedPnl: 1287,
     averagePnl: 91.93,
     bestPnl: 240,
     grossProfit: 1820,
@@ -336,11 +337,7 @@ const DEVELOPMENT_ANALYTICS: AnalyticsDto = {
 };
 
 const DEVELOPMENT_TRADING_CONFIG: TradingConfigDto = {
-  accountName: 'Trading',
-  accountEquity: 10_000,
-  defaultRiskPercent: 0.005,
-  maxPositionPercent: 0.1,
-  currency: 'CAD'
+  settings: []
 };
 
 export class MockCockpitGateway implements CockpitGateway {
@@ -402,13 +399,28 @@ export class MockCockpitGateway implements CockpitGateway {
         openPositions: pipeline.openPositions,
         closedTrades
       },
-      account: { ...this.tradingConfig },
+      account: {
+        accountName: 'All Accounts',
+        accountEquity: this.analytics.summary.totalPnl,
+        realizedEquity: this.analytics.summary.totalPnl,
+        netExternalCapital: 0,
+        realizedPnl: this.analytics.summary.totalPnl,
+        accountCount: 2,
+        maxPositionPercent: 0,
+        currency: 'CAD',
+        scope: { type: 'ALL' }
+      },
       pipeline,
       performance: {
         trades: this.analytics.summary.trades,
         wins: this.analytics.summary.wins,
+        losses: this.analytics.summary.losses,
+        breakeven: this.analytics.summary.breakeven,
         realizedPnl: this.analytics.summary.totalPnl,
+        netExternalCapital: 0,
+        realizedEquity: this.analytics.summary.totalPnl,
         winRate: this.analytics.summary.winRate,
+        profitFactor: this.analytics.summary.profitFactor,
         averageR: this.analytics.summary.averageR,
         totalR: this.analytics.summary.totalR
       },

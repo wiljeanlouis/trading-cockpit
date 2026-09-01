@@ -27,15 +27,12 @@ import {
   runSetFinvizToken
 } from '../composition/finviz';
 import type {
-  AnalyticsDto,
   AddMomentumCandidateToWatchlistRequest,
   AddMomentumCandidateToWatchlistResponse,
   CreateTradePlanRequest,
   CreateTradePlanResponse,
   ClosePositionRequest,
   ClosePositionResponse,
-  DashboardDto,
-  DashboardSummaryDto,
   RecordCapitalTransactionRequest,
   RecordCapitalTransactionResponse,
   ExecuteTradePlanRequest,
@@ -50,12 +47,6 @@ import type {
   UpdateTradePlanPlanningRequest,
   UpdateTradePlanPlanningResponse
 } from '@trading-cockpit/contracts';
-import {
-  runGetDashboard,
-  runGetDashboardSummary,
-  runRefreshDashboard
-} from '../composition/dashboard';
-import { runGetAnalytics, runRefreshAnalytics } from '../composition/analytics';
 import { rememberActiveTradingCockpitSpreadsheet } from '../adapters/outbound/google-sheets/trading-cockpit-spreadsheet';
 import { runGetWatchlist } from '../composition/watchlist';
 import {
@@ -73,18 +64,6 @@ import { runGetJournal } from '../composition/journal';
 import { runInitializeTradingCockpit, runValidateTradingCockpit } from '../composition/workbook';
 import type { WorkbookSetupReport } from '../adapters/inbound/google-sheets/ui/trading-cockpit-workbook';
 
-export function getDashboardSummary(): DashboardSummaryDto {
-  return runGetDashboardSummary();
-}
-
-export function getDashboard(): DashboardDto {
-  return runGetDashboard();
-}
-
-export function refreshDashboard(): DashboardDto {
-  return runRefreshDashboard();
-}
-
 export function getWatchlist(): WatchlistDto {
   return runGetWatchlist();
 }
@@ -101,14 +80,6 @@ export function addMomentumCandidateToWatchlist(
 
 export function getTradingAccounts(): TradingAccountsDto {
   return runListTradingAccountsForWeb();
-}
-
-export function getAnalytics(): AnalyticsDto {
-  return runGetAnalytics();
-}
-
-export function refreshAnalytics(): AnalyticsDto {
-  return runRefreshAnalytics();
 }
 
 export function createTradePlan(request: CreateTradePlanRequest): CreateTradePlanResponse {

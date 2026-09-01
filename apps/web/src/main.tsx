@@ -7,12 +7,17 @@ import { createCockpitGateway } from './app/create-cockpit-gateway';
 import './styles.css';
 
 const container = document.getElementById('root');
-if (!container) throw new Error('React root element is missing.');
+
+if (!container) {
+  throw new Error('React root element is missing.');
+}
+
+const useMockGateway = shouldUseMockGateway();
 
 createRoot(container).render(
   <StrictMode>
     <HashRouter>
-      {import.meta.env.DEV ? (
+      {useMockGateway ? (
         <App gateway={createCockpitGateway()} development />
       ) : (
         <AuthenticatedCockpit />
@@ -20,3 +25,27 @@ createRoot(container).render(
     </HashRouter>
   </StrictMode>
 );
+
+function shouldUseMockGateway(): boolean {
+  if (!import.meta.env.DEV) {
+    return false;
+  }
+
+  const gatewayMode = String(
+    import.meta.env.VITE_TRADING_COCKPIT_GATEWAY ?? 'mock'
+  )
+    .trim()
+    .toLowerCase();
+
+  if (gatewayMode === 'mock') {
+    return true;
+  }
+
+  if (gatewayMode === 'http') {
+    return false;
+  }
+
+  throw new Error(
+    `Unsupported VITE_TRADING_COCKPIT_GATEWAY value: ${gatewayMode}. Expected "mock" or "http".`
+  );
+}

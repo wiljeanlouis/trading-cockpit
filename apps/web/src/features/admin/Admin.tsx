@@ -22,7 +22,6 @@ import {
   TableSummary
 } from '@/components/ui/cockpit';
 import {
-  FactGrid,
   formLabelClassName,
   inputClassName,
   noticeClassName,
@@ -51,22 +50,6 @@ interface AdminState {
 }
 
 type CapitalTransactionType = RecordCapitalTransactionRequest['type'];
-
-function formatPercent(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return '—';
-  return new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 2 }).format(
-    value
-  );
-}
-
-function formatMoney(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return '—';
-  return new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 2
-  }).format(value);
-}
 
 function formatBooleanBadgeTone(configured: boolean | null): 'positive' | 'muted' | 'watching' {
   if (configured === null) return 'watching';
@@ -343,7 +326,7 @@ export function Admin({ gateway }: AdminProps) {
           <DataPanel aria-label="Cockpit configuration">
             <TableSummary>
               <span>Cockpit configuration</span>
-              <small>Legacy config sheet, read-only in React</small>
+              <small>Global settings only; accounts own capital and risk</small>
             </TableSummary>
             <div className="grid gap-5 p-5">
               <div className="flex flex-wrap gap-2">
@@ -373,31 +356,36 @@ export function Admin({ gateway }: AdminProps) {
                 </Button>
               </div>
               {state.tradingConfig ? (
-                <FactGrid columns={2}>
-                  <div>
-                    <dt>Account name</dt>
-                    <dd>{state.tradingConfig.accountName}</dd>
-                  </div>
-                  <div>
-                    <dt>Account equity</dt>
-                    <dd>{formatMoney(state.tradingConfig.accountEquity)}</dd>
-                  </div>
-                  <div>
-                    <dt>Default risk %</dt>
-                    <dd>{formatPercent(state.tradingConfig.defaultRiskPercent)}</dd>
-                  </div>
-                  <div>
-                    <dt>Max position %</dt>
-                    <dd>{formatPercent(state.tradingConfig.maxPositionPercent)}</dd>
-                  </div>
-                  <div>
-                    <dt>Currency</dt>
-                    <dd>{state.tradingConfig.currency}</dd>
-                  </div>
-                </FactGrid>
+                state.tradingConfig.settings.length === 0 ? (
+                  <EmptyState icon="⚙" title="No global Cockpit settings">
+                    Account capital comes from Capital Ledger + Journal. Risk % Per Trade comes from
+                    Accounts.
+                  </EmptyState>
+                ) : (
+                  <TableScroll>
+                    <Table className="min-w-[760px] border-collapse tabular-nums">
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Parameter</TableHead>
+                          <TableHead>Value</TableHead>
+                          <TableHead>Description</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {state.tradingConfig.settings.map((setting) => (
+                          <TableRow key={setting.parameter}>
+                            <TableCell>{setting.parameter}</TableCell>
+                            <TableCell>{String(setting.value ?? '—')}</TableCell>
+                            <TableCell>{setting.description || '—'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableScroll>
+                )
               ) : (
                 <EmptyState icon="⚙" title="Cockpit Config missing">
-                  Use Setup Cockpit Config to initialize the legacy configuration sheet.
+                  Use Setup Cockpit Config to initialize the global settings table.
                 </EmptyState>
               )}
             </div>

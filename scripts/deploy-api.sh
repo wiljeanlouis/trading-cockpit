@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/env.sh"
+
+load_root_env
+require_image_tag
+require_env \
+  TRADING_COCKPIT_GCP_PROJECT \
+  TRADING_COCKPIT_GCP_REGION \
+  TRADING_COCKPIT_CLOUD_RUN_SERVICE \
+  TRADING_COCKPIT_CLOUD_RUN_SERVICE_ACCOUNT \
+  TRADING_COCKPIT_SPREADSHEET_ID \
+  TRADING_COCKPIT_GOOGLE_CLIENT_ID \
+  TRADING_COCKPIT_ALLOWED_EMAILS \
+  TRADING_COCKPIT_ALLOWED_ORIGINS \
+  TRADING_COCKPIT_FINVIZ_TOKEN_SECRET
+
+image_uri="$(cloud_image_uri)"
+runtime_env_vars="^|^TRADING_COCKPIT_SPREADSHEET_ID=${TRADING_COCKPIT_SPREADSHEET_ID}|TRADING_COCKPIT_GOOGLE_CLIENT_ID=${TRADING_COCKPIT_GOOGLE_CLIENT_ID}|TRADING_COCKPIT_ALLOWED_EMAILS=${TRADING_COCKPIT_ALLOWED_EMAILS}|TRADING_COCKPIT_ALLOWED_ORIGINS=${TRADING_COCKPIT_ALLOWED_ORIGINS}|TRADING_COCKPIT_FINVIZ_TOKEN_SECRET=${TRADING_COCKPIT_FINVIZ_TOKEN_SECRET}"
+
+if [[ "${DRY_RUN:-}" == "1" ]]; then
+  echo "Cloud Run deploy dry run OK."
+  echo "Project: ${TRADING_COCKPIT_GCP_PROJECT}"
+  echo "Region: ${TRADING_COCKPIT_GCP_REGION}"
+  echo "Service: ${TRADING_COCKPIT_CLOUD_RUN_SERVICE}"
+  echo "Image: ${image_uri}"
+  echo "Runtime env vars: [redacted values]"
+  exit 0
+fi
+
+gcloud run deploy "${TRADING_COCKPIT_CLOUD_RUN_SERVICE}" \
+  --project "${TRADING_COCKPIT_GCP_PROJECT}" \
+  --region "${TRADING_COCKPIT_GCP_REGION}" \
+  --image "${image_uri}" \
+  --service-account "${TRADING_COCKPIT_CLOUD_RUN_SERVICE_ACCOUNT}" \
+  --min-instances "${TRADING_COCKPIT_CLOUD_RUN_MIN_INSTANCES:-0}" \
+  --max-instances "${TRADING_COCKPIT_CLOUD_RUN_MAX_INSTANCES:-1}" \
+  --set-env-vars "${runtime_env_vars}" \
+  --allow-unauthenticated

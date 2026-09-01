@@ -5,7 +5,6 @@ import {
 } from '@trading-cockpit/contracts';
 import {
   COCKPIT_CONFIG_HEADERS,
-  COCKPIT_CONFIG_ROWS,
   COCKPIT_CONFIG_SHEET_NAME,
   hasCockpitConfigHeaders
 } from '../../../outbound/google-sheets/cockpit-config/cockpit-configuration-sheet';
@@ -92,7 +91,8 @@ const FINVIZ_MOMENTUM_HEADERS = [
   ...FINVIZ_MOMENTUM_EXPORT_HEADERS
 ] as const;
 
-const OPTIONAL_REPORT_SHEETS = ['Dashboard', 'Analytics', 'Documentation'] as const;
+const LEGACY_REPORT_SHEETS = ['Dashboard', 'Analytics'] as const;
+const OPTIONAL_REPORT_SHEETS = ['Documentation'] as const;
 const LEGACY_UNUSED_SHEETS = ['Lists', 'Finviz Screener'] as const;
 
 function tableDefinitions(): TableSheetDefinition[] {
@@ -196,6 +196,7 @@ export function initializeTradingCockpitWorkbook(): WorkbookSetupReport {
   }
 
   items.push(initializeMomentumScoreConfig(spreadsheet));
+  items.push(...LEGACY_REPORT_SHEETS.map(skippedLegacy));
   items.push(...OPTIONAL_REPORT_SHEETS.map(skippedOptional));
   items.push(...LEGACY_UNUSED_SHEETS.map(skippedLegacy));
   items.push({
@@ -219,6 +220,7 @@ export function validateTradingCockpitWorkbook(): WorkbookSetupReport {
   }
 
   items.push(validateMomentumScoreConfig(spreadsheet));
+  items.push(...LEGACY_REPORT_SHEETS.map(skippedLegacy));
   items.push(...OPTIONAL_REPORT_SHEETS.map(skippedOptional));
   items.push(...LEGACY_UNUSED_SHEETS.map(skippedLegacy));
   items.push({
@@ -342,13 +344,8 @@ function initializeCockpitConfig(): void {
     spreadsheet.getSheetByName(COCKPIT_CONFIG_SHEET_NAME) ??
     spreadsheet.insertSheet(COCKPIT_CONFIG_SHEET_NAME);
   sheet.clear();
-  sheet
-    .getRange(1, 1, 1 + COCKPIT_CONFIG_ROWS.length, 3)
-    .setValues([[...COCKPIT_CONFIG_HEADERS], ...COCKPIT_CONFIG_ROWS]);
+  sheet.getRange(1, 1, 1, COCKPIT_CONFIG_HEADERS.length).setValues([[...COCKPIT_CONFIG_HEADERS]]);
   sheet.getRange('A1:C1').setFontWeight('bold');
-  sheet.getRange('B3').setNumberFormat('$#,##0.00');
-  sheet.getRange('B4').setNumberFormat('0.00%');
-  sheet.getRange('B5').setNumberFormat('0.00%');
   sheet.setFrozenRows(1);
   sheet.autoResizeColumns(1, 3);
 }
@@ -417,11 +414,6 @@ function validateRequiredRows(sheetName: string, sheet: GoogleAppsScript.Spreads
     const headers = readSheetHeaders(sheet);
     if (!hasCockpitConfigHeaders(headers)) {
       throw new Error('Cockpit Config doit utiliser Parameter / Value / Description en ligne 1.');
-    }
-    const rows = sheet.getRange(2, 1, Math.max(sheet.getLastRow() - 1, 1), 1).getValues();
-    const keys = new Set(rows.map((row) => String(row[0] || '').trim()).filter(Boolean));
-    for (const [parameter] of COCKPIT_CONFIG_ROWS) {
-      if (!keys.has(parameter)) throw new Error(`Cockpit Config paramètre absent : ${parameter}`);
     }
   }
 }

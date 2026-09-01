@@ -245,12 +245,12 @@ Canonical workbook inventory:
 | Signals History       |            DATA | row 1 headers / row 2+ records | Complete historical Finviz snapshots plus Trading Cockpit metadata |
 | Strategies            |          CONFIG | row 1 headers / row 2+ records | Strategy reference/configuration                                   |
 | Accounts              |          CONFIG | row 1 headers / row 2+ records | Trading account identity and risk policy                           |
-| Cockpit Config        |          CONFIG | row 1 headers / row 2+ records | Legacy/global compatibility configuration                          |
+| Cockpit Config        |          CONFIG | row 1 headers / row 2+ records | Global settings table; no account capital/risk authority           |
 | Momentum Score Config |          CONFIG | row 1 headers / row 2+ records | Human-readable Momentum scoring reference                          |
 | Finviz - Momentum     |       TECHNICAL | row 1 headers / row 2+ records | Current Finviz provider projection                                 |
-| Dashboard             | OPTIONAL_REPORT | generated report               | Sheets presentation, not React source of truth                     |
-| Analytics             | OPTIONAL_REPORT | generated report               | Sheets presentation, not React source of truth                     |
 | Documentation         | OPTIONAL_REPORT | generated utility              | Sheets help surface                                                |
+| Dashboard             |   LEGACY_UNUSED | none                           | Retired Sheets report; React Dashboard is the supported UI         |
+| Analytics             |   LEGACY_UNUSED | none                           | Retired Sheets report; React Analytics is the supported UI         |
 | Lists                 |   LEGACY_UNUSED | none                           | Not recreated by canonical setup                                   |
 | Finviz Screener       |   LEGACY_UNUSED | none                           | Not recreated by canonical setup                                   |
 

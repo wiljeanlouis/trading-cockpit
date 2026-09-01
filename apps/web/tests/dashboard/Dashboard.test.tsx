@@ -16,9 +16,13 @@ const dashboard: DashboardDto = {
     closedTrades: 14
   },
   account: {
-    accountName: 'Trading',
+    accountName: 'All Accounts',
     accountEquity: 20_000,
-    defaultRiskPercent: 0.005,
+    realizedEquity: 20_000,
+    netExternalCapital: 18_713,
+    realizedPnl: 1_287,
+    accountCount: 2,
+    scope: { type: 'ALL' },
     maxPositionPercent: 0.1,
     currency: 'CAD'
   },
@@ -34,7 +38,12 @@ const dashboard: DashboardDto = {
   performance: {
     trades: 14,
     wins: 9,
+    losses: 4,
+    breakeven: 1,
     realizedPnl: 1287,
+    netExternalCapital: 18_713,
+    realizedEquity: 20_000,
+    profitFactor: 2.14,
     winRate: 0.64,
     averageR: 1.3,
     totalR: 18.2
@@ -109,15 +118,26 @@ const dashboard: DashboardDto = {
 describe('Dashboard', () => {
   it('loads automatically and renders the backend Dashboard DTO', async () => {
     const load = vi.fn(async () => dashboard);
-    render(<Dashboard gateway={createGatewayStub({ getDashboard: load })} />);
+    const getTradingAccounts = vi.fn(async () => ({
+      accounts: [
+        { id: 'A1', name: 'Main Account', baseCurrency: 'CAD' },
+        { id: 'A2', name: 'Secondary Account', baseCurrency: 'CAD' }
+      ]
+    }));
+    render(<Dashboard gateway={createGatewayStub({ getDashboard: load, getTradingAccounts })} />);
 
     expect(screen.getByText('Loading cockpit data…')).toBeInTheDocument();
     expect(await screen.findByText('12')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /Account Scope/i })).toHaveValue('');
+    expect(screen.getByRole('option', { name: 'A1 — Main Account' })).toBeInTheDocument();
+    expect(screen.getByText('Market pipeline')).toBeInTheDocument();
+    expect(screen.getByText('Account scope')).toBeInTheDocument();
     expect(screen.getByText('Performance')).toBeInTheDocument();
-    expect(screen.getByText('Action Required')).toBeInTheDocument();
+    expect(screen.getByText('Open Position Actions')).toBeInTheDocument();
     expect(screen.getAllByText('BOX').length).toBeGreaterThan(0);
     expect(screen.getByText(/Updated/)).toBeInTheDocument();
-    expect(load).toHaveBeenCalledTimes(1);
+    expect(load).toHaveBeenCalledWith({ accountId: null });
+    expect(getTradingAccounts).toHaveBeenCalledTimes(1);
   });
 
   it('shows a useful error and permits retry', async () => {
@@ -157,5 +177,39 @@ describe('Dashboard', () => {
       summary: { ...dashboard.summary, signals: 13 }
     });
     await waitFor(() => expect(screen.getByText('13')).toBeInTheDocument());
+  });
+
+  it('reloads Dashboard when an individual account is selected and when switching back to All Accounts', async () => {
+    const accountDashboard: DashboardDto = {
+      ...dashboard,
+      account: {
+        ...dashboard.account,
+        accountName: 'Main Account',
+        accountId: 'A1',
+        accountCount: 1,
+        scope: { type: 'ACCOUNT', accountId: 'A1' }
+      },
+      summary: { ...dashboard.summary, activeTradePlans: 1 }
+    };
+    const load = vi.fn(async (query?: { accountId?: string | null }) =>
+      query?.accountId === 'A1' ? accountDashboard : dashboard
+    );
+    render(
+      <Dashboard
+        gateway={createGatewayStub({
+          getDashboard: load,
+          getTradingAccounts: vi.fn(async () => ({
+            accounts: [{ id: 'A1', name: 'Main Account', baseCurrency: 'CAD' }]
+          }))
+        })}
+      />
+    );
+
+    const selector = await screen.findByRole('combobox', { name: /Account Scope/i });
+    fireEvent.change(selector, { target: { value: 'A1' } });
+    await waitFor(() => expect(load).toHaveBeenLastCalledWith({ accountId: 'A1' }));
+
+    fireEvent.change(selector, { target: { value: '' } });
+    await waitFor(() => expect(load).toHaveBeenLastCalledWith({ accountId: null }));
   });
 });

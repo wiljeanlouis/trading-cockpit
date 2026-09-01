@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createGetAccountEquity } from '@trading-cockpit/core/application/trading-account/get-account-equity';
+import { calculatePortfolioEquitySummary } from '@trading-cockpit/core/application/trading-account/get-portfolio-equity';
 import {
   calculateRealizedPnl,
   createAccountEquitySummary
@@ -150,5 +151,80 @@ describe('account realized equity', () => {
     const a1 = useCase('A1', [transaction('A1', 'INITIAL_FUNDING', 100)], []);
     const a2 = useCase('A2', [transaction('A2', 'INITIAL_FUNDING', 100)], []);
     expect([a1('A1').baseCurrency, a2('A2').baseCurrency]).toEqual(['CAD', 'USD']);
+  });
+
+  it('aggregates any dynamic number of same-currency accounts from underlying records', () => {
+    const result = calculatePortfolioEquitySummary({
+      scope: { type: 'ALL' },
+      accounts: [
+        { id: 'A1', name: 'Account 1', baseCurrency: 'CAD' },
+        { id: 'A2', name: 'Account 2', baseCurrency: 'CAD' },
+        { id: 'A3', name: 'Account 3', baseCurrency: 'CAD' }
+      ],
+      transactions: [
+        transaction('A1', 'INITIAL_FUNDING', 10_000),
+        transaction('A1', 'DEPOSIT', 1_000),
+        transaction('A2', 'INITIAL_FUNDING', 20_000),
+        transaction('A2', 'WITHDRAWAL', 2_000),
+        transaction('A3', 'INITIAL_FUNDING', 5_000)
+      ],
+      journalEntries: [
+        journal('A1', 'J1', 500),
+        journal('A2', 'J2', -250),
+        journal('A3', 'J3', 100)
+      ]
+    });
+
+    expect(result).toMatchObject({
+      accountId: null,
+      accountName: 'All Accounts',
+      accountCount: 3,
+      baseCurrency: 'CAD',
+      netExternalCapital: 34_000,
+      realizedPnl: 350,
+      realizedEquity: 34_350
+    });
+  });
+
+  it('calculates one account scope without assuming fixed account slots', () => {
+    const result = calculatePortfolioEquitySummary({
+      scope: { type: 'ACCOUNT', accountId: 'A2' },
+      accounts: [
+        { id: 'A1', name: 'Account 1', baseCurrency: 'CAD' },
+        { id: 'A2', name: 'Account 2', baseCurrency: 'CAD' }
+      ],
+      transactions: [
+        transaction('A1', 'INITIAL_FUNDING', 10_000),
+        transaction('A2', 'INITIAL_FUNDING', 20_000),
+        transaction('A2', 'DEPOSIT', 1_000)
+      ],
+      journalEntries: [journal('A1', 'J1', 500), journal('A2', 'J2', -250)]
+    });
+
+    expect(result).toMatchObject({
+      accountId: 'A2',
+      accountName: 'Account 2',
+      accountCount: 1,
+      netExternalCapital: 21_000,
+      realizedPnl: -250,
+      realizedEquity: 20_750
+    });
+  });
+
+  it('rejects mixed-currency global monetary aggregation instead of doing implicit FX', () => {
+    expect(() =>
+      calculatePortfolioEquitySummary({
+        scope: { type: 'ALL' },
+        accounts: [
+          { id: 'A1', name: 'Account 1', baseCurrency: 'CAD' },
+          { id: 'A2', name: 'Account 2', baseCurrency: 'USD' }
+        ],
+        transactions: [
+          transaction('A1', 'INITIAL_FUNDING', 10_000),
+          transaction('A2', 'INITIAL_FUNDING', 10_000)
+        ],
+        journalEntries: []
+      })
+    ).toThrow('Agrégation monétaire impossible : plusieurs devises de base.');
   });
 });

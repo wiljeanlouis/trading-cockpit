@@ -23,8 +23,17 @@ import type {
   WatchlistDto
 } from '@trading-cockpit/contracts';
 
+export interface AccountScopedQuery {
+  accountId?: string | null;
+}
+
+export interface AnalyticsQuery extends AccountScopedQuery {
+  strategyId?: string | null;
+  strategyVersion?: string | null;
+}
+
 export interface CockpitGateway {
-  getDashboard(): Promise<DashboardDto>;
+  getDashboard(query?: AccountScopedQuery): Promise<DashboardDto>;
   getDashboardSummary(): Promise<DashboardSummaryDto>;
   getWatchlist(): Promise<WatchlistDto>;
   getMomentumRanking(): Promise<MomentumRankingDto>;
@@ -33,7 +42,7 @@ export interface CockpitGateway {
   addMomentumCandidateToWatchlist(
     request: AddMomentumCandidateToWatchlistRequest
   ): Promise<AddMomentumCandidateToWatchlistResponse>;
-  getAnalytics(): Promise<AnalyticsDto>;
+  getAnalytics(query?: AnalyticsQuery): Promise<AnalyticsDto>;
   getTradingAccounts(): Promise<TradingAccountsDto>;
   getTradingConfig(): Promise<TradingConfigDto>;
   setupMomentumRanking(): Promise<void>;

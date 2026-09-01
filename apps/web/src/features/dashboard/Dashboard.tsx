@@ -1,7 +1,24 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { DashboardDto, DashboardSummaryDto } from '@trading-cockpit/contracts';
+import type {
+  DashboardDto,
+  DashboardSummaryDto,
+  TradingAccountDto
+} from '@trading-cockpit/contracts';
 import { Button } from '@/components/ui/button';
+import {
+  DataPanel,
+  ErrorState,
+  Eyebrow,
+  LoadingState,
+  PageActions,
+  PageHeader,
+  PageShell,
+  PageSubtitle,
+  PageTitle,
+  TableSummary,
+  UpdatedAt
+} from '@/components/ui/cockpit';
 import type { CockpitGateway } from '../../infrastructure/cockpit-gateway';
 
 interface DashboardProps {
@@ -10,14 +27,39 @@ interface DashboardProps {
 
 interface DashboardState {
   dashboard: DashboardDto | null;
+  accounts: TradingAccountDto[];
   loading: boolean;
   error: string | null;
 }
 
-const METRICS: Array<{ key: keyof DashboardSummaryDto; label: string; detail: string }> = [
-  { key: 'signals', label: 'Signals', detail: 'Latest momentum snapshot' },
-  { key: 'watchlist', label: 'Watchlist', detail: 'Tracked candidates' },
-  { key: 'ready', label: 'Ready', detail: 'Candidates ready to plan' },
+const GLOBAL_METRICS: Array<{
+  value: (dashboard: DashboardDto) => number;
+  label: string;
+  detail: string;
+}> = [
+  {
+    value: (dashboard) => dashboard.summary.signals,
+    label: 'Signals',
+    detail: 'Latest momentum snapshot'
+  },
+  {
+    value: (dashboard) => dashboard.summary.watchlist,
+    label: 'Watchlist',
+    detail: 'Tracked candidates'
+  },
+  {
+    value: (dashboard) => dashboard.summary.ready,
+    label: 'Ready',
+    detail: 'Candidates ready to plan'
+  },
+  {
+    value: (dashboard) => dashboard.pipeline.nearBreakout,
+    label: 'Near breakout',
+    detail: 'Candidates approaching trigger'
+  }
+];
+
+const ACCOUNT_METRICS: Array<{ key: keyof DashboardSummaryDto; label: string; detail: string }> = [
   { key: 'activeTradePlans', label: 'Trade plans', detail: 'Draft or ready' },
   { key: 'openPositions', label: 'Open positions', detail: 'Currently open' },
   { key: 'closedTrades', label: 'Closed trades', detail: 'Journal entries' }
@@ -48,7 +90,30 @@ function displayPercent(value: number | null | undefined): string {
     : '—';
 }
 
-function Panel({
+function DashboardMetricCard({
+  label,
+  value,
+  detail
+}: {
+  label: string;
+  value: string | number;
+  detail: string;
+}) {
+  return (
+    <article className="relative min-h-[160px] overflow-hidden rounded-[14px] border border-[#1d3045] bg-[linear-gradient(145deg,rgba(18,32,50,0.92),rgba(11,23,38,0.9))] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.18)] transition hover:-translate-y-px hover:border-[#2c4b56]">
+      <div className="absolute inset-x-0 top-0 h-0.5 bg-[linear-gradient(90deg,#4ee1a0,transparent_70%)]" />
+      <p className="mb-[18px] text-[11px] font-extrabold tracking-[0.12em] text-[#8393a9] uppercase">
+        {label}
+      </p>
+      <strong className="mb-3 block text-[42px] tracking-[-0.05em] text-[#f5f8fc] tabular-nums">
+        {value}
+      </strong>
+      <span className="text-[11px] text-[#60728b]">{detail}</span>
+    </article>
+  );
+}
+
+function DetailPanel({
   title,
   children,
   action
@@ -58,15 +123,13 @@ function Panel({
   action?: ReactNode;
 }) {
   return (
-    <section className="rounded-[14px] border border-[#1d3045] bg-[rgba(11,23,38,0.76)] shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
-      <div className="flex items-center justify-between gap-4 border-b border-[#1d3045] px-5 py-4">
-        <h2 className="m-0 text-sm font-extrabold tracking-[0.12em] text-[#d7e3f4] uppercase">
-          {title}
-        </h2>
+    <DataPanel aria-label={title}>
+      <TableSummary>
+        <span>{title}</span>
         {action}
-      </div>
+      </TableSummary>
       {children}
-    </section>
+    </DataPanel>
   );
 }
 
@@ -88,15 +151,20 @@ function CompactRows({
 export function Dashboard({ gateway }: DashboardProps) {
   const [state, setState] = useState<DashboardState>({
     dashboard: null,
+    accounts: [],
     loading: true,
     error: null
   });
+  const [selectedAccountId, setSelectedAccountId] = useState('');
 
   const load = useCallback(async () => {
     setState((current) => ({ ...current, loading: true, error: null }));
     try {
-      const dashboard = await gateway.getDashboard();
-      setState({ dashboard, loading: false, error: null });
+      const [dashboard, accounts] = await Promise.all([
+        gateway.getDashboard({ accountId: selectedAccountId || null }),
+        gateway.getTradingAccounts()
+      ]);
+      setState({ dashboard, accounts: accounts.accounts, loading: false, error: null });
     } catch (error) {
       setState((current) => ({
         ...current,
@@ -104,7 +172,7 @@ export function Dashboard({ gateway }: DashboardProps) {
         error: error instanceof Error ? error.message : String(error)
       }));
     }
-  }, [gateway]);
+  }, [gateway, selectedAccountId]);
 
   useEffect(() => {
     void load();
@@ -112,171 +180,195 @@ export function Dashboard({ gateway }: DashboardProps) {
 
   const dashboard = state.dashboard;
   const currency = dashboard?.account.currency || 'USD';
+  const scopeLabel =
+    selectedAccountId === ''
+      ? 'All Accounts'
+      : state.accounts.find((account) => account.id === selectedAccountId)?.name ||
+        selectedAccountId;
 
   return (
-    <main className="mx-auto max-w-[1260px] px-12 pt-12 pb-16 max-[900px]:px-[26px] max-[900px]:py-9">
-      <header className="mb-[38px] flex items-end justify-between gap-8 max-[620px]:flex-col max-[620px]:items-start">
+    <PageShell>
+      <PageHeader>
         <div>
-          <p className="mb-2 text-[10px] font-extrabold tracking-[0.18em] text-[#4ee1a0] uppercase">
-            Trading overview
-          </p>
-          <h1 className="mb-2 text-[clamp(32px,4vw,48px)] font-bold tracking-[-0.04em]">
-            Dashboard
-          </h1>
-          <p className="m-0 text-sm text-[#7f8fa6]">
-            Current workflow, risk pulse and operational actions
-          </p>
+          <Eyebrow>Trading overview</Eyebrow>
+          <PageTitle>Dashboard</PageTitle>
+          <PageSubtitle>Current workflow, risk pulse and operational actions</PageSubtitle>
         </div>
-        <div className="flex items-center gap-4 max-[620px]:flex-col max-[620px]:items-start">
-          {dashboard && (
-            <p className="m-0 text-[11px] text-[#6f8098]">
-              Updated {formattedTimestamp(dashboard.generatedAt)}
-            </p>
-          )}
+        <PageActions>
+          {dashboard && <UpdatedAt>Updated {formattedTimestamp(dashboard.generatedAt)}</UpdatedAt>}
           <Button onClick={() => void load()} disabled={state.loading}>
             <span aria-hidden="true">↻</span>
             {state.loading ? 'Refreshing' : 'Refresh'}
           </Button>
-        </div>
-      </header>
+        </PageActions>
+      </PageHeader>
 
-      {state.loading && !dashboard && (
-        <section
-          className="flex min-h-[220px] items-center justify-center gap-3 rounded-[14px] border border-[#1c3045] bg-[rgba(11,23,38,0.75)] text-[#8495ac]"
-          aria-live="polite"
-        >
-          <span
-            className="size-[18px] animate-spin rounded-full border-2 border-[#27413f] border-t-[#4ee1a0]"
-            aria-hidden="true"
-          />
-          Loading cockpit data…
-        </section>
-      )}
+      {state.loading && !dashboard && <LoadingState>Loading cockpit data…</LoadingState>}
 
       {state.error && (
-        <section
-          className="flex min-h-[220px] items-center justify-between gap-3 rounded-[14px] border border-[#61343a] bg-[rgba(61,23,31,0.45)] p-6 text-[#ffb9b9]"
-          role="alert"
-        >
-          <div>
-            <strong>Dashboard unavailable</strong>
-            <p className="mt-1.5 mb-0 text-[#bd8a90]">{state.error}</p>
-          </div>
-          <Button variant="retry" onClick={() => void load()}>
-            Try again
-          </Button>
-        </section>
+        <ErrorState title="Dashboard unavailable" error={state.error} onRetry={() => void load()} />
       )}
 
       {dashboard && (
         <div className="space-y-5">
-          <section
-            className="grid grid-cols-3 gap-4 max-[900px]:grid-cols-2 max-[620px]:grid-cols-1"
-            aria-label="Trading workflow summary"
-          >
-            {METRICS.map((metric) => (
-              <article
-                className="relative min-h-[160px] overflow-hidden rounded-[14px] border border-[#1d3045] bg-[linear-gradient(145deg,rgba(18,32,50,0.92),rgba(11,23,38,0.9))] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.18)] transition hover:-translate-y-px hover:border-[#2c4b56]"
-                key={metric.key}
-              >
-                <div className="absolute inset-x-0 top-0 h-0.5 bg-[linear-gradient(90deg,#4ee1a0,transparent_70%)]" />
-                <p className="mb-[18px] text-[11px] font-extrabold tracking-[0.12em] text-[#8393a9] uppercase">
-                  {metric.label}
+          <DataPanel aria-label="Global market pipeline" className="p-4">
+            <div className="mb-4 flex items-end justify-between gap-4 max-[620px]:flex-col max-[620px]:items-start">
+              <div>
+                <h2 className="m-0 text-sm font-extrabold tracking-[0.12em] text-[#d7e3f4] uppercase">
+                  Market pipeline
+                </h2>
+                <p className="mt-1.5 mb-0 text-xs text-[#7f8fa6]">
+                  Global signal discovery and Watchlist state, independent of account scope.
                 </p>
-                <strong className="mb-3 block text-[42px] tracking-[-0.05em] text-[#f5f8fc] tabular-nums">
-                  {dashboard.summary[metric.key]}
-                </strong>
-                <span className="text-[11px] text-[#60728b]">{metric.detail}</span>
-              </article>
-            ))}
-          </section>
-
-          <section className="grid grid-cols-3 gap-4 max-[900px]:grid-cols-1">
-            <Panel title="Performance">
-              <dl className="grid grid-cols-2 gap-4 p-5 text-sm">
-                <div>
-                  <dt className="text-[#7f8fa6]">Realized P&L</dt>
-                  <dd className="m-0 text-xl font-bold text-[#4ee1a0]">
-                    {displayMoney(dashboard.performance.realizedPnl, currency)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-[#7f8fa6]">Win Rate</dt>
-                  <dd className="m-0 text-xl font-bold">
-                    {displayPercent(dashboard.performance.winRate)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-[#7f8fa6]">Average R</dt>
-                  <dd className="m-0 text-xl font-bold">
-                    {displayNumber(dashboard.performance.averageR)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-[#7f8fa6]">Total R</dt>
-                  <dd className="m-0 text-xl font-bold">
-                    {displayNumber(dashboard.performance.totalR)}
-                  </dd>
-                </div>
-              </dl>
-            </Panel>
-
-            <Panel
-              title="Action Required"
-              action={
-                <span className="rounded-full border border-[#2f5f52] px-3 py-1 text-[10px] font-bold tracking-[0.1em] text-[#69f0ae] uppercase">
-                  {dashboard.pipeline.nearBreakout + dashboard.actions.ready.length} active
-                </span>
-              }
-            >
-              <div className="grid grid-cols-3 divide-x divide-[#1d3045] text-center text-sm">
-                <div className="p-5">
-                  <strong className="block text-2xl">
-                    {dashboard.actions.nearBreakout.length}
-                  </strong>
-                  <span className="text-[#7f8fa6]">Near breakout</span>
-                </div>
-                <div className="p-5">
-                  <strong className="block text-2xl">{dashboard.actions.ready.length}</strong>
-                  <span className="text-[#7f8fa6]">Ready</span>
-                </div>
-                <div className="p-5">
-                  <strong className="block text-2xl">
-                    {dashboard.actions.openPositions.length}
-                  </strong>
-                  <span className="text-[#7f8fa6]">Open</span>
-                </div>
               </div>
-            </Panel>
+            </div>
 
-            <Panel title="Account">
-              <dl className="grid grid-cols-2 gap-4 p-5 text-sm">
-                <div>
-                  <dt className="text-[#7f8fa6]">Account</dt>
-                  <dd className="m-0 font-bold">{dashboard.account.accountName || '—'}</dd>
+            <div
+              className="grid grid-cols-4 gap-4 max-[1100px]:grid-cols-2 max-[620px]:grid-cols-1"
+              aria-label="Global workflow summary"
+            >
+              {GLOBAL_METRICS.map((metric) => (
+                <DashboardMetricCard
+                  key={metric.label}
+                  label={metric.label}
+                  value={metric.value(dashboard)}
+                  detail={metric.detail}
+                />
+              ))}
+            </div>
+          </DataPanel>
+
+          <DataPanel aria-label="Account-scoped Dashboard" className="p-4">
+            <div className="mb-4 flex items-end justify-between gap-4 max-[620px]:flex-col max-[620px]:items-start [&_label]:grid [&_label]:gap-[7px] [&_label>span]:text-[9px] [&_label>span]:font-extrabold [&_label>span]:tracking-[0.11em] [&_label>span]:text-[#71869d] [&_label>span]:uppercase [&_select]:min-h-10 [&_select]:min-w-[260px] [&_select]:rounded-lg [&_select]:border [&_select]:border-[#294256] [&_select]:bg-[#0a1826] [&_select]:px-[11px] [&_select]:text-xs [&_select]:text-[#e5edf7] [&_select]:outline-none focus-within:[&_select]:border-[#4ee1a0] focus-within:[&_select]:ring-2 focus-within:[&_select]:ring-[rgba(78,225,160,0.14)] max-[620px]:[&_label]:w-full max-[620px]:[&_select]:w-full">
+              <div>
+                <h2 className="m-0 text-sm font-extrabold tracking-[0.12em] text-[#d7e3f4] uppercase">
+                  Account scope
+                </h2>
+                <p className="mt-1.5 mb-0 text-xs text-[#7f8fa6]">
+                  Trade Plans, Positions, Journal and performance for the selected scope.
+                </p>
+              </div>
+              <label>
+                <span>Account Scope</span>
+                <select
+                  value={selectedAccountId}
+                  onChange={(event) => setSelectedAccountId(event.target.value)}
+                  disabled={state.loading && !dashboard}
+                >
+                  <option value="">All Accounts</option>
+                  {state.accounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.id} — {account.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 max-[900px]:grid-cols-2 max-[620px]:grid-cols-1">
+              {ACCOUNT_METRICS.map((metric) => (
+                <DashboardMetricCard
+                  key={metric.key}
+                  label={metric.label}
+                  value={dashboard.summary[metric.key]}
+                  detail={metric.detail}
+                />
+              ))}
+            </div>
+
+            <div className="mt-4 grid grid-cols-3 gap-4 max-[900px]:grid-cols-1">
+              <DetailPanel title="Performance">
+                <dl className="grid grid-cols-2 gap-4 p-5 text-sm">
+                  <div>
+                    <dt className="text-[#7f8fa6]">Realized Equity</dt>
+                    <dd className="m-0 text-xl font-bold">
+                      {displayMoney(dashboard.performance.realizedEquity, currency)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-[#7f8fa6]">Net External Capital</dt>
+                    <dd className="m-0 text-xl font-bold">
+                      {displayMoney(dashboard.performance.netExternalCapital, currency)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-[#7f8fa6]">Realized P&L</dt>
+                    <dd className="m-0 text-xl font-bold text-[#4ee1a0]">
+                      {displayMoney(dashboard.performance.realizedPnl, currency)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-[#7f8fa6]">Win Rate</dt>
+                    <dd className="m-0 text-xl font-bold">
+                      {displayPercent(dashboard.performance.winRate)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-[#7f8fa6]">Profit Factor</dt>
+                    <dd className="m-0 text-xl font-bold">
+                      {displayNumber(dashboard.performance.profitFactor)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-[#7f8fa6]">Average R</dt>
+                    <dd className="m-0 text-xl font-bold">
+                      {displayNumber(dashboard.performance.averageR)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-[#7f8fa6]">Total R</dt>
+                    <dd className="m-0 text-xl font-bold">
+                      {displayNumber(dashboard.performance.totalR)}
+                    </dd>
+                  </div>
+                </dl>
+              </DetailPanel>
+
+              <DetailPanel
+                title="Open Position Actions"
+                action={
+                  <small className="rounded-full border border-[#2f5f52] px-3 py-1 text-[10px] font-bold tracking-[0.1em] text-[#69f0ae] uppercase">
+                    {dashboard.actions.openPositions.length} active
+                  </small>
+                }
+              >
+                <div className="grid grid-cols-1 text-center text-sm">
+                  <div className="p-5">
+                    <strong className="block text-2xl">
+                      {dashboard.actions.openPositions.length}
+                    </strong>
+                    <span className="text-[#7f8fa6]">Scoped open positions</span>
+                  </div>
                 </div>
-                <div>
-                  <dt className="text-[#7f8fa6]">Currency</dt>
-                  <dd className="m-0 font-bold">{dashboard.account.currency || '—'}</dd>
-                </div>
-                <div>
-                  <dt className="text-[#7f8fa6]">Risk / Trade</dt>
-                  <dd className="m-0 font-bold">
-                    {displayPercent(dashboard.account.defaultRiskPercent)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-[#7f8fa6]">Max Position</dt>
-                  <dd className="m-0 font-bold">
-                    {displayPercent(dashboard.account.maxPositionPercent)}
-                  </dd>
-                </div>
-              </dl>
-            </Panel>
-          </section>
+              </DetailPanel>
+
+              <DetailPanel title="Account">
+                <dl className="grid grid-cols-2 gap-4 p-5 text-sm">
+                  <div>
+                    <dt className="text-[#7f8fa6]">Scope</dt>
+                    <dd className="m-0 font-bold">{scopeLabel}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[#7f8fa6]">Currency</dt>
+                    <dd className="m-0 font-bold">{dashboard.account.currency || '—'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[#7f8fa6]">Accounts</dt>
+                    <dd className="m-0 font-bold">{dashboard.account.accountCount ?? '—'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[#7f8fa6]">Realized Equity</dt>
+                    <dd className="m-0 font-bold">
+                      {displayMoney(dashboard.account.realizedEquity, currency)}
+                    </dd>
+                  </div>
+                </dl>
+              </DetailPanel>
+            </div>
+          </DataPanel>
 
           <section className="grid grid-cols-3 gap-4 max-[1100px]:grid-cols-1">
-            <Panel title="Top Momentum">
+            <DetailPanel title="Top Momentum">
               <CompactRows
                 rows={dashboard.topMomentum}
                 empty="No ranked candidates."
@@ -296,9 +388,9 @@ export function Dashboard({ gateway }: DashboardProps) {
                   );
                 }}
               />
-            </Panel>
+            </DetailPanel>
 
-            <Panel title="Watchlist">
+            <DetailPanel title="Watchlist">
               <CompactRows
                 rows={dashboard.watchlistPreview}
                 empty="No active watchlist candidates."
@@ -320,9 +412,9 @@ export function Dashboard({ gateway }: DashboardProps) {
                   );
                 }}
               />
-            </Panel>
+            </DetailPanel>
 
-            <Panel title="Open Positions">
+            <DetailPanel title="Open Positions">
               <CompactRows
                 rows={dashboard.openPositionsPreview}
                 empty="No open positions."
@@ -344,7 +436,7 @@ export function Dashboard({ gateway }: DashboardProps) {
                   );
                 }}
               />
-            </Panel>
+            </DetailPanel>
           </section>
 
           <section className="mt-5 flex items-center justify-between gap-7 rounded-[14px] border border-[#1b2b3f] bg-[rgba(10,22,37,0.72)] px-7 py-[26px] max-[900px]:flex-col max-[900px]:items-start">
@@ -368,6 +460,6 @@ export function Dashboard({ gateway }: DashboardProps) {
           </section>
         </div>
       )}
-    </main>
+    </PageShell>
   );
 }

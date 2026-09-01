@@ -100,6 +100,124 @@ describe('get Analytics', () => {
       'MOMENTUM_BREAKOUT/V2',
       'QUALITY_DIP/V1'
     ]);
+    expect(result.byAccount).toEqual([
+      expect.objectContaining({
+        accountId: 'A1',
+        trades: 3,
+        wins: 1,
+        losses: 1,
+        breakeven: 1,
+        realizedPnl: 100,
+        totalR: 1
+      })
+    ]);
+  });
+
+  it('filters Analytics by account and recomputes ratios from underlying trades', () => {
+    const result = createGetAnalytics({
+      journalReader: {
+        findAll: () => [
+          journalEntry({
+            id: 'J-A1-WIN',
+            positionId: 'P1',
+            accountId: 'A1',
+            realizedPnl: 100,
+            rMultiple: 1
+          }),
+          journalEntry({
+            id: 'J-A1-LOSS',
+            positionId: 'P2',
+            accountId: 'A1',
+            realizedPnl: -50,
+            rMultiple: -0.5
+          }),
+          journalEntry({
+            id: 'J-A2-WIN',
+            positionId: 'P3',
+            accountId: 'A2',
+            realizedPnl: 900,
+            rMultiple: 9
+          })
+        ]
+      },
+      accounts: [
+        { id: 'A1', name: 'Account 1', baseCurrency: 'CAD' },
+        { id: 'A2', name: 'Account 2', baseCurrency: 'CAD' }
+      ],
+      now: () => new Date('2026-08-28T16:00:00.000Z')
+    })({ scope: { type: 'ACCOUNT', accountId: 'A1' } });
+
+    expect(result.scope).toEqual({ type: 'ACCOUNT', accountId: 'A1' });
+    expect(result.summary).toMatchObject({
+      trades: 2,
+      wins: 1,
+      losses: 1,
+      winRate: 0.5,
+      profitFactor: 2,
+      totalPnl: 50,
+      totalR: 0.5,
+      averageR: 0.25
+    });
+    expect(result.byAccount).toEqual([
+      expect.objectContaining({ accountId: 'A1', accountName: 'Account 1', trades: 2 })
+    ]);
+  });
+
+  it('filters Analytics by account, strategy and strategy version', () => {
+    const result = createGetAnalytics({
+      journalReader: {
+        findAll: () => [
+          journalEntry({
+            id: 'J1',
+            positionId: 'P1',
+            accountId: 'A1',
+            strategyVersion: 'V1',
+            realizedPnl: 100,
+            rMultiple: 1
+          }),
+          journalEntry({
+            id: 'J2',
+            positionId: 'P2',
+            accountId: 'A1',
+            strategyVersion: 'V2',
+            realizedPnl: 200,
+            rMultiple: 2
+          }),
+          journalEntry({
+            id: 'J3',
+            positionId: 'P3',
+            accountId: 'A1',
+            strategyId: 'QUALITY_DIP',
+            strategyName: 'Quality Dip',
+            strategyVersion: 'V1',
+            realizedPnl: 300,
+            rMultiple: 3
+          }),
+          journalEntry({
+            id: 'J4',
+            positionId: 'P4',
+            accountId: 'A2',
+            strategyVersion: 'V1',
+            realizedPnl: 400,
+            rMultiple: 4
+          })
+        ]
+      },
+      now: () => new Date('2026-08-28T16:00:00.000Z')
+    })({
+      scope: { type: 'ACCOUNT', accountId: 'A1' },
+      strategyId: 'MOMENTUM_BREAKOUT',
+      strategyVersion: 'V2'
+    });
+
+    expect(result.summary).toMatchObject({
+      trades: 1,
+      totalPnl: 200,
+      totalR: 2
+    });
+    expect(result.byStrategyVersion).toEqual([
+      expect.objectContaining({ strategyId: 'MOMENTUM_BREAKOUT', version: 'V2', trades: 1 })
+    ]);
   });
 
   it('returns an available empty snapshot when Journal has no closed trades yet', () => {

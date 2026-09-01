@@ -21,18 +21,30 @@ export interface DashboardPipelineDto {
 export interface DashboardPerformanceDto {
   trades: number;
   wins: number;
+  losses?: number;
+  breakeven?: number;
   realizedPnl: number;
+  netExternalCapital?: number;
+  realizedEquity?: number;
   winRate: number;
+  profitFactor?: number | null;
   averageR: number;
   totalR: number;
 }
 
 export interface DashboardAccountDto {
   accountName: string;
-  accountEquity: number;
-  defaultRiskPercent: number;
+  accountEquity?: number;
+  defaultRiskPercent?: number;
   maxPositionPercent: number;
   currency: string;
+  scope?: { type: 'ALL' } | { type: 'ACCOUNT'; accountId: string };
+  accountId?: string | null;
+  netExternalCapital?: number;
+  realizedPnl?: number;
+  realizedEquity?: number;
+  baseCurrency?: string;
+  accountCount?: number;
 }
 
 export interface DashboardMomentumCandidateDto {

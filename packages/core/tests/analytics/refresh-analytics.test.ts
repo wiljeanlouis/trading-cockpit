@@ -14,6 +14,7 @@ function analyticsDto(): AnalyticsDto {
       winRate: 1,
       profitFactor: null,
       totalPnl: 150,
+      realizedPnl: 150,
       averagePnl: 150,
       bestPnl: 150,
       grossProfit: 150,

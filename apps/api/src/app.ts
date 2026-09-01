@@ -127,7 +127,8 @@ export async function handleCloudRunRequest(dependencies: {
   now?: () => Date;
 }): Promise<CloudRunHttpResponse> {
   const method = dependencies.method.toUpperCase();
-  const pathname = requestPathname(dependencies.url);
+  const requestUrl = new URL(dependencies.url, 'http://localhost');
+  const pathname = requestUrl.pathname;
   const headers = normalizeHeaders(dependencies.headers ?? {});
   const cors = evaluateCors({
     origin: headers.origin,
@@ -159,7 +160,7 @@ export async function handleCloudRunRequest(dependencies: {
         allowedEmails: dependencies.auth.allowedEmails,
         verifier: dependencies.tokenVerifier
       });
-      const context = { principal };
+      const context = { principal, query: requestUrl.searchParams };
       const routeResponse = isQueryRoute(method, pathname)
         ? await handleQueryRoute({
             context,
@@ -297,10 +298,6 @@ function normalizeHeaders(headers: IncomingHttpHeadersLike): Record<string, stri
     normalized[key.toLowerCase()] = Array.isArray(value) ? value.join(',') : value;
   }
   return normalized;
-}
-
-function requestPathname(url: string): string {
-  return new URL(url, 'http://localhost').pathname;
 }
 
 function logRejectedCorsOrigin(origin: string | undefined): void {

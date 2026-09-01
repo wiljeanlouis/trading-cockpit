@@ -9,19 +9,25 @@ export async function handleTimedQuery<T>(dependencies: {
   context: RequestContext;
   sheetsClientFactory: () => Promise<SheetsValuesClient>;
   spreadsheetId: string;
-  query: (dependencies: { sheets: RequestScopedSheets; now: () => Date }) => Promise<T>;
+  query: (dependencies: {
+    context: RequestContext;
+    sheets: RequestScopedSheets;
+    now: () => Date;
+  }) => Promise<T>;
   now: () => Date;
   itemCount?: (dto: T) => number;
 }): Promise<CloudRunHttpResponse> {
-  void dependencies.context;
-
   const totalStart = nowMs();
   const sheetsClient = await dependencies.sheetsClientFactory();
   const sheets = createQueryContext({
     sheetsClient,
     spreadsheetId: dependencies.spreadsheetId
   });
-  const dto = await dependencies.query({ sheets, now: dependencies.now });
+  const dto = await dependencies.query({
+    context: dependencies.context,
+    sheets,
+    now: dependencies.now
+  });
   const totalMs = elapsedMs(totalStart);
   const timings = sheets.timings();
   const headers: Record<string, string> = {

@@ -221,6 +221,8 @@ describe('Trading Cockpit workbook setup and validation', () => {
     expect(SIGNALS_HISTORY_HEADERS.length).toBe(6 + FINVIZ_MOMENTUM_EXPORT_HEADERS.length);
     expect(spreadsheet.getSheetByName('Signals History')?.values[1]).toBeUndefined();
     expect(spreadsheet.getSheetByName('Momentum Ranking')?.values[1]).toBeUndefined();
+    expect(spreadsheet.getSheetByName('Dashboard')).toBeNull();
+    expect(spreadsheet.getSheetByName('Analytics')).toBeNull();
     expect(spreadsheet.getSheetByName('Accounts')?.values).toEqual([
       ['Account ID', 'Name', 'Base Currency', 'Risk % Per Trade']
     ]);
@@ -239,7 +241,16 @@ describe('Trading Cockpit workbook setup and validation', () => {
     expect(initialization.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ sheetName: 'Accounts', status: 'MANUAL_CONFIGURATION' }),
-        expect.objectContaining({ sheetName: 'Dashboard', status: 'SKIPPED_OPTIONAL' }),
+        expect.objectContaining({
+          sheetName: 'Dashboard',
+          classification: 'LEGACY_UNUSED',
+          status: 'SKIPPED_OPTIONAL'
+        }),
+        expect.objectContaining({
+          sheetName: 'Analytics',
+          classification: 'LEGACY_UNUSED',
+          status: 'SKIPPED_OPTIONAL'
+        }),
         expect.objectContaining({ sheetName: 'Lists', classification: 'LEGACY_UNUSED' })
       ])
     );

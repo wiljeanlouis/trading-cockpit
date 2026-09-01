@@ -28,10 +28,6 @@ const POSITIONS_SHEET = 'Positions';
 
 const JOURNAL_SHEET = 'Journal';
 
-const DASHBOARD_SHEET = 'Dashboard';
-
-const ANALYTICS_SHEET = 'Analytics';
-
 type Spreadsheet = GoogleAppsScript.Spreadsheet.Spreadsheet;
 type Sheet = GoogleAppsScript.Spreadsheet.Sheet;
 type Range = GoogleAppsScript.Spreadsheet.Range;
@@ -89,9 +85,6 @@ function getSheetHeaders(sheet: Sheet): string[] {
 
 export function applyCockpitTheme(): void {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-
-  themeDashboard(ss);
-  themeAnalytics(ss);
 
   themeRanking(ss);
   themeWatchlist(ss);
@@ -296,157 +289,6 @@ function numericLessRule(
     .setFontColor(fontColor)
     .setRanges([range])
     .build();
-}
-
-/**
- * ============================================================
- * DASHBOARD
- * ============================================================
- */
-
-export function themeDashboard(ss: Spreadsheet): void {
-  const sheet = ss.getSheetByName(DASHBOARD_SHEET);
-
-  if (!sheet) {
-    return;
-  }
-
-  prepareSheet(sheet);
-
-  // ----------------------------------------------------------
-  // TITLE
-  // ----------------------------------------------------------
-
-  sheet
-    .getRange('A1:H1')
-    .setBackground(COCKPIT_THEME.navy)
-    .setFontColor(COCKPIT_THEME.white)
-    .setFontWeight('bold')
-    .setFontSize(20);
-
-  sheet.getRange('A2:H2').setBackground(COCKPIT_THEME.navy).setFontColor('#CBD5E1');
-
-  sheet.setRowHeight(1, 40);
-
-  sheet.setRowHeight(2, 22);
-
-  // ----------------------------------------------------------
-  // SECTIONS
-  // ----------------------------------------------------------
-
-  [4, 8, 12, 16, 25, 34].forEach((row) => {
-    sheet
-      .getRange(row, 1, 1, 8)
-      .setBackground(COCKPIT_THEME.navy)
-      .setFontColor(COCKPIT_THEME.white)
-      .setFontWeight('bold')
-      .setBorder(
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        COCKPIT_THEME.borderStrong,
-        SpreadsheetApp.BorderStyle.SOLID
-      );
-
-    sheet.setRowHeight(row, 27);
-  });
-
-  // ----------------------------------------------------------
-  // ACCOUNT
-  // ----------------------------------------------------------
-
-  styleCard(sheet, 'A5:B6', COCKPIT_THEME.lightBlue);
-
-  styleCard(sheet, 'D5:E6', COCKPIT_THEME.lightBlue);
-
-  styleCard(sheet, 'G5:H6', COCKPIT_THEME.lightBlue);
-
-  // ----------------------------------------------------------
-  // PIPELINE
-  // ----------------------------------------------------------
-
-  styleCard(sheet, 'A9:B10', COCKPIT_THEME.lightGray);
-
-  styleCard(sheet, 'D9:E10', COCKPIT_THEME.lightOrange);
-
-  styleCard(sheet, 'G9:H10', COCKPIT_THEME.lightGreen);
-
-  // ----------------------------------------------------------
-  // PERFORMANCE
-  // ----------------------------------------------------------
-
-  styleCard(sheet, 'A13:B14', COCKPIT_THEME.lightGreen);
-
-  styleCard(sheet, 'D13:E14', COCKPIT_THEME.lightGreen);
-
-  styleCard(sheet, 'G13:H14', COCKPIT_THEME.lightGreen);
-
-  // ----------------------------------------------------------
-  // DASHBOARD TABLES
-  // ----------------------------------------------------------
-
-  styleDashboardTable(sheet, 17, 18, 22);
-
-  styleDashboardTable(sheet, 26, 27, 31);
-
-  styleDashboardTable(sheet, 35, 36, 40);
-}
-
-function styleDashboardTable(
-  sheet: Sheet,
-  headerRow: number,
-  startDataRow: number,
-  endDataRow: number
-): void {
-  sheet
-    .getRange(headerRow, 1, 1, 8)
-    .setBackground(COCKPIT_THEME.blue)
-    .setFontColor(COCKPIT_THEME.white)
-    .setFontWeight('bold')
-    .setBorder(
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      COCKPIT_THEME.borderStrong,
-      SpreadsheetApp.BorderStyle.SOLID
-    );
-
-  const range = sheet.getRange(startDataRow, 1, endDataRow - startDataRow + 1, 8);
-
-  range.setBorder(
-    true,
-    true,
-    true,
-    true,
-    true,
-    true,
-    COCKPIT_THEME.border,
-    SpreadsheetApp.BorderStyle.SOLID
-  );
-
-  applyTableAlternatingRows(sheet, startDataRow, endDataRow, 1, 8);
-}
-
-function styleCard(sheet: Sheet, rangeA1: string, background: string): void {
-  sheet
-    .getRange(rangeA1)
-    .setBackground(background)
-    .setBorder(
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      COCKPIT_THEME.border,
-      SpreadsheetApp.BorderStyle.SOLID
-    );
 }
 
 /**
@@ -704,74 +546,6 @@ export function themeJournal(ss: Spreadsheet): void {
 
     numericLessRule(rRange, 0, COCKPIT_THEME.lightRed, COCKPIT_THEME.red)
   ]);
-}
-
-/**
- * ============================================================
- * ANALYTICS
- * ============================================================
- */
-
-export function themeAnalytics(ss: Spreadsheet): void {
-  const sheet = ss.getSheetByName(ANALYTICS_SHEET);
-
-  if (!sheet) {
-    return;
-  }
-
-  prepareSheet(sheet);
-
-  sheet
-    .getRange('A1:H1')
-    .setBackground(COCKPIT_THEME.navy)
-    .setFontColor(COCKPIT_THEME.white)
-    .setFontWeight('bold')
-    .setFontSize(20)
-    .setHorizontalAlignment('center');
-
-  sheet
-    .getRange('A2:H2')
-    .setBackground(COCKPIT_THEME.navy)
-    .setFontColor('#CBD5E1')
-    .setHorizontalAlignment('center');
-
-  [4, 8, 12, 17].forEach((row) => {
-    sheet
-      .getRange(row, 1, 1, 8)
-      .setBackground(COCKPIT_THEME.navy)
-      .setFontColor(COCKPIT_THEME.white)
-      .setFontWeight('bold')
-      .setBorder(
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        COCKPIT_THEME.borderStrong,
-        SpreadsheetApp.BorderStyle.SOLID
-      );
-  });
-
-  ['A5:B6', 'D5:E6', 'G5:H6'].forEach((range) => styleCard(sheet, range, COCKPIT_THEME.lightBlue));
-
-  ['A9:B10', 'D9:E10', 'G9:H10'].forEach((range) =>
-    styleCard(sheet, range, COCKPIT_THEME.lightGreen)
-  );
-
-  ['A13:B14', 'D13:E14', 'G13:H14'].forEach((range) =>
-    styleCard(sheet, range, COCKPIT_THEME.lightBlue)
-  );
-
-  if (sheet.getLastRow() >= 18) {
-    const numberOfColumns = Math.min(7, sheet.getLastColumn());
-
-    styleDataTable(sheet, 18, 1, numberOfColumns);
-
-    if (sheet.getLastRow() > 18) {
-      applyTableAlternatingRows(sheet, 19, sheet.getLastRow(), 1, numberOfColumns);
-    }
-  }
 }
 
 /**
