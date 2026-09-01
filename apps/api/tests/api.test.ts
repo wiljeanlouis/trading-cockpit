@@ -880,6 +880,165 @@ describe('Cloud Run Trading Cockpit API', () => {
     );
   });
 
+  it('creates a funded trading account with one composite Accounts and Capital Ledger write', async () => {
+    const client = mutableSheetsClientByRange(
+      queryFixtureByRange({
+        accounts: [],
+        capitalLedger: []
+      })
+    );
+
+    const response = await handleCloudRunRequest({
+      method: 'POST',
+      url: '/api/admin/trading-accounts/funded',
+      headers: authorizationHeaders(),
+      body: JSON.stringify({
+        accountId: 'a2',
+        name: 'Second Account',
+        baseCurrency: 'usd',
+        riskPercentPerTrade: 0.01,
+        initialAmount: 25_000
+      }),
+      spreadsheetId: 'spreadsheet-id',
+      auth: testAuthConfig(),
+      cors: testCorsConfig(),
+      sheetsClientFactory: async () => client,
+      tokenVerifier: authorizedTokenVerifier(),
+      now: () => new Date('2026-09-01T12:00:00.000Z')
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual({
+      id: 'A2',
+      name: 'Second Account',
+      baseCurrency: 'USD',
+      riskPercentPerTrade: 0.01
+    });
+    expect(client.batchUpdateValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: [
+          expect.objectContaining({
+            range: "'Accounts'!A2:D2",
+            values: [['A2', 'Second Account', 'USD', 0.01]]
+          }),
+          expect.objectContaining({
+            range: "'Capital Ledger'!A2:F2",
+            values: [
+              [
+                expect.any(String),
+                'A2',
+                'INITIAL_FUNDING',
+                25_000,
+                '2026-09-01 12:00:00',
+                'Initial funding'
+              ]
+            ]
+          })
+        ]
+      })
+    );
+    expect(client.appendValues).not.toHaveBeenCalled();
+  });
+
+  it('returns an Admin overview with accounts, financial summaries and ledger history', async () => {
+    const accountHeaders = [...SHEET_DEFINITIONS.accounts.requiredHeaders];
+    const capitalLedgerHeaders = [
+      'Transaction ID',
+      'Account ID',
+      'Type',
+      'Amount',
+      'Occurred At',
+      'Note'
+    ];
+    const client = mutableSheetsClientByRange(
+      queryFixtureByRange({
+        accounts: [
+          rowForHeaders(accountHeaders, {
+            'Account ID': 'A1',
+            Name: 'Main Account',
+            'Base Currency': 'CAD',
+            'Risk % Per Trade': 0.005
+          }),
+          rowForHeaders(accountHeaders, {
+            'Account ID': 'A2',
+            Name: 'Second Account',
+            'Base Currency': 'CAD',
+            'Risk % Per Trade': 0.01
+          })
+        ],
+        capitalLedger: [
+          rowForHeaders(capitalLedgerHeaders, {
+            'Transaction ID': 'CL-1',
+            'Account ID': 'A1',
+            Type: 'INITIAL_FUNDING',
+            Amount: 10_000,
+            'Occurred At': sheetsSerialDate('2026-08-01T12:00:00.000Z'),
+            Note: 'Initial'
+          }),
+          rowForHeaders(capitalLedgerHeaders, {
+            'Transaction ID': 'CL-2',
+            'Account ID': 'A1',
+            Type: 'DEPOSIT',
+            Amount: 500,
+            'Occurred At': sheetsSerialDate('2026-09-01T12:00:00.000Z'),
+            Note: 'Top up'
+          }),
+          rowForHeaders(capitalLedgerHeaders, {
+            'Transaction ID': 'CL-3',
+            'Account ID': 'A2',
+            Type: 'INITIAL_FUNDING',
+            Amount: 5_000,
+            'Occurred At': sheetsSerialDate('2026-08-01T12:00:00.000Z'),
+            Note: 'Initial'
+          })
+        ]
+      })
+    );
+
+    const response = await handleCloudRunRequest({
+      method: 'GET',
+      url: '/api/admin/overview',
+      headers: authorizationHeaders(),
+      spreadsheetId: 'spreadsheet-id',
+      auth: testAuthConfig(),
+      cors: testCorsConfig(),
+      sheetsClientFactory: async () => client,
+      tokenVerifier: authorizedTokenVerifier()
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toMatchObject({
+      finviz: { configured: false },
+      accounts: [
+        expect.objectContaining({
+          id: 'A1',
+          riskPercentPerTrade: 0.005,
+          financialSummary: expect.objectContaining({
+            initialFunding: 10_000,
+            deposits: 500,
+            withdrawals: 0,
+            netExternalCapital: 10_500,
+            realizedPnl: 40,
+            realizedEquity: 10_540
+          }),
+          capitalTransactions: [
+            expect.objectContaining({ transactionId: 'CL-2', type: 'DEPOSIT' }),
+            expect.objectContaining({ transactionId: 'CL-1', type: 'INITIAL_FUNDING' })
+          ]
+        }),
+        expect.objectContaining({
+          id: 'A2',
+          financialSummary: expect.objectContaining({
+            initialFunding: 5_000,
+            netExternalCapital: 5_000,
+            realizedPnl: 0
+          }),
+          capitalTransactions: [expect.objectContaining({ transactionId: 'CL-3' })]
+        })
+      ]
+    });
+  });
+
   it('sets up Trading Accounts sheets with headers without exposing Sheets UI behavior', async () => {
     const client = mutableSheetsClientByRange(queryFixtureByRange());
 

@@ -62,7 +62,9 @@ describe('Analytics', () => {
   it('loads and refreshes directly from getAnalytics without materializing the sheet projection', async () => {
     const getAnalytics = vi.fn(async () => analytics);
     const getTradingAccounts = vi.fn(async () => ({
-      accounts: [{ id: 'A1', name: 'Main Account', baseCurrency: 'CAD' }]
+      accounts: [
+        { id: 'A1', name: 'Main Account', baseCurrency: 'CAD', riskPercentPerTrade: 0.005 }
+      ]
     }));
     render(<Analytics gateway={createGatewayStub({ getAnalytics, getTradingAccounts })} />);
 
@@ -85,7 +87,9 @@ describe('Analytics', () => {
         gateway={createGatewayStub({
           getAnalytics,
           getTradingAccounts: vi.fn(async () => ({
-            accounts: [{ id: 'A1', name: 'Main Account', baseCurrency: 'CAD' }]
+            accounts: [
+              { id: 'A1', name: 'Main Account', baseCurrency: 'CAD', riskPercentPerTrade: 0.005 }
+            ]
           }))
         })}
       />

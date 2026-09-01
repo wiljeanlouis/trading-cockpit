@@ -2,14 +2,18 @@ import type {
   AnalyticsDto,
   AddMomentumCandidateToWatchlistRequest,
   AddMomentumCandidateToWatchlistResponse,
+  AdminOverviewDto,
   CreateTradePlanRequest,
   CreateTradePlanResponse,
   ClosePositionRequest,
   ClosePositionResponse,
+  CreateFundedTradingAccountRequest,
+  CreateTradingAccountRequest,
   DashboardDto,
   DashboardSummaryDto,
   RecordCapitalTransactionRequest,
   RecordCapitalTransactionResponse,
+  CapitalTransactionDto,
   ExecuteTradePlanRequest,
   ExecuteTradePlanResponse,
   OpenPositionsDto,
@@ -22,9 +26,12 @@ import type {
   TradePlansDto,
   TradingConfigDto,
   TradingAccountsDto,
+  TradingAccountMutationResponse,
+  AdminAccountDto,
   WatchlistDto,
   UpdateTradePlanPlanningRequest,
-  UpdateTradePlanPlanningResponse
+  UpdateTradePlanPlanningResponse,
+  UpdateTradingAccountRequest
 } from '@trading-cockpit/contracts';
 import type { CockpitGateway } from './cockpit-gateway';
 
@@ -349,6 +356,64 @@ export class MockCockpitGateway implements CockpitGateway {
   private analytics = { ...DEVELOPMENT_ANALYTICS };
   private finvizConfigured = true;
   private tradingConfig = { ...DEVELOPMENT_TRADING_CONFIG };
+  private accounts: AdminAccountDto[] = [
+    {
+      id: 'DEMO-CAD',
+      name: 'Development CAD',
+      baseCurrency: 'CAD',
+      riskPercentPerTrade: 0.005,
+      financialSummary: {
+        initialFunding: 10_000,
+        deposits: 1_000,
+        withdrawals: 0,
+        netExternalCapital: 11_000,
+        realizedPnl: 287,
+        realizedEquity: 11_287
+      },
+      capitalTransactions: [
+        {
+          transactionId: 'CT-DEMO-CAD-1',
+          accountId: 'DEMO-CAD',
+          type: 'INITIAL_FUNDING',
+          amount: 10_000,
+          occurredAt: '2026-08-01T12:00:00.000Z',
+          note: 'Initial funding'
+        },
+        {
+          transactionId: 'CT-DEMO-CAD-2',
+          accountId: 'DEMO-CAD',
+          type: 'DEPOSIT',
+          amount: 1_000,
+          occurredAt: '2026-08-15T12:00:00.000Z',
+          note: 'Monthly contribution'
+        }
+      ]
+    },
+    {
+      id: 'DEMO-USD',
+      name: 'Development USD',
+      baseCurrency: 'USD',
+      riskPercentPerTrade: 0.01,
+      financialSummary: {
+        initialFunding: 5_000,
+        deposits: 0,
+        withdrawals: 0,
+        netExternalCapital: 5_000,
+        realizedPnl: 0,
+        realizedEquity: 5_000
+      },
+      capitalTransactions: [
+        {
+          transactionId: 'CT-DEMO-USD-1',
+          accountId: 'DEMO-USD',
+          type: 'INITIAL_FUNDING',
+          amount: 5_000,
+          occurredAt: '2026-08-01T12:00:00.000Z',
+          note: 'Initial funding'
+        }
+      ]
+    }
+  ];
 
   async getDashboard(): Promise<DashboardDto> {
     await new Promise((resolve) => setTimeout(resolve, 250));
@@ -520,10 +585,24 @@ export class MockCockpitGateway implements CockpitGateway {
   async getTradingAccounts(): Promise<TradingAccountsDto> {
     await new Promise((resolve) => setTimeout(resolve, 150));
     return {
-      accounts: [
-        { id: 'DEMO-CAD', name: 'Development CAD', baseCurrency: 'CAD' },
-        { id: 'DEMO-USD', name: 'Development USD', baseCurrency: 'USD' }
-      ]
+      accounts: this.accounts.map(({ id, name, baseCurrency, riskPercentPerTrade }) => ({
+        id,
+        name,
+        baseCurrency,
+        riskPercentPerTrade
+      }))
+    };
+  }
+
+  async getAdminOverview(): Promise<AdminOverviewDto> {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    return {
+      finviz: { configured: this.finvizConfigured },
+      accounts: this.accounts.map((account) => ({
+        ...account,
+        financialSummary: { ...account.financialSummary },
+        capitalTransactions: account.capitalTransactions.map((transaction) => ({ ...transaction }))
+      }))
     };
   }
 
@@ -617,11 +696,71 @@ export class MockCockpitGateway implements CockpitGateway {
     await new Promise((resolve) => setTimeout(resolve, 150));
   }
 
+  async createTradingAccount(
+    request: CreateTradingAccountRequest
+  ): Promise<TradingAccountMutationResponse> {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    return {
+      id: request.accountId.trim().toUpperCase(),
+      name: request.name.trim(),
+      baseCurrency: request.baseCurrency.trim().toUpperCase(),
+      riskPercentPerTrade: request.riskPercentPerTrade
+    };
+  }
+
+  async createFundedTradingAccount(
+    request: CreateFundedTradingAccountRequest
+  ): Promise<TradingAccountMutationResponse> {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    const account: AdminAccountDto = {
+      id: request.accountId.trim().toUpperCase(),
+      name: request.name.trim(),
+      baseCurrency: request.baseCurrency.trim().toUpperCase(),
+      riskPercentPerTrade: request.riskPercentPerTrade,
+      financialSummary: {
+        initialFunding: request.initialAmount,
+        deposits: 0,
+        withdrawals: 0,
+        netExternalCapital: request.initialAmount,
+        realizedPnl: 0,
+        realizedEquity: request.initialAmount
+      },
+      capitalTransactions: [
+        {
+          transactionId: `CT-INITIAL_FUNDING-${request.accountId}-${Date.now()}`,
+          accountId: request.accountId.trim().toUpperCase(),
+          type: 'INITIAL_FUNDING',
+          amount: request.initialAmount,
+          occurredAt: new Date().toISOString(),
+          note: 'Initial funding'
+        }
+      ]
+    };
+    this.accounts.push(account);
+    return account;
+  }
+
+  async updateTradingAccount(
+    request: UpdateTradingAccountRequest
+  ): Promise<TradingAccountMutationResponse> {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    const updated = {
+      id: request.accountId.trim().toUpperCase(),
+      name: request.name.trim(),
+      baseCurrency: request.baseCurrency.trim().toUpperCase(),
+      riskPercentPerTrade: request.riskPercentPerTrade
+    };
+    this.accounts = this.accounts.map((account) =>
+      account.id === updated.id ? { ...account, ...updated } : account
+    );
+    return updated;
+  }
+
   async recordCapitalTransaction(
     request: RecordCapitalTransactionRequest
   ): Promise<RecordCapitalTransactionResponse> {
     await new Promise((resolve) => setTimeout(resolve, 200));
-    return {
+    const transaction: CapitalTransactionDto = {
       transactionId: `CT-${request.type}-${request.accountId}-${Date.now()}`,
       accountId: request.accountId,
       type: request.type,
@@ -629,6 +768,19 @@ export class MockCockpitGateway implements CockpitGateway {
       occurredAt: new Date().toISOString(),
       note: request.note ?? ''
     };
+    const account = this.accounts.find((candidate) => candidate.id === request.accountId);
+    if (account) {
+      account.capitalTransactions.unshift(transaction);
+      if (request.type === 'DEPOSIT') account.financialSummary.deposits += request.amount;
+      if (request.type === 'WITHDRAWAL') account.financialSummary.withdrawals += request.amount;
+      account.financialSummary.netExternalCapital =
+        account.financialSummary.initialFunding +
+        account.financialSummary.deposits -
+        account.financialSummary.withdrawals;
+      account.financialSummary.realizedEquity =
+        account.financialSummary.netExternalCapital + account.financialSummary.realizedPnl;
+    }
+    return transaction;
   }
 
   async checkFinvizAuth(): Promise<boolean> {

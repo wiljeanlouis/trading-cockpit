@@ -1,4 +1,5 @@
 import {
+  getAdminOverviewForCloudRun,
   getTradingAccountsForCloudRun,
   getTradingConfigForCloudRun,
   validateStrategiesForCloudRun
@@ -107,6 +108,12 @@ const routeByPath: Record<string, QueryRouteHandler> = {
     handleTimedQuery({
       ...dependencies,
       query: getTradingAccountsForCloudRun,
+      itemCount: (dto) => dto.accounts.length
+    }),
+  '/api/admin/overview': (dependencies) =>
+    handleTimedQuery({
+      ...dependencies,
+      query: getAdminOverviewForCloudRun,
       itemCount: (dto) => dto.accounts.length
     }),
   '/api/admin/trading-config': (dependencies) =>

@@ -21,11 +21,19 @@ export type {
   PortfolioScopeDto
 } from './analytics';
 export type {
+  AdminAccountDto,
+  AdminOverviewDto,
+  CapitalTransactionDto,
   CapitalTransactionType,
+  CreateFundedTradingAccountRequest,
+  CreateTradingAccountRequest,
   RecordCapitalTransactionRequest,
   RecordCapitalTransactionResponse,
+  AccountFinancialSummaryDto,
   TradingConfigDto,
-  TradingConfigSettingDto
+  TradingConfigSettingDto,
+  TradingAccountMutationResponse,
+  UpdateTradingAccountRequest
 } from './admin';
 export type {
   AddMomentumCandidateToWatchlistRequest,

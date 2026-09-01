@@ -1,9 +1,12 @@
 import type {
   AddMomentumCandidateToWatchlistRequest,
   AddMomentumCandidateToWatchlistResponse,
+  AdminOverviewDto,
   AnalyticsDto,
   ClosePositionRequest,
   ClosePositionResponse,
+  CreateFundedTradingAccountRequest,
+  CreateTradingAccountRequest,
   CreateTradePlanRequest,
   CreateTradePlanResponse,
   DashboardDto,
@@ -17,7 +20,9 @@ import type {
   RecordCapitalTransactionResponse,
   TradePlansDto,
   TradingAccountsDto,
+  TradingAccountMutationResponse,
   TradingConfigDto,
+  UpdateTradingAccountRequest,
   UpdateTradePlanPlanningRequest,
   UpdateTradePlanPlanningResponse,
   WatchlistDto
@@ -91,6 +96,10 @@ export class HttpCockpitGateway implements CockpitGateway {
     return this.get(withQuery('/api/analytics', query));
   }
 
+  getAdminOverview(): Promise<AdminOverviewDto> {
+    return this.get('/api/admin/overview');
+  }
+
   getTradingAccounts(): Promise<TradingAccountsDto> {
     return this.get('/api/admin/trading-accounts');
   }
@@ -117,6 +126,27 @@ export class HttpCockpitGateway implements CockpitGateway {
 
   async setupTradingAccounts(): Promise<void> {
     await this.post('/api/admin/trading-accounts/setup');
+  }
+
+  createTradingAccount(
+    request: CreateTradingAccountRequest
+  ): Promise<TradingAccountMutationResponse> {
+    return this.post('/api/admin/trading-accounts', request);
+  }
+
+  createFundedTradingAccount(
+    request: CreateFundedTradingAccountRequest
+  ): Promise<TradingAccountMutationResponse> {
+    return this.post('/api/admin/trading-accounts/funded', request);
+  }
+
+  updateTradingAccount(
+    request: UpdateTradingAccountRequest
+  ): Promise<TradingAccountMutationResponse> {
+    return this.patch(
+      `/api/admin/trading-accounts/${encodeURIComponent(request.accountId)}`,
+      request
+    );
   }
 
   recordCapitalTransaction(

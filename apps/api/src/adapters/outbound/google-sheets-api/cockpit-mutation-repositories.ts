@@ -13,7 +13,10 @@ import {
   createCapitalTransaction,
   type CapitalTransaction
 } from '@trading-cockpit/core/domain/capital-transaction';
-import type { TradingAccount } from '@trading-cockpit/core/domain/trading-account';
+import type {
+  TradingAccount,
+  TradingAccountRecord
+} from '@trading-cockpit/core/domain/trading-account';
 import type { TradingAccountRiskPolicy } from '@trading-cockpit/core/domain/trading-account-risk-policy';
 import type { RuntimePort } from '@trading-cockpit/core/ports/outbound/runtime-port';
 import type { StrategyRepository } from '@trading-cockpit/core/ports/outbound/strategy-repository';
@@ -23,6 +26,10 @@ import type { PositionRepository } from '@trading-cockpit/core/ports/outbound/po
 import type { JournalRepository } from '@trading-cockpit/core/ports/outbound/journal-repository';
 import type { CapitalTransactionRepository } from '@trading-cockpit/core/ports/outbound/capital-transaction-repository';
 import type { TradingAccountRepository } from '@trading-cockpit/core/ports/outbound/trading-account-repository';
+import type {
+  TradingAccountManagementRepository,
+  TradingAccountReferenceSummary
+} from '@trading-cockpit/core/ports/outbound/trading-account-management-repository';
 import type { TradingAccountRiskPolicyRepository } from '@trading-cockpit/core/ports/outbound/trading-account-risk-policy-repository';
 import type { MomentumRankingProjection } from '@trading-cockpit/core/ports/outbound/momentum-ranking-projection';
 import type {
@@ -55,7 +62,8 @@ import {
   requireColumn,
   textValue,
   valueByHeader,
-  type RequestScopedSheets
+  type RequestScopedSheets,
+  type SheetTable
 } from './sheets-api-table';
 
 export const CAPITAL_LEDGER_HEADERS = [
@@ -453,6 +461,137 @@ export class LoadedTradingAccountRepository implements TradingAccountRepository 
   findAll(): TradingAccount[] {
     return [...this.accounts];
   }
+}
+
+export class CloudRunTradingAccountManagementRepository implements TradingAccountManagementRepository {
+  private accounts: TradingAccount[] | null = null;
+  private accountTable: SheetTable | null = null;
+  private referenceTables: SheetTable[] = [];
+
+  constructor(private readonly context: MutationContext) {}
+
+  async load(): Promise<this> {
+    await this.context.sheets.batchLoad([
+      SHEET_DEFINITIONS.accounts,
+      SHEET_DEFINITIONS.tradePlans,
+      SHEET_DEFINITIONS.positions,
+      SHEET_DEFINITIONS.journal,
+      SHEET_DEFINITIONS.capitalLedger
+    ]);
+    this.accounts = await readTradingAccounts(this.context.sheets);
+    this.accountTable = (await this.context.sheets.getTable(SHEET_DEFINITIONS.accounts)).table;
+    this.referenceTables = await Promise.all(
+      [
+        SHEET_DEFINITIONS.tradePlans,
+        SHEET_DEFINITIONS.positions,
+        SHEET_DEFINITIONS.journal,
+        SHEET_DEFINITIONS.capitalLedger
+      ].map(async (definition) => (await this.context.sheets.getTable(definition)).table)
+    );
+    return this;
+  }
+
+  findById(accountId: string) {
+    const expected = textValue(accountId).toUpperCase();
+    const account = this.loaded().find((candidate) => candidate.id === expected);
+    if (!account) return null;
+    const riskPercentPerTrade = this.riskPercentByAccountId().get(account.id);
+    if (!Number.isFinite(riskPercentPerTrade)) {
+      throw new Error(`Risk % Per Trade absent pour ${account.id}.`);
+    }
+    return { ...account, riskPercentPerTrade: riskPercentPerTrade as number };
+  }
+
+  create(account: TradingAccountRecord): void {
+    this.context.writer.append(SHEET_DEFINITIONS.accounts.range, [tradingAccountToRow(account)]);
+    this.accounts = [...this.loaded(), account];
+  }
+
+  createFunded(account: TradingAccountRecord, initialFunding: CapitalTransaction): void {
+    const accountRowNumber = this.loadedAccountTable().rows.length + 2;
+    const capitalRowNumber = this.referenceTables[3].rows.length + 2;
+    this.context.writer.batchUpdate([
+      {
+        range: rowRange(SHEET_DEFINITIONS.accounts.sheetName, accountRowNumber, 1, 4),
+        values: [tradingAccountToRow(account)]
+      },
+      {
+        range: rowRange(SHEET_DEFINITIONS.capitalLedger.sheetName, capitalRowNumber, 1, 6),
+        values: [capitalTransactionToRow(initialFunding)]
+      }
+    ]);
+    this.accounts = [...this.loaded(), account];
+    this.accountTable = {
+      ...this.loadedAccountTable(),
+      rows: [...this.loadedAccountTable().rows, tradingAccountToRow(account)]
+    };
+    this.referenceTables[3] = {
+      ...this.referenceTables[3],
+      rows: [...this.referenceTables[3].rows, capitalTransactionToRow(initialFunding)]
+    };
+  }
+
+  update(account: TradingAccountRecord): void {
+    const rowNumber = this.requireRowNumberById(account.id);
+    this.context.writer.update(rowRange(SHEET_DEFINITIONS.accounts.sheetName, rowNumber, 1, 4), [
+      tradingAccountToRow(account)
+    ]);
+    this.accounts = this.loaded().map((candidate) =>
+      candidate.id === account.id ? account : candidate
+    );
+  }
+
+  countReferences(accountId: string): TradingAccountReferenceSummary {
+    const expected = textValue(accountId).toUpperCase();
+    return {
+      tradePlans: this.countAccountReferences(this.referenceTables[0], expected),
+      positions: this.countAccountReferences(this.referenceTables[1], expected),
+      journalEntries: this.countAccountReferences(this.referenceTables[2], expected),
+      capitalTransactions: this.countAccountReferences(this.referenceTables[3], expected)
+    };
+  }
+
+  private loaded(): TradingAccount[] {
+    if (!this.accounts) throw new Error('Trading Account repository must be loaded before use.');
+    return this.accounts;
+  }
+
+  private riskPercentByAccountId(): Map<string, number> {
+    const table = this.loadedAccountTable();
+    return new Map(
+      table.rows
+        .filter((row) => row.some((value) => textValue(value)))
+        .map((row) => [
+          textValue(valueByHeader(table.headers, row, 'Account ID')).toUpperCase(),
+          Number(valueByHeader(table.headers, row, 'Risk % Per Trade'))
+        ])
+    );
+  }
+
+  private requireRowNumberById(id: string): number {
+    const index = this.loaded().findIndex((account) => account.id === textValue(id).toUpperCase());
+    if (index < 0) throw new Error(`Trading Account introuvable : ${id}`);
+    return index + 2;
+  }
+
+  private countAccountReferences(table: SheetTable | undefined, accountId: string): number {
+    if (!table) throw new Error('Trading Account reference tables must be loaded before use.');
+    const accountColumn = table.headers.findIndex(
+      (header) => header.trim().toLowerCase() === 'account id'
+    );
+    if (accountColumn < 0) return 0;
+    return table.rows.filter((row) => textValue(row[accountColumn]).toUpperCase() === accountId)
+      .length;
+  }
+
+  private loadedAccountTable(): SheetTable {
+    if (!this.accountTable) throw new Error('Trading Account table must be loaded before use.');
+    return this.accountTable;
+  }
+}
+
+function tradingAccountToRow(account: TradingAccountRecord): unknown[] {
+  return [account.id, account.name, account.baseCurrency, account.riskPercentPerTrade];
 }
 
 export class CloudRunMomentumRankingProjection implements MomentumRankingProjection {

@@ -2,10 +2,13 @@ import type {
   AnalyticsDto,
   AddMomentumCandidateToWatchlistRequest,
   AddMomentumCandidateToWatchlistResponse,
+  AdminOverviewDto,
   CreateTradePlanRequest,
   CreateTradePlanResponse,
   ClosePositionRequest,
   ClosePositionResponse,
+  CreateFundedTradingAccountRequest,
+  CreateTradingAccountRequest,
   DashboardDto,
   DashboardSummaryDto,
   RecordCapitalTransactionRequest,
@@ -18,7 +21,9 @@ import type {
   TradePlansDto,
   TradingConfigDto,
   TradingAccountsDto,
+  TradingAccountMutationResponse,
   UpdateTradePlanPlanningRequest,
+  UpdateTradingAccountRequest,
   UpdateTradePlanPlanningResponse,
   WatchlistDto
 } from '@trading-cockpit/contracts';
@@ -107,6 +112,10 @@ export class AppsScriptCockpitGateway implements CockpitGateway {
     });
   }
 
+  getAdminOverview(): Promise<AdminOverviewDto> {
+    return Promise.reject(new Error('Admin Overview is available through the Cloud Run API.'));
+  }
+
   getTradingAccounts(): Promise<TradingAccountsDto> {
     return new Promise((resolve, reject) => {
       google.script.run
@@ -168,6 +177,30 @@ export class AppsScriptCockpitGateway implements CockpitGateway {
         .withFailureHandler((error) => reject(new Error(failureMessage(error))))
         .setupTradingAccounts();
     });
+  }
+
+  createTradingAccount(
+    _request: CreateTradingAccountRequest
+  ): Promise<TradingAccountMutationResponse> {
+    return Promise.reject(
+      new Error('Trading Account management is available through the Cloud Run API.')
+    );
+  }
+
+  createFundedTradingAccount(
+    _request: CreateFundedTradingAccountRequest
+  ): Promise<TradingAccountMutationResponse> {
+    return Promise.reject(
+      new Error('Trading Account management is available through the Cloud Run API.')
+    );
+  }
+
+  updateTradingAccount(
+    _request: UpdateTradingAccountRequest
+  ): Promise<TradingAccountMutationResponse> {
+    return Promise.reject(
+      new Error('Trading Account management is available through the Cloud Run API.')
+    );
   }
 
   recordCapitalTransaction(

@@ -9,6 +9,8 @@ import {
   addMomentumCandidateToWatchlistForCloudRun,
   checkFinvizAuthForCloudRun,
   closePositionForCloudRun,
+  createFundedTradingAccountForCloudRun,
+  createTradingAccountForCloudRun,
   createTradePlanForCloudRun,
   deleteFinvizTokenForCloudRun,
   executeTradePlanForCloudRun,
@@ -20,6 +22,7 @@ import {
   setupMomentumRankingForCloudRun,
   setupStrategiesForCloudRun,
   setupTradingAccountsForCloudRun,
+  updateTradingAccountForCloudRun,
   updateTradePlanPlanningForCloudRun
 } from '../../composition/mutations';
 import { elapsedMs, nowMs } from '../../timing';
@@ -152,6 +155,14 @@ function matchMutationRoute(method: string, pathname: string): RouteMatch | null
     };
   }
 
+  const tradingAccount = pathname.match(/^\/api\/admin\/trading-accounts\/([^/]+)$/);
+  if (normalizedMethod === 'PATCH' && tradingAccount) {
+    return {
+      handler: updateTradingAccountForCloudRun,
+      pathParams: { accountId: decodeURIComponent(tradingAccount[1]) }
+    };
+  }
+
   return null;
 }
 
@@ -160,6 +171,8 @@ const exactRoutes: Record<string, MutationHandler> = {
   'POST /api/discovery/momentum-ranking/refresh': refreshMomentumRankingForCloudRun,
   'POST /api/discovery/momentum-ranking/watchlist': addMomentumCandidateToWatchlistForCloudRun,
   'POST /api/trade-plans': createTradePlanForCloudRun,
+  'POST /api/admin/trading-accounts': createTradingAccountForCloudRun,
+  'POST /api/admin/trading-accounts/funded': createFundedTradingAccountForCloudRun,
   'POST /api/admin/capital-transactions': recordCapitalTransactionForCloudRun,
   'GET /api/admin/finviz/auth': checkFinvizAuthForCloudRun,
   'PUT /api/admin/finviz/token': setFinvizTokenForCloudRun,

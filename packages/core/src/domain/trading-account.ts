@@ -4,6 +4,10 @@ export interface TradingAccount {
   baseCurrency: string;
 }
 
+export interface TradingAccountRecord extends TradingAccount {
+  riskPercentPerTrade: number;
+}
+
 export type PortfolioScope = { type: 'ALL' } | { type: 'ACCOUNT'; accountId: string };
 
 export function normalizeTradingAccount(account: TradingAccount): TradingAccount {
@@ -21,6 +25,18 @@ export function normalizeTradingAccount(account: TradingAccount): TradingAccount
   if (!baseCurrency) throw new Error('Base Currency absente.');
 
   return { id, name, baseCurrency };
+}
+
+export function normalizeTradingAccountRecord(account: TradingAccountRecord): TradingAccountRecord {
+  const normalized = normalizeTradingAccount(account);
+  if (
+    !Number.isFinite(account.riskPercentPerTrade) ||
+    account.riskPercentPerTrade <= 0 ||
+    account.riskPercentPerTrade > 1
+  ) {
+    throw new Error('Risk % doit être compris entre 0% et 100%.');
+  }
+  return { ...normalized, riskPercentPerTrade: account.riskPercentPerTrade };
 }
 
 export function requireUniqueTradingAccountIds(accounts: TradingAccount[]): void {

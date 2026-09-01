@@ -13,6 +13,9 @@ import {
   createRecordInitialFunding,
   createRecordWithdrawal
 } from '@trading-cockpit/core/application/trading-account/record-capital-transaction';
+import { createCreateTradingAccount } from '@trading-cockpit/core/application/trading-account/create-trading-account';
+import { createCreateFundedTradingAccount } from '@trading-cockpit/core/application/trading-account/create-funded-trading-account';
+import { createUpdateTradingAccount } from '@trading-cockpit/core/application/trading-account/update-trading-account';
 import { buildSignalKey } from '@trading-cockpit/core/domain/market-signal';
 import type {
   AddMomentumCandidateToWatchlistRequest,
@@ -21,6 +24,8 @@ import type {
   CreateTradePlanResponse,
   ExecuteTradePlanResponse,
   RecordCapitalTransactionResponse,
+  TradingAccountMutationResponse,
+  CreateFundedTradingAccountRequest,
   UpdateTradePlanPlanningResponse
 } from '@trading-cockpit/contracts';
 import {
@@ -28,6 +33,7 @@ import {
   CloudRunMomentumRankingProjection,
   CloudRunMomentumSignalRepository,
   CloudRunSignalHistoryRepository,
+  CloudRunTradingAccountManagementRepository,
   CloudRunTradePlanRepository,
   CloudRunWatchlistRepository,
   LoadedStrategyRepository,
@@ -287,6 +293,53 @@ export async function recordCapitalTransactionForCloudRun({
     occurredAt: transaction.occurredAt.toISOString(),
     note: transaction.note
   };
+}
+
+export async function createTradingAccountForCloudRun({
+  mutationContext,
+  body
+}: MutationDependencies): Promise<TradingAccountMutationResponse> {
+  const repository = await new CloudRunTradingAccountManagementRepository(mutationContext).load();
+  const account = createCreateTradingAccount(repository)({
+    accountId: requiredText(body.accountId, 'accountId'),
+    name: requiredText(body.name, 'name'),
+    baseCurrency: requiredText(body.baseCurrency, 'baseCurrency'),
+    riskPercentPerTrade: requiredNumber(body.riskPercentPerTrade, 'riskPercentPerTrade')
+  });
+  return account;
+}
+
+export async function createFundedTradingAccountForCloudRun({
+  mutationContext,
+  body
+}: MutationDependencies): Promise<TradingAccountMutationResponse> {
+  const repository = await new CloudRunTradingAccountManagementRepository(mutationContext).load();
+  const request = body as unknown as CreateFundedTradingAccountRequest;
+  const account = createCreateFundedTradingAccount({
+    repository,
+    runtime: new NodeRuntime(mutationContext.now)
+  })({
+    accountId: requiredText(request.accountId, 'accountId'),
+    name: requiredText(request.name, 'name'),
+    baseCurrency: requiredText(request.baseCurrency, 'baseCurrency'),
+    riskPercentPerTrade: requiredNumber(request.riskPercentPerTrade, 'riskPercentPerTrade'),
+    initialAmount: requiredNumber(request.initialAmount, 'initialAmount')
+  });
+  return account;
+}
+
+export async function updateTradingAccountForCloudRun({
+  mutationContext,
+  body
+}: MutationDependencies): Promise<TradingAccountMutationResponse> {
+  const repository = await new CloudRunTradingAccountManagementRepository(mutationContext).load();
+  const account = createUpdateTradingAccount(repository)({
+    accountId: requiredText(body.accountId, 'accountId'),
+    name: requiredText(body.name, 'name'),
+    baseCurrency: requiredText(body.baseCurrency, 'baseCurrency'),
+    riskPercentPerTrade: requiredNumber(body.riskPercentPerTrade, 'riskPercentPerTrade')
+  });
+  return account;
 }
 
 export async function checkFinvizAuthForCloudRun(): Promise<{ configured: boolean }> {

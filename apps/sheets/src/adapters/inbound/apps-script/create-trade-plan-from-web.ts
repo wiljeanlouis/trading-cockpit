@@ -6,9 +6,17 @@ import type {
 import type { CreateTradePlanFromWatchlist } from '@trading-cockpit/core/application/trade-plan/create-trade-plan-from-watchlist';
 import type { TradingAccount } from '@trading-cockpit/core/domain/trading-account';
 
-export function tradingAccountsToDto(accounts: TradingAccount[]): TradingAccountsDto {
+export function tradingAccountsToDto(
+  accounts: TradingAccount[],
+  riskPercentByAccountId: (accountId: string) => number | null = () => null
+): TradingAccountsDto {
   return {
-    accounts: accounts.map(({ id, name, baseCurrency }) => ({ id, name, baseCurrency }))
+    accounts: accounts.map(({ id, name, baseCurrency }) => ({
+      id,
+      name,
+      baseCurrency,
+      riskPercentPerTrade: riskPercentByAccountId(id) ?? 0
+    }))
   };
 }
 

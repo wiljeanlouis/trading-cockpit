@@ -1,11 +1,14 @@
 import type {
   AnalyticsDto,
+  AdminOverviewDto,
   AddMomentumCandidateToWatchlistRequest,
   AddMomentumCandidateToWatchlistResponse,
   CreateTradePlanRequest,
   CreateTradePlanResponse,
   ClosePositionRequest,
   ClosePositionResponse,
+  CreateFundedTradingAccountRequest,
+  CreateTradingAccountRequest,
   DashboardDto,
   DashboardSummaryDto,
   RecordCapitalTransactionRequest,
@@ -18,6 +21,8 @@ import type {
   TradePlansDto,
   TradingConfigDto,
   TradingAccountsDto,
+  TradingAccountMutationResponse,
+  UpdateTradingAccountRequest,
   UpdateTradePlanPlanningRequest,
   UpdateTradePlanPlanningResponse,
   WatchlistDto
@@ -43,6 +48,7 @@ export interface CockpitGateway {
     request: AddMomentumCandidateToWatchlistRequest
   ): Promise<AddMomentumCandidateToWatchlistResponse>;
   getAnalytics(query?: AnalyticsQuery): Promise<AnalyticsDto>;
+  getAdminOverview(): Promise<AdminOverviewDto>;
   getTradingAccounts(): Promise<TradingAccountsDto>;
   getTradingConfig(): Promise<TradingConfigDto>;
   setupMomentumRanking(): Promise<void>;
@@ -50,6 +56,15 @@ export interface CockpitGateway {
   validateStrategies(): Promise<boolean>;
   setupCockpitConfig(): Promise<void>;
   setupTradingAccounts(): Promise<void>;
+  createTradingAccount(
+    request: CreateTradingAccountRequest
+  ): Promise<TradingAccountMutationResponse>;
+  createFundedTradingAccount(
+    request: CreateFundedTradingAccountRequest
+  ): Promise<TradingAccountMutationResponse>;
+  updateTradingAccount(
+    request: UpdateTradingAccountRequest
+  ): Promise<TradingAccountMutationResponse>;
   recordCapitalTransaction(
     request: RecordCapitalTransactionRequest
   ): Promise<RecordCapitalTransactionResponse>;

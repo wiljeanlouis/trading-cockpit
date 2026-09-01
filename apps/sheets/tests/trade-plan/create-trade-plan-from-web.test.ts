@@ -71,7 +71,7 @@ describe('Apps Script Trade Plan web adapter', () => {
 
   it('returns only serializable account identity and display fields', () => {
     expect(tradingAccountsToDto([{ id: 'A1', name: 'Primary', baseCurrency: 'CAD' }])).toEqual({
-      accounts: [{ id: 'A1', name: 'Primary', baseCurrency: 'CAD' }]
+      accounts: [{ id: 'A1', name: 'Primary', baseCurrency: 'CAD', riskPercentPerTrade: 0 }]
     });
   });
 });

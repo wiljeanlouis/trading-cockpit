@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import type {
-  RecordCapitalTransactionRequest,
-  TradingAccountDto,
-  TradingConfigDto
+  AdminAccountDto,
+  AdminOverviewDto,
+  CapitalTransactionType,
+  CreateFundedTradingAccountRequest,
+  RecordCapitalTransactionRequest
 } from '@trading-cockpit/contracts';
 import type { CockpitGateway } from '../../infrastructure/cockpit-gateway';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +24,12 @@ import {
   TableSummary
 } from '@/components/ui/cockpit';
 import {
+  DetailBackdrop,
+  DetailGrid,
+  DetailHeader,
+  DetailPanel,
+  FactGrid,
+  FactSection,
   formLabelClassName,
   inputClassName,
   noticeClassName,
@@ -44,70 +52,120 @@ interface AdminProps {
 interface AdminState {
   loading: boolean;
   error: string | null;
-  accounts: TradingAccountDto[];
-  tradingConfig: TradingConfigDto | null;
-  finvizConfigured: boolean | null;
+  overview: AdminOverviewDto | null;
 }
 
-type CapitalTransactionType = RecordCapitalTransactionRequest['type'];
+interface CreateAccountFormState {
+  accountId: string;
+  name: string;
+  baseCurrency: string;
+  riskPercent: string;
+  initialAmount: string;
+}
+
+interface AccountSettingsFormState {
+  name: string;
+  riskPercent: string;
+}
+
+interface CapitalFormState {
+  type: Exclude<CapitalTransactionType, 'INITIAL_FUNDING'>;
+  amount: string;
+  note: string;
+}
+
+const EMPTY_CREATE_ACCOUNT_FORM: CreateAccountFormState = {
+  accountId: '',
+  name: '',
+  baseCurrency: 'USD',
+  riskPercent: '0.5',
+  initialAmount: ''
+};
+
+const EMPTY_CAPITAL_FORM: CapitalFormState = {
+  type: 'DEPOSIT',
+  amount: '',
+  note: ''
+};
 
 function formatBooleanBadgeTone(configured: boolean | null): 'positive' | 'muted' | 'watching' {
   if (configured === null) return 'watching';
   return configured ? 'positive' : 'muted';
 }
 
+function formatRiskPercent(value: number): string {
+  if (!Number.isFinite(value)) return '—';
+  return new Intl.NumberFormat(undefined, {
+    style: 'percent',
+    maximumFractionDigits: 3
+  }).format(value);
+}
+
+function formatMoney(value: number, currency: string): string {
+  if (!Number.isFinite(value)) return '—';
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: currency || 'USD',
+    maximumFractionDigits: 2
+  }).format(value);
+}
+
+function formatDateTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value || '—';
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(date);
+}
+
+function riskPercentInputValue(account: AdminAccountDto): string {
+  return Number.isFinite(account.riskPercentPerTrade)
+    ? String(account.riskPercentPerTrade * 100)
+    : '';
+}
+
+function parsePositiveNumber(value: string): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : Number.NaN;
+}
+
+function parseRiskPercentInput(value: string): number {
+  const parsed = parsePositiveNumber(value);
+  if (!Number.isFinite(parsed)) return Number.NaN;
+  return parsed / 100;
+}
+
 export function Admin({ gateway }: AdminProps) {
   const [state, setState] = useState<AdminState>({
     loading: true,
     error: null,
-    accounts: [],
-    tradingConfig: null,
-    finvizConfigured: null
+    overview: null
   });
   const [message, setMessage] = useState<string | null>(null);
-  const [messageTone, setMessageTone] = useState<'positive' | 'planned' | 'muted'>('positive');
+  const [messageTone, setMessageTone] = useState<'positive' | 'planned'>('positive');
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [finvizToken, setFinvizToken] = useState('');
-  const [capitalType, setCapitalType] = useState<CapitalTransactionType>('INITIAL_FUNDING');
-  const [capitalAccountId, setCapitalAccountId] = useState('');
-  const [capitalAmount, setCapitalAmount] = useState('');
-  const [capitalNote, setCapitalNote] = useState('');
+  const [createAccountOpen, setCreateAccountOpen] = useState(false);
+  const [createAccountForm, setCreateAccountForm] =
+    useState<CreateAccountFormState>(EMPTY_CREATE_ACCOUNT_FORM);
+  const [managedAccountId, setManagedAccountId] = useState<string | null>(null);
+  const [accountSettingsForm, setAccountSettingsForm] = useState<AccountSettingsFormState>({
+    name: '',
+    riskPercent: ''
+  });
+  const [capitalForm, setCapitalForm] = useState<CapitalFormState>(EMPTY_CAPITAL_FORM);
 
   const load = useCallback(async () => {
     setState((current) => ({ ...current, loading: true, error: null }));
     try {
-      const [accountsResult, configResult, finvizResult] = await Promise.allSettled([
-        gateway.getTradingAccounts(),
-        gateway.getTradingConfig(),
-        gateway.checkFinvizAuth()
-      ]);
-
-      const accounts =
-        accountsResult.status === 'fulfilled' ? accountsResult.value.accounts : state.accounts;
-      const config = configResult.status === 'fulfilled' ? configResult.value : state.tradingConfig;
-      const finvizConfigured =
-        finvizResult.status === 'fulfilled' ? finvizResult.value : state.finvizConfigured;
-
-      setState({
-        loading: false,
-        error: null,
-        accounts,
-        tradingConfig: config,
-        finvizConfigured
-      });
-
-      setCapitalAccountId((current) => current || accounts[0]?.id || '');
-      if (accountsResult.status === 'rejected' && configResult.status === 'rejected') {
-        setState((current) => ({
-          ...current,
-          error: `${accountsResult.reason instanceof Error ? accountsResult.reason.message : String(accountsResult.reason)} / ${configResult.reason instanceof Error ? configResult.reason.message : String(configResult.reason)}`
-        }));
-      }
+      const overview = await gateway.getAdminOverview();
+      setState({ loading: false, error: null, overview });
     } catch (error) {
       setState((current) => ({
         ...current,
         loading: false,
-        error: error instanceof Error ? error.message : String(error)
+        error: failureText(error)
       }));
     }
   }, [gateway]);
@@ -116,14 +174,18 @@ export function Admin({ gateway }: AdminProps) {
     void load();
   }, [load]);
 
-  const accountOptions = useMemo(() => state.accounts, [state.accounts]);
+  const accounts = state.overview?.accounts ?? [];
+  const managedAccount = useMemo(
+    () => accounts.find((account) => account.id === managedAccountId) ?? null,
+    [accounts, managedAccountId]
+  );
 
   async function runAction(
     action: string,
     operation: () => Promise<unknown>,
     successMessage: string
-  ) {
-    if (busyAction) return;
+  ): Promise<boolean> {
+    if (busyAction) return false;
     setBusyAction(action);
     setMessage(null);
     try {
@@ -131,9 +193,11 @@ export function Admin({ gateway }: AdminProps) {
       setMessage(successMessage);
       setMessageTone('positive');
       await load();
+      return true;
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : String(error));
+      setMessage(failureText(error));
       setMessageTone('planned');
+      return false;
     } finally {
       setBusyAction(null);
     }
@@ -145,40 +209,103 @@ export function Admin({ gateway }: AdminProps) {
       setMessageTone('planned');
       return;
     }
-    await runAction(
+    const saved = await runAction(
       'save-token',
       () => gateway.setFinvizToken(finvizToken.trim()),
       'Finviz token saved.'
     );
-    setFinvizToken('');
+    if (saved) setFinvizToken('');
   }
 
-  async function handleCapitalSubmit(event: FormEvent<HTMLFormElement>) {
+  function openCreateAccount() {
+    setMessage(null);
+    setCreateAccountForm(EMPTY_CREATE_ACCOUNT_FORM);
+    setCreateAccountOpen(true);
+  }
+
+  function openManageAccount(account: AdminAccountDto) {
+    setMessage(null);
+    setManagedAccountId(account.id);
+    setAccountSettingsForm({
+      name: account.name,
+      riskPercent: riskPercentInputValue(account)
+    });
+    setCapitalForm(EMPTY_CAPITAL_FORM);
+  }
+
+  async function handleCreateAccountSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const parsedAmount = Number(capitalAmount);
-    if (!capitalAccountId) {
-      setMessage('Select an account first.');
+    const riskPercentPerTrade = parseRiskPercentInput(createAccountForm.riskPercent);
+    const initialAmount = parsePositiveNumber(createAccountForm.initialAmount);
+    if (!Number.isFinite(riskPercentPerTrade)) {
+      setMessage('Risk % Per Trade doit être un pourcentage supérieur à 0.');
       setMessageTone('planned');
       return;
     }
-    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      setMessage('Amount must be greater than 0.');
+    if (!Number.isFinite(initialAmount)) {
+      setMessage('Initial Amount doit être supérieur à 0.');
+      setMessageTone('planned');
+      return;
+    }
+
+    const request: CreateFundedTradingAccountRequest = {
+      accountId: createAccountForm.accountId,
+      name: createAccountForm.name,
+      baseCurrency: createAccountForm.baseCurrency,
+      riskPercentPerTrade,
+      initialAmount
+    };
+    const created = await runAction(
+      'create-funded-account',
+      () => gateway.createFundedTradingAccount(request),
+      'Trading Account created and funded.'
+    );
+    if (created) setCreateAccountOpen(false);
+  }
+
+  async function handleSettingsSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!managedAccount) return;
+    const riskPercentPerTrade = parseRiskPercentInput(accountSettingsForm.riskPercent);
+    if (!Number.isFinite(riskPercentPerTrade)) {
+      setMessage('Risk % Per Trade doit être un pourcentage supérieur à 0.');
       setMessageTone('planned');
       return;
     }
     await runAction(
-      'capital-transaction',
+      `update-account-${managedAccount.id}`,
       () =>
-        gateway.recordCapitalTransaction({
-          type: capitalType,
-          accountId: capitalAccountId,
-          amount: parsedAmount,
-          note: capitalNote.trim() || null
+        gateway.updateTradingAccount({
+          accountId: managedAccount.id,
+          name: accountSettingsForm.name,
+          baseCurrency: managedAccount.baseCurrency,
+          riskPercentPerTrade
         }),
-      'Capital transaction recorded.'
+      'Trading Account updated.'
     );
-    setCapitalAmount('');
-    setCapitalNote('');
+  }
+
+  async function handleCapitalSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!managedAccount) return;
+    const amount = parsePositiveNumber(capitalForm.amount);
+    if (!Number.isFinite(amount)) {
+      setMessage('Amount must be greater than 0.');
+      setMessageTone('planned');
+      return;
+    }
+    const request: RecordCapitalTransactionRequest = {
+      type: capitalForm.type,
+      accountId: managedAccount.id,
+      amount,
+      note: capitalForm.note.trim() || null
+    };
+    const recorded = await runAction(
+      `capital-${managedAccount.id}`,
+      () => gateway.recordCapitalTransaction(request),
+      `${capitalForm.type === 'DEPOSIT' ? 'Deposit' : 'Withdrawal'} recorded.`
+    );
+    if (recorded) setCapitalForm(EMPTY_CAPITAL_FORM);
   }
 
   return (
@@ -187,7 +314,7 @@ export function Admin({ gateway }: AdminProps) {
         <div>
           <Eyebrow>Operational controls</Eyebrow>
           <PageTitle>Administration</PageTitle>
-          <PageSubtitle>Minimum setup and maintenance workflows for React Cockpit V1</PageSubtitle>
+          <PageSubtitle>Provider and Trading Account management</PageSubtitle>
         </div>
         <PageActions>
           <Button onClick={() => void load()} disabled={state.loading}>
@@ -197,9 +324,7 @@ export function Admin({ gateway }: AdminProps) {
         </PageActions>
       </PageHeader>
 
-      {state.loading && !state.tradingConfig && (
-        <LoadingState>Loading administration…</LoadingState>
-      )}
+      {state.loading && !state.overview && <LoadingState>Loading administration…</LoadingState>}
 
       {state.error && (
         <ErrorState
@@ -209,287 +334,116 @@ export function Admin({ gateway }: AdminProps) {
         />
       )}
 
-      {!state.loading && (
+      {state.overview && (
         <div className="grid gap-5">
-          <DataPanel aria-label="Signal and Finviz">
+          <DataPanel aria-label="Finviz">
             <TableSummary>
-              <span>Signal refresh and Finviz maintenance</span>
-              <Badge tone={formatBooleanBadgeTone(state.finvizConfigured)}>
-                {state.finvizConfigured === null
-                  ? 'UNKNOWN'
-                  : state.finvizConfigured
-                    ? 'AUTH CONFIGURED'
-                    : 'AUTH MISSING'}
+              <span>Finviz</span>
+              <Badge tone={formatBooleanBadgeTone(state.overview.finviz.configured)}>
+                {state.overview.finviz.configured ? 'AUTH CONFIGURED' : 'AUTH MISSING'}
               </Badge>
             </TableSummary>
-            <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-              <div className="grid gap-3">
-                <div className={noticeClassName}>
-                  Refresh Finviz rebuilds the market signal projection and archives new signals into
-                  Watchlist.
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    onClick={() =>
-                      void runAction(
-                        'refresh-finviz',
-                        () => gateway.refreshFinviz(),
-                        'Finviz refreshed.'
-                      )
-                    }
-                    disabled={busyAction !== null}
-                  >
-                    Refresh Finviz
-                  </Button>
-                  <Button
-                    onClick={() =>
-                      void runAction(
-                        'setup-momentum-ranking',
-                        () => gateway.setupMomentumRanking(),
-                        'Momentum ranking setup completed.'
-                      )
-                    }
-                    disabled={busyAction !== null}
-                  >
-                    Setup Momentum Ranking
-                  </Button>
-                  <Button
-                    onClick={() =>
-                      void runAction(
-                        'setup-strategies',
-                        () => gateway.setupStrategies(),
-                        'Strategies setup completed.'
-                      )
-                    }
-                    disabled={busyAction !== null}
-                  >
-                    Setup Strategies
-                  </Button>
-                  <Button
-                    onClick={() =>
-                      void runAction(
-                        'validate-strategies',
-                        async () => {
-                          const valid = await gateway.validateStrategies();
-                          if (!valid) throw new Error('Validation returned false.');
-                        },
-                        'Strategies validated.'
-                      )
-                    }
-                    disabled={busyAction !== null}
-                  >
-                    Validate Strategies
-                  </Button>
-                </div>
+            <div className="grid gap-3 p-5 lg:grid-cols-[minmax(220px,0.6fr)_minmax(0,1fr)] lg:items-end">
+              <div>
+                <p className="m-0 text-sm text-[#8ba0b7]">
+                  Market data provider and authentication.
+                </p>
               </div>
-              <div className="grid gap-3 rounded-[13px] border border-[#22384d] bg-[rgba(11,23,38,0.75)] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <strong className="text-[#e4edf7]">Finviz token</strong>
-                  <Badge tone={formatBooleanBadgeTone(state.finvizConfigured)}>
-                    {state.finvizConfigured ? 'CONFIGURED' : 'NOT CONFIGURED'}
-                  </Badge>
-                </div>
-                <label className={formLabelClassName} htmlFor="finviz-token">
-                  Token
+              <div className="grid gap-3 min-[760px]:grid-cols-[minmax(220px,1fr)_auto_auto_auto] min-[760px]:items-end">
+                <label className="grid gap-2">
+                  <span className={formLabelClassName}>Token</span>
+                  <input
+                    id="finviz-token"
+                    className={inputClassName}
+                    type="password"
+                    value={finvizToken}
+                    onChange={(event) => setFinvizToken(event.target.value)}
+                    placeholder="Paste Finviz token"
+                    autoComplete="off"
+                  />
                 </label>
-                <input
-                  id="finviz-token"
-                  className={inputClassName}
-                  type="password"
-                  value={finvizToken}
-                  onChange={(event) => setFinvizToken(event.target.value)}
-                  placeholder="Paste Finviz token"
-                  autoComplete="off"
-                />
-                <div className="flex gap-2">
-                  <Button onClick={() => void saveFinvizToken()} disabled={busyAction !== null}>
-                    Save token
-                  </Button>
-                  <Button
-                    variant="retry"
-                    onClick={() =>
-                      void runAction(
-                        'delete-token',
-                        () => gateway.deleteFinvizToken(),
-                        'Finviz token deleted.'
-                      )
-                    }
-                    disabled={busyAction !== null}
-                  >
-                    Delete token
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </DataPanel>
-
-          <DataPanel aria-label="Cockpit configuration">
-            <TableSummary>
-              <span>Cockpit configuration</span>
-              <small>Global settings only; accounts own capital and risk</small>
-            </TableSummary>
-            <div className="grid gap-5 p-5">
-              <div className="flex flex-wrap gap-2">
+                <Button onClick={() => void saveFinvizToken()} disabled={busyAction !== null}>
+                  Save token
+                </Button>
                 <Button
+                  variant="retry"
                   onClick={() =>
                     void runAction(
-                      'setup-cockpit-config',
-                      () => gateway.setupCockpitConfig(),
-                      'Cockpit Config ready.'
+                      'delete-token',
+                      () => gateway.deleteFinvizToken(),
+                      'Finviz token deleted.'
                     )
                   }
                   disabled={busyAction !== null}
                 >
-                  Setup Cockpit Config
+                  Delete token
                 </Button>
                 <Button
                   onClick={() =>
                     void runAction(
-                      'setup-trading-accounts',
-                      () => gateway.setupTradingAccounts(),
-                      'Trading Accounts ready.'
+                      'refresh-finviz',
+                      () => gateway.refreshFinviz(),
+                      'Finviz refreshed.'
                     )
                   }
                   disabled={busyAction !== null}
                 >
-                  Setup Trading Accounts
+                  Refresh Finviz
                 </Button>
               </div>
-              {state.tradingConfig ? (
-                state.tradingConfig.settings.length === 0 ? (
-                  <EmptyState icon="⚙" title="No global Cockpit settings">
-                    Account capital comes from Capital Ledger + Journal. Risk % Per Trade comes from
-                    Accounts.
-                  </EmptyState>
-                ) : (
-                  <TableScroll>
-                    <Table className="min-w-[760px] border-collapse tabular-nums">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Parameter</TableHead>
-                          <TableHead>Value</TableHead>
-                          <TableHead>Description</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {state.tradingConfig.settings.map((setting) => (
-                          <TableRow key={setting.parameter}>
-                            <TableCell>{setting.parameter}</TableCell>
-                            <TableCell>{String(setting.value ?? '—')}</TableCell>
-                            <TableCell>{setting.description || '—'}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableScroll>
-                )
-              ) : (
-                <EmptyState icon="⚙" title="Cockpit Config missing">
-                  Use Setup Cockpit Config to initialize the global settings table.
-                </EmptyState>
-              )}
             </div>
           </DataPanel>
 
           <DataPanel aria-label="Trading accounts">
             <TableSummary>
-              <span>{state.accounts.length} trading account(s)</span>
-              <small>Used for Trade Plan creation and capital ledger operations</small>
+              <span>{accounts.length} trading account(s)</span>
+              <Button onClick={openCreateAccount} disabled={busyAction !== null}>
+                + Add account
+              </Button>
             </TableSummary>
-            {accountOptions.length === 0 ? (
-              <EmptyState icon="◎" title="No trading accounts">
-                Use Setup Trading Accounts to initialize the account sheet.
-              </EmptyState>
-            ) : (
-              <TableScroll>
-                <Table className="min-w-[760px] border-collapse tabular-nums">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Base Currency</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {accountOptions.map((account) => (
-                      <TableRow key={account.id}>
-                        <TableCell>
-                          <strong>{account.id}</strong>
-                        </TableCell>
-                        <TableCell>{account.name}</TableCell>
-                        <TableCell>{account.baseCurrency}</TableCell>
+            <div className="grid gap-5 p-5">
+              {accounts.length === 0 ? (
+                <EmptyState icon="◎" title="No trading accounts">
+                  Create a funded Trading Account to make Dashboard, Analytics and Trade Plan sizing
+                  operational.
+                </EmptyState>
+              ) : (
+                <TableScroll>
+                  <Table className="min-w-[880px] border-collapse tabular-nums">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Base Currency</TableHead>
+                        <TableHead>Risk / Trade</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableScroll>
-            )}
-          </DataPanel>
-
-          <DataPanel aria-label="Capital transactions">
-            <TableSummary>
-              <span>Capital ledger entry</span>
-              <small>Initial funding, deposits and withdrawals</small>
-            </TableSummary>
-            <form className="grid gap-4 p-5" onSubmit={(event) => void handleCapitalSubmit(event)}>
-              <div className="grid gap-4 min-[760px]:grid-cols-3">
-                <label className="grid gap-2">
-                  <span className={formLabelClassName}>Transaction type</span>
-                  <select
-                    className={selectClassName}
-                    value={capitalType}
-                    onChange={(event) =>
-                      setCapitalType(event.target.value as CapitalTransactionType)
-                    }
-                  >
-                    <option value="INITIAL_FUNDING">Initial Funding</option>
-                    <option value="DEPOSIT">Deposit</option>
-                    <option value="WITHDRAWAL">Withdrawal</option>
-                  </select>
-                </label>
-                <label className="grid gap-2">
-                  <span className={formLabelClassName}>Account</span>
-                  <select
-                    className={selectClassName}
-                    value={capitalAccountId}
-                    onChange={(event) => setCapitalAccountId(event.target.value)}
-                  >
-                    <option value="">Select an account</option>
-                    {accountOptions.map((account) => (
-                      <option key={account.id} value={account.id}>
-                        {account.id} — {account.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="grid gap-2">
-                  <span className={formLabelClassName}>Amount</span>
-                  <input
-                    className={inputClassName}
-                    type="number"
-                    min="0"
-                    step="any"
-                    value={capitalAmount}
-                    onChange={(event) => setCapitalAmount(event.target.value)}
-                  />
-                </label>
-              </div>
-              <label className="grid gap-2">
-                <span className={formLabelClassName}>Note</span>
-                <input
-                  className={inputClassName}
-                  type="text"
-                  value={capitalNote}
-                  onChange={(event) => setCapitalNote(event.target.value)}
-                  placeholder="Optional note"
-                />
-              </label>
-              <div className="flex items-center gap-2">
-                <Button type="submit" disabled={busyAction !== null}>
-                  Record transaction
-                </Button>
-              </div>
-            </form>
+                    </TableHeader>
+                    <TableBody>
+                      {accounts.map((account) => (
+                        <TableRow key={account.id}>
+                          <TableCell>
+                            <strong>{account.id}</strong>
+                          </TableCell>
+                          <TableCell>{account.name}</TableCell>
+                          <TableCell>{account.baseCurrency}</TableCell>
+                          <TableCell>{formatRiskPercent(account.riskPercentPerTrade)}</TableCell>
+                          <TableCell>
+                            <Button
+                              className="px-3 py-2 text-xs"
+                              onClick={() => openManageAccount(account)}
+                              disabled={busyAction !== null}
+                            >
+                              Manage
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableScroll>
+              )}
+            </div>
           </DataPanel>
 
           {message && (
@@ -499,6 +453,376 @@ export function Admin({ gateway }: AdminProps) {
           )}
         </div>
       )}
+
+      {createAccountOpen && (
+        <DetailBackdrop
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="create-account-title"
+          onClick={() => {
+            if (!busyAction) setCreateAccountOpen(false);
+          }}
+        >
+          <DetailPanel className="max-w-[840px]" onClick={(event) => event.stopPropagation()}>
+            <DetailHeader>
+              <div>
+                <h2 id="create-account-title">Add Trading Account</h2>
+                <p>Create a Trading Account ready to use with its Initial Funding.</p>
+              </div>
+              <Button
+                type="button"
+                variant="retry"
+                onClick={() => setCreateAccountOpen(false)}
+                disabled={busyAction !== null}
+              >
+                Close
+              </Button>
+            </DetailHeader>
+            <form
+              className="grid gap-4"
+              onSubmit={(event) => void handleCreateAccountSubmit(event)}
+            >
+              <div className="grid gap-4 min-[760px]:grid-cols-2">
+                <AccountInput
+                  label="Account ID"
+                  value={createAccountForm.accountId}
+                  onChange={(accountId) =>
+                    setCreateAccountForm((current) => ({ ...current, accountId }))
+                  }
+                  placeholder="A1"
+                />
+                <AccountInput
+                  label="Name"
+                  value={createAccountForm.name}
+                  onChange={(name) => setCreateAccountForm((current) => ({ ...current, name }))}
+                  placeholder="10% Monthly"
+                />
+                <AccountInput
+                  label="Base Currency"
+                  value={createAccountForm.baseCurrency}
+                  onChange={(baseCurrency) =>
+                    setCreateAccountForm((current) => ({ ...current, baseCurrency }))
+                  }
+                  placeholder="USD"
+                />
+                <NumberInput
+                  label="Risk / Trade (%)"
+                  value={createAccountForm.riskPercent}
+                  onChange={(riskPercent) =>
+                    setCreateAccountForm((current) => ({ ...current, riskPercent }))
+                  }
+                  placeholder="0.5"
+                />
+                <NumberInput
+                  label="Initial Amount"
+                  value={createAccountForm.initialAmount}
+                  onChange={(initialAmount) =>
+                    setCreateAccountForm((current) => ({ ...current, initialAmount }))
+                  }
+                  placeholder="10000"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" disabled={busyAction !== null}>
+                  Create funded account
+                </Button>
+                <Button
+                  type="button"
+                  variant="retry"
+                  onClick={() => setCreateAccountOpen(false)}
+                  disabled={busyAction !== null}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </DetailPanel>
+        </DetailBackdrop>
+      )}
+
+      {managedAccount && (
+        <DetailBackdrop
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="manage-account-title"
+          onClick={() => {
+            if (!busyAction) setManagedAccountId(null);
+          }}
+        >
+          <DetailPanel onClick={(event) => event.stopPropagation()}>
+            <DetailHeader>
+              <div>
+                <h2 id="manage-account-title">{managedAccount.id}</h2>
+                <p>{managedAccount.name}</p>
+              </div>
+              <Button
+                type="button"
+                variant="retry"
+                onClick={() => setManagedAccountId(null)}
+                disabled={busyAction !== null}
+              >
+                Close
+              </Button>
+            </DetailHeader>
+
+            <DetailGrid>
+              <div className="grid gap-5">
+                <FactSection>
+                  <header>
+                    <span>CFG</span>
+                    <div>
+                      <h3>Account settings</h3>
+                      <p>
+                        Account ID is immutable. Base Currency is locked after account activity.
+                      </p>
+                    </div>
+                  </header>
+                  <form
+                    className="grid gap-4 p-4"
+                    onSubmit={(event) => void handleSettingsSubmit(event)}
+                  >
+                    <div className="grid gap-4 min-[760px]:grid-cols-2">
+                      <ReadOnlyField label="Account ID" value={managedAccount.id} />
+                      <ReadOnlyField label="Base Currency" value={managedAccount.baseCurrency} />
+                      <AccountInput
+                        label="Name"
+                        value={accountSettingsForm.name}
+                        onChange={(name) =>
+                          setAccountSettingsForm((current) => ({ ...current, name }))
+                        }
+                      />
+                      <NumberInput
+                        label="Risk / Trade (%)"
+                        value={accountSettingsForm.riskPercent}
+                        onChange={(riskPercent) =>
+                          setAccountSettingsForm((current) => ({ ...current, riskPercent }))
+                        }
+                      />
+                    </div>
+                    <Button type="submit" disabled={busyAction !== null}>
+                      Save settings
+                    </Button>
+                  </form>
+                </FactSection>
+
+                <FactSection tone="price">
+                  <header>
+                    <span>$</span>
+                    <div>
+                      <h3>Financial summary</h3>
+                      <p>Capital Ledger plus Journal realized P&amp;L.</p>
+                    </div>
+                  </header>
+                  <FactGrid columns={3}>
+                    <Metric
+                      label="Initial Funding"
+                      value={formatMoney(
+                        managedAccount.financialSummary.initialFunding,
+                        managedAccount.baseCurrency
+                      )}
+                    />
+                    <Metric
+                      label="Deposits"
+                      value={formatMoney(
+                        managedAccount.financialSummary.deposits,
+                        managedAccount.baseCurrency
+                      )}
+                    />
+                    <Metric
+                      label="Withdrawals"
+                      value={formatMoney(
+                        managedAccount.financialSummary.withdrawals,
+                        managedAccount.baseCurrency
+                      )}
+                    />
+                    <Metric
+                      label="Net External Capital"
+                      value={formatMoney(
+                        managedAccount.financialSummary.netExternalCapital,
+                        managedAccount.baseCurrency
+                      )}
+                    />
+                    <Metric
+                      label="Realized P&L"
+                      value={formatMoney(
+                        managedAccount.financialSummary.realizedPnl,
+                        managedAccount.baseCurrency
+                      )}
+                    />
+                    <Metric
+                      label="Realized Equity"
+                      value={formatMoney(
+                        managedAccount.financialSummary.realizedEquity,
+                        managedAccount.baseCurrency
+                      )}
+                    />
+                  </FactGrid>
+                </FactSection>
+              </div>
+
+              <div className="grid gap-5">
+                <FactSection tone="risk">
+                  <header>
+                    <span>CAP</span>
+                    <div>
+                      <h3>Deposit / Withdraw</h3>
+                      <p>Initial Funding is recorded only when the account is created.</p>
+                    </div>
+                  </header>
+                  <form
+                    className="grid gap-4 p-4"
+                    onSubmit={(event) => void handleCapitalSubmit(event)}
+                  >
+                    <label className="grid gap-2">
+                      <span className={formLabelClassName}>Transaction Type</span>
+                      <select
+                        className={selectClassName}
+                        value={capitalForm.type}
+                        onChange={(event) =>
+                          setCapitalForm((current) => ({
+                            ...current,
+                            type: event.target.value as CapitalFormState['type']
+                          }))
+                        }
+                      >
+                        <option value="DEPOSIT">Deposit</option>
+                        <option value="WITHDRAWAL">Withdrawal</option>
+                      </select>
+                    </label>
+                    <NumberInput
+                      label="Amount"
+                      value={capitalForm.amount}
+                      onChange={(amount) => setCapitalForm((current) => ({ ...current, amount }))}
+                    />
+                    <AccountInput
+                      label="Note"
+                      value={capitalForm.note}
+                      onChange={(note) => setCapitalForm((current) => ({ ...current, note }))}
+                      placeholder="Optional note"
+                    />
+                    <Button type="submit" disabled={busyAction !== null}>
+                      Record {capitalForm.type === 'DEPOSIT' ? 'deposit' : 'withdrawal'}
+                    </Button>
+                  </form>
+                </FactSection>
+
+                <FactSection>
+                  <header>
+                    <span>LOG</span>
+                    <div>
+                      <h3>Capital activity</h3>
+                      <p>Newest transactions first.</p>
+                    </div>
+                  </header>
+                  {managedAccount.capitalTransactions.length === 0 ? (
+                    <div className="p-4 text-sm text-[#8ba0b7]">No capital transactions yet.</div>
+                  ) : (
+                    <TableScroll>
+                      <Table className="min-w-[560px] border-collapse tabular-nums">
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Note</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {managedAccount.capitalTransactions.map((transaction) => (
+                            <TableRow key={transaction.transactionId}>
+                              <TableCell>{formatDateTime(transaction.occurredAt)}</TableCell>
+                              <TableCell>{transaction.type}</TableCell>
+                              <TableCell>
+                                {formatMoney(transaction.amount, managedAccount.baseCurrency)}
+                              </TableCell>
+                              <TableCell>{transaction.note || '—'}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableScroll>
+                  )}
+                </FactSection>
+              </div>
+            </DetailGrid>
+          </DetailPanel>
+        </DetailBackdrop>
+      )}
     </PageShell>
   );
+}
+
+function AccountInput({
+  label,
+  value,
+  onChange,
+  placeholder
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <label className="grid gap-2">
+      <span className={formLabelClassName}>{label}</span>
+      <input
+        className={inputClassName}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+      />
+    </label>
+  );
+}
+
+function NumberInput({
+  label,
+  value,
+  onChange,
+  placeholder
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <label className="grid gap-2">
+      <span className={formLabelClassName}>{label}</span>
+      <input
+        className={inputClassName}
+        type="number"
+        min="0"
+        step="any"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+      />
+    </label>
+  );
+}
+
+function ReadOnlyField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid gap-2">
+      <span className={formLabelClassName}>{label}</span>
+      <div className="rounded-[10px] border border-[#22384d] bg-[#071422] px-3 py-2 text-sm text-[#e5edf7]">
+        {value || '—'}
+      </div>
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+    </div>
+  );
+}
+
+function failureText(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

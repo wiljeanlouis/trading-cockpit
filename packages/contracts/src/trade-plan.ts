@@ -2,6 +2,7 @@ export interface TradingAccountDto {
   id: string;
   name: string;
   baseCurrency: string;
+  riskPercentPerTrade: number;
 }
 
 export interface TradingAccountsDto {

@@ -6,6 +6,7 @@ import type {
   CreateTradePlanResponse,
   ClosePositionRequest,
   ClosePositionResponse,
+  CreateTradingAccountRequest,
   DashboardDto,
   DashboardSummaryDto,
   RecordCapitalTransactionRequest,
@@ -18,7 +19,9 @@ import type {
   TradePlansDto,
   TradingConfigDto,
   TradingAccountsDto,
+  TradingAccountMutationResponse,
   UpdateTradePlanPlanningRequest,
+  UpdateTradingAccountRequest,
   UpdateTradePlanPlanningResponse,
   WatchlistDto
 } from '@trading-cockpit/contracts';
@@ -33,6 +36,9 @@ interface CockpitScriptRunner {
   ): CockpitScriptRunner;
   withSuccessHandler(handler: (value: AnalyticsDto) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: TradingAccountsDto) => void): CockpitScriptRunner;
+  withSuccessHandler(
+    handler: (value: TradingAccountMutationResponse) => void
+  ): CockpitScriptRunner;
   withSuccessHandler(handler: (value: TradingConfigDto) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: number) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: boolean) => void): CockpitScriptRunner;
@@ -66,6 +72,8 @@ interface CockpitScriptRunner {
   validateStrategies(): void;
   setupCockpitConfig(): void;
   setupTradingAccounts(): void;
+  createTradingAccount(request: CreateTradingAccountRequest): void;
+  updateTradingAccount(request: UpdateTradingAccountRequest): void;
   recordCapitalTransaction(request: RecordCapitalTransactionRequest): void;
   checkFinvizAuth(): void;
   setFinvizToken(token: string): void;

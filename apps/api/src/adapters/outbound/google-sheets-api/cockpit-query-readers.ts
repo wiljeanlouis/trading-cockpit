@@ -6,9 +6,12 @@ import {
 import type { MomentumRankingRecord } from '@trading-cockpit/core/ports/outbound/momentum-ranking-reader';
 import type { Position } from '@trading-cockpit/core/domain/position';
 import type { TradePlan } from '@trading-cockpit/core/domain/trade-plan';
-import type { TradingAccount } from '@trading-cockpit/core/domain/trading-account';
+import type {
+  TradingAccount,
+  TradingAccountRecord
+} from '@trading-cockpit/core/domain/trading-account';
 import {
-  normalizeTradingAccount,
+  normalizeTradingAccountRecord,
   requireUniqueTradingAccountIds
 } from '@trading-cockpit/core/domain/trading-account';
 import type { WatchlistEntry } from '@trading-cockpit/core/domain/watchlist';
@@ -336,14 +339,25 @@ export async function readJournalEntries(sheets: RequestScopedSheets): Promise<J
 }
 
 export async function readTradingAccounts(sheets: RequestScopedSheets): Promise<TradingAccount[]> {
+  return (await readTradingAccountRecords(sheets)).map(({ id, name, baseCurrency }) => ({
+    id,
+    name,
+    baseCurrency
+  }));
+}
+
+export async function readTradingAccountRecords(
+  sheets: RequestScopedSheets
+): Promise<TradingAccountRecord[]> {
   const table = await readTable(sheets, SHEET_DEFINITIONS.accounts);
   const accounts = table.rows
     .filter((row) => row.some((value) => textValue(value)))
     .map((row) =>
-      normalizeTradingAccount({
+      normalizeTradingAccountRecord({
         id: textValue(valueByHeader(table.headers, row, 'Account ID')),
         name: textValue(valueByHeader(table.headers, row, 'Name')),
-        baseCurrency: textValue(valueByHeader(table.headers, row, 'Base Currency'))
+        baseCurrency: textValue(valueByHeader(table.headers, row, 'Base Currency')),
+        riskPercentPerTrade: Number(valueByHeader(table.headers, row, 'Risk % Per Trade'))
       })
     );
   requireUniqueTradingAccountIds(accounts);

@@ -51,8 +51,10 @@ export function createTradePlanUseCase(observe?: Observe): CreateTradePlanFromWa
 }
 
 export function runListTradingAccountsForWeb(): TradingAccountsDto {
+  const riskPolicies = new GoogleSheetsTradingAccountRiskPolicyRepository();
   return tradingAccountsToDto(
-    createListTradingAccounts(new GoogleSheetsTradingAccountRepository())()
+    createListTradingAccounts(new GoogleSheetsTradingAccountRepository())(),
+    (accountId) => riskPolicies.findByAccountId(accountId)?.riskPercentPerTrade ?? null
   );
 }
 

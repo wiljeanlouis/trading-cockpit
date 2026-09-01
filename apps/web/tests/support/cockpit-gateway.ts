@@ -1,11 +1,16 @@
 import { vi } from 'vitest';
 import type {
   AddMomentumCandidateToWatchlistRequest,
+  AdminOverviewDto,
   AnalyticsDto,
+  CreateFundedTradingAccountRequest,
   DashboardDto,
   RecordCapitalTransactionRequest,
   RecordCapitalTransactionResponse,
-  TradingConfigDto
+  CreateTradingAccountRequest,
+  TradingAccountMutationResponse,
+  TradingConfigDto,
+  UpdateTradingAccountRequest
 } from '@trading-cockpit/contracts';
 import type { CockpitGateway } from '../../src/infrastructure/cockpit-gateway';
 
@@ -34,7 +39,13 @@ const EMPTY_ANALYTICS: AnalyticsDto = {
     bestR: 0
   },
   byStrategy: [],
-  byStrategyVersion: []
+  byStrategyVersion: [],
+  byAccount: []
+};
+
+const EMPTY_ADMIN_OVERVIEW: AdminOverviewDto = {
+  finviz: { configured: false },
+  accounts: []
 };
 
 const EMPTY_DASHBOARD: DashboardDto = {
@@ -120,6 +131,7 @@ export function createGatewayStub(overrides: Partial<CockpitGateway> = {}): Cock
       })
     ),
     getAnalytics: vi.fn(async () => EMPTY_ANALYTICS),
+    getAdminOverview: vi.fn(async () => EMPTY_ADMIN_OVERVIEW),
     getTradingAccounts: vi.fn(async () => ({ accounts: [] })),
     getTradingConfig: vi.fn(async () => EMPTY_TRADING_CONFIG),
     setupMomentumRanking: vi.fn(async () => {}),
@@ -127,6 +139,32 @@ export function createGatewayStub(overrides: Partial<CockpitGateway> = {}): Cock
     validateStrategies: vi.fn(async () => true),
     setupCockpitConfig: vi.fn(async () => {}),
     setupTradingAccounts: vi.fn(async () => {}),
+    createTradingAccount: vi.fn(
+      async (request: CreateTradingAccountRequest): Promise<TradingAccountMutationResponse> => ({
+        id: request.accountId,
+        name: request.name,
+        baseCurrency: request.baseCurrency,
+        riskPercentPerTrade: request.riskPercentPerTrade
+      })
+    ),
+    createFundedTradingAccount: vi.fn(
+      async (
+        request: CreateFundedTradingAccountRequest
+      ): Promise<TradingAccountMutationResponse> => ({
+        id: request.accountId,
+        name: request.name,
+        baseCurrency: request.baseCurrency,
+        riskPercentPerTrade: request.riskPercentPerTrade
+      })
+    ),
+    updateTradingAccount: vi.fn(
+      async (request: UpdateTradingAccountRequest): Promise<TradingAccountMutationResponse> => ({
+        id: request.accountId,
+        name: request.name,
+        baseCurrency: request.baseCurrency,
+        riskPercentPerTrade: request.riskPercentPerTrade
+      })
+    ),
     recordCapitalTransaction: vi.fn(
       async (_request: RecordCapitalTransactionRequest) => EMPTY_CAPITAL_TRANSACTION_RESPONSE
     ),

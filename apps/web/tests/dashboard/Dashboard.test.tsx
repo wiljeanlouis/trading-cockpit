@@ -120,8 +120,8 @@ describe('Dashboard', () => {
     const load = vi.fn(async () => dashboard);
     const getTradingAccounts = vi.fn(async () => ({
       accounts: [
-        { id: 'A1', name: 'Main Account', baseCurrency: 'CAD' },
-        { id: 'A2', name: 'Secondary Account', baseCurrency: 'CAD' }
+        { id: 'A1', name: 'Main Account', baseCurrency: 'CAD', riskPercentPerTrade: 0.005 },
+        { id: 'A2', name: 'Secondary Account', baseCurrency: 'CAD', riskPercentPerTrade: 0.005 }
       ]
     }));
     render(<Dashboard gateway={createGatewayStub({ getDashboard: load, getTradingAccounts })} />);
@@ -223,7 +223,9 @@ describe('Dashboard', () => {
         gateway={createGatewayStub({
           getDashboard: load,
           getTradingAccounts: vi.fn(async () => ({
-            accounts: [{ id: 'A1', name: 'Main Account', baseCurrency: 'CAD' }]
+            accounts: [
+              { id: 'A1', name: 'Main Account', baseCurrency: 'CAD', riskPercentPerTrade: 0.005 }
+            ]
           }))
         })}
       />
