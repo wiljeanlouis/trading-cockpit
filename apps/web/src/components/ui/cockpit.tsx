@@ -139,6 +139,79 @@ export function DataPanel({ className, ...props }: React.ComponentProps<'section
   );
 }
 
+export function MetricCard({
+  label,
+  value,
+  detail,
+  className,
+  valueClassName
+}: {
+  label: string;
+  value: React.ReactNode;
+  detail?: React.ReactNode;
+  className?: string;
+  valueClassName?: string;
+}) {
+  return (
+    <article
+      className={cn(
+        'relative min-h-[118px] overflow-hidden rounded-[12px] border border-[#1d3045] bg-[linear-gradient(145deg,rgba(18,32,50,0.92),rgba(11,23,38,0.9))] p-5 shadow-[0_14px_36px_rgba(0,0,0,0.14)] transition hover:-translate-y-px hover:border-[#2c4b56]',
+        className
+      )}
+    >
+      <div className="absolute inset-x-0 top-0 h-0.5 bg-[linear-gradient(90deg,#4ee1a0,transparent_70%)]" />
+      <p className="mb-5 text-[10px] font-extrabold tracking-[0.12em] text-[#8393a9] uppercase">
+        {label}
+      </p>
+      <strong
+        className={cn(
+          'mb-2 block text-[34px] leading-none tracking-[-0.05em] text-[#f5f8fc] tabular-nums',
+          valueClassName
+        )}
+      >
+        {value}
+      </strong>
+      {detail && <span className="text-[11px] text-[#60728b]">{detail}</span>}
+    </article>
+  );
+}
+
+export function MetricDetailGrid({ className, ...props }: React.ComponentProps<'dl'>) {
+  return (
+    <dl
+      className={cn(
+        'grid grid-cols-7 gap-4 p-5 text-sm max-[1180px]:grid-cols-4 max-[760px]:grid-cols-2',
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+export function ScopeContextBar({ className, ...props }: React.ComponentProps<'div'>) {
+  return (
+    <div
+      className={cn(
+        'flex flex-wrap gap-x-2 gap-y-1 border-b border-[#1d3045] px-5 py-3 text-xs text-[#7f8fa6] [&_b]:font-normal [&_b]:text-[#d7e3f4]',
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+export function ScopeBadge({ className, ...props }: React.ComponentProps<'span'>) {
+  return (
+    <span
+      className={cn(
+        'rounded-full border border-[#2a3c55] px-3 py-1 text-[10px] font-bold tracking-[0.08em] text-[#9fb0c6] uppercase',
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
 export function TableSummary({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div

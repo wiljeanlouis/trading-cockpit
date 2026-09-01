@@ -8,11 +8,15 @@ import {
   ErrorState,
   Eyebrow,
   LoadingState,
+  MetricCard,
+  MetricDetailGrid,
   PageActions,
   PageHeader,
   PageShell,
   PageSubtitle,
   PageTitle,
+  ScopeBadge,
+  ScopeContextBar,
   TableScroll,
   TableSummary,
   UpdatedAt,
@@ -57,21 +61,6 @@ function formatMoney(value: number | null): string {
     currency: 'USD',
     maximumFractionDigits: 2
   }).format(value);
-}
-
-function AnalyticsCard({ label, value, detail }: { label: string; value: string; detail: string }) {
-  return (
-    <article className="relative min-h-[150px] overflow-hidden rounded-[14px] border border-[#1d3045] bg-[linear-gradient(145deg,rgba(18,32,50,0.92),rgba(11,23,38,0.9))] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.18)] transition hover:-translate-y-px hover:border-[#2c4b56]">
-      <div className="absolute inset-x-0 top-0 h-0.5 bg-[linear-gradient(90deg,#4ee1a0,transparent_70%)]" />
-      <p className="mb-[18px] text-[11px] font-extrabold tracking-[0.12em] text-[#8393a9] uppercase">
-        {label}
-      </p>
-      <strong className="mb-3 block text-[42px] tracking-[-0.05em] text-[#f5f8fc] tabular-nums">
-        {value}
-      </strong>
-      <span className="text-[11px] text-[#60728b]">{detail}</span>
-    </article>
-  );
 }
 
 function strategyRowClassName(row: number): string {
@@ -128,6 +117,12 @@ export function Analytics({ gateway }: AnalyticsProps) {
   const selectedStrategyName =
     strategyOptions.find((strategy) => strategy.strategyId === selectedStrategyId)?.strategy ??
     selectedStrategyId;
+  const scopeLabel =
+    selectedAccountId === ''
+      ? 'All Accounts'
+      : state.accounts.find((account) => account.id === selectedAccountId)?.name ||
+        selectedAccountId;
+  const selectedAccount = state.accounts.find((account) => account.id === selectedAccountId);
 
   return (
     <PageShell>
@@ -147,12 +142,13 @@ export function Analytics({ gateway }: AnalyticsProps) {
       </PageHeader>
 
       <section
-        className="mb-[18px] grid grid-cols-[repeat(2,minmax(220px,360px))] items-end gap-3 rounded-xl border border-[#1c3447] bg-[rgba(10,24,39,0.82)] p-4 max-[620px]:grid-cols-1 [&_label]:grid [&_label]:gap-[7px] [&_label>span]:text-[9px] [&_label>span]:font-extrabold [&_label>span]:tracking-[0.11em] [&_label>span]:text-[#71869d] [&_label>span]:uppercase [&_select]:min-h-10 [&_select]:min-w-0 [&_select]:rounded-lg [&_select]:border [&_select]:border-[#294256] [&_select]:bg-[#0a1826] [&_select]:px-[11px] [&_select]:text-xs [&_select]:text-[#e5edf7] [&_select]:outline-none focus-within:[&_select]:border-[#4ee1a0] focus-within:[&_select]:ring-2 focus-within:[&_select]:ring-[rgba(78,225,160,0.14)]"
+        className="mb-4 grid grid-cols-[repeat(2,minmax(220px,360px))] items-end gap-3 rounded-xl border border-[#1c3447] bg-[rgba(10,24,39,0.82)] p-4 max-[620px]:grid-cols-1 [&_label]:grid [&_label]:gap-[7px] [&_label>span]:text-[9px] [&_label>span]:font-extrabold [&_label>span]:tracking-[0.11em] [&_label>span]:text-[#71869d] [&_label>span]:uppercase [&_select]:min-h-10 [&_select]:min-w-0 [&_select]:rounded-lg [&_select]:border [&_select]:border-[#294256] [&_select]:bg-[#0a1826] [&_select]:px-[11px] [&_select]:text-xs [&_select]:text-[#e5edf7] [&_select]:outline-none focus-within:[&_select]:border-[#4ee1a0] focus-within:[&_select]:ring-2 focus-within:[&_select]:ring-[rgba(78,225,160,0.14)]"
         aria-label="Analytics filters"
       >
         <label>
           <span>Account Scope</span>
           <select
+            aria-label="Account Scope"
             value={selectedAccountId}
             onChange={(event) => setSelectedAccountId(event.target.value)}
             disabled={state.loading && !data}
@@ -168,6 +164,7 @@ export function Analytics({ gateway }: AnalyticsProps) {
         <label>
           <span>Strategy</span>
           <select
+            aria-label="Strategy"
             value={selectedStrategyId}
             onChange={(event) => setSelectedStrategyId(event.target.value)}
             disabled={state.loading && !data}
@@ -198,37 +195,34 @@ export function Analytics({ gateway }: AnalyticsProps) {
       )}
 
       {data && data.available && (
-        <div className="grid gap-5">
+        <div className="grid gap-4">
           <section
             className="grid grid-cols-3 gap-4 max-[900px]:grid-cols-2 max-[620px]:grid-cols-1"
             aria-label="Analytics summary"
           >
-            <AnalyticsCard
-              label="Trades"
-              value={String(data.summary.trades)}
-              detail="Closed trades"
-            />
-            <AnalyticsCard
+            <MetricCard label="Trades" value={String(data.summary.trades)} detail="Closed trades" />
+            <MetricCard
               label="Win Rate"
               value={formatPercent(data.summary.winRate)}
               detail="Wins ÷ trades"
             />
-            <AnalyticsCard
+            <MetricCard
               label="Profit Factor"
               value={formatNumber(data.summary.profitFactor)}
               detail="Gross profit ÷ gross loss"
             />
-            <AnalyticsCard
+            <MetricCard
               label="Total P&L"
               value={formatMoney(data.summary.totalPnl)}
               detail="Authoritative realized P&L"
+              valueClassName={monetaryTone(data.summary.totalPnl) ?? undefined}
             />
-            <AnalyticsCard
+            <MetricCard
               label="Total R"
               value={formatNumber(data.summary.totalR)}
               detail="Aggregate R multiple"
             />
-            <AnalyticsCard
+            <MetricCard
               label="Expectancy"
               value={formatNumber(data.summary.expectancyR)}
               detail="Average R expectancy"
@@ -237,13 +231,30 @@ export function Analytics({ gateway }: AnalyticsProps) {
 
           <DataPanel aria-label="Performance details">
             <TableSummary>
-              <span>
-                {data.summary.wins} wins / {data.summary.losses} losses / {data.summary.breakeven}{' '}
-                breakeven
-              </span>
-              <small>Read-only history</small>
+              <span>Scoped Performance</span>
+              <ScopeBadge>{scopeLabel}</ScopeBadge>
             </TableSummary>
-            <div className="grid gap-px bg-[#20364b] text-sm tabular-nums min-[760px]:grid-cols-3">
+            <ScopeContextBar>
+              <span>Calculated from backend-confirmed Journal records</span>
+              <span className="mx-2 text-[#36506a]">•</span>
+              <span>
+                Outcome <b>{data.summary.wins}W</b> / <b>{data.summary.losses}L</b> /{' '}
+                <b>{data.summary.breakeven}B</b>
+              </span>
+              <span className="mx-2 text-[#36506a]">•</span>
+              <span>
+                Strategy <b>{selectedStrategyId ? selectedStrategyName : 'All Strategies'}</b>
+              </span>
+              {selectedAccount && (
+                <>
+                  <span className="mx-2 text-[#36506a]">•</span>
+                  <span>
+                    Account ID <b>{selectedAccount.id}</b>
+                  </span>
+                </>
+              )}
+            </ScopeContextBar>
+            <MetricDetailGrid className="grid-cols-9 max-[1180px]:grid-cols-5 max-[760px]:grid-cols-2">
               {[
                 ['Average P&L', formatMoney(data.summary.averagePnl)],
                 ['Best Trade', formatMoney(data.summary.bestPnl)],
@@ -255,14 +266,12 @@ export function Analytics({ gateway }: AnalyticsProps) {
                 ['Average Loser', formatNumber(data.summary.averageLoserR)],
                 ['Best R', formatNumber(data.summary.bestR)]
               ].map(([label, value]) => (
-                <div key={label} className="bg-[#0c1929] p-4">
-                  <dt className="mb-2 text-[10px] font-extrabold tracking-[0.11em] text-[#667a94] uppercase">
-                    {label}
-                  </dt>
-                  <dd className="m-0 text-sm text-[#e5edf7]">{value}</dd>
+                <div key={label}>
+                  <dt className="text-[#7f8fa6]">{label}</dt>
+                  <dd className="m-0 text-lg font-bold">{value}</dd>
                 </div>
               ))}
-            </div>
+            </MetricDetailGrid>
           </DataPanel>
 
           <DataPanel aria-label="Performance by strategy">

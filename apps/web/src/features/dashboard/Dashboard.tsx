@@ -11,11 +11,15 @@ import {
   ErrorState,
   Eyebrow,
   LoadingState,
+  MetricCard,
+  MetricDetailGrid,
   PageActions,
   PageHeader,
   PageShell,
   PageSubtitle,
   PageTitle,
+  ScopeBadge,
+  ScopeContextBar,
   TableSummary,
   UpdatedAt
 } from '@/components/ui/cockpit';
@@ -46,16 +50,6 @@ const GLOBAL_METRICS: Array<{
     value: (dashboard) => dashboard.summary.watchlist,
     label: 'Watchlist',
     detail: 'Tracked candidates'
-  },
-  {
-    value: (dashboard) => dashboard.summary.ready,
-    label: 'Ready',
-    detail: 'Candidates ready to plan'
-  },
-  {
-    value: (dashboard) => dashboard.pipeline.nearBreakout,
-    label: 'Near breakout',
-    detail: 'Candidates approaching trigger'
   }
 ];
 
@@ -88,29 +82,6 @@ function displayPercent(value: number | null | undefined): string {
   return typeof value === 'number' && Number.isFinite(value)
     ? new Intl.NumberFormat(undefined, { style: 'percent', maximumFractionDigits: 2 }).format(value)
     : '—';
-}
-
-function DashboardMetricCard({
-  label,
-  value,
-  detail
-}: {
-  label: string;
-  value: string | number;
-  detail: string;
-}) {
-  return (
-    <article className="relative min-h-[160px] overflow-hidden rounded-[14px] border border-[#1d3045] bg-[linear-gradient(145deg,rgba(18,32,50,0.92),rgba(11,23,38,0.9))] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.18)] transition hover:-translate-y-px hover:border-[#2c4b56]">
-      <div className="absolute inset-x-0 top-0 h-0.5 bg-[linear-gradient(90deg,#4ee1a0,transparent_70%)]" />
-      <p className="mb-[18px] text-[11px] font-extrabold tracking-[0.12em] text-[#8393a9] uppercase">
-        {label}
-      </p>
-      <strong className="mb-3 block text-[42px] tracking-[-0.05em] text-[#f5f8fc] tabular-nums">
-        {value}
-      </strong>
-      <span className="text-[11px] text-[#60728b]">{detail}</span>
-    </article>
-  );
 }
 
 function DetailPanel({
@@ -210,162 +181,140 @@ export function Dashboard({ gateway }: DashboardProps) {
       )}
 
       {dashboard && (
-        <div className="space-y-5">
-          <DataPanel aria-label="Global market pipeline" className="p-4">
-            <div className="mb-4 flex items-end justify-between gap-4 max-[620px]:flex-col max-[620px]:items-start">
-              <div>
-                <h2 className="m-0 text-sm font-extrabold tracking-[0.12em] text-[#d7e3f4] uppercase">
-                  Market pipeline
-                </h2>
-                <p className="mt-1.5 mb-0 text-xs text-[#7f8fa6]">
-                  Global signal discovery and Watchlist state, independent of account scope.
-                </p>
-              </div>
-            </div>
-
-            <div
-              className="grid grid-cols-4 gap-4 max-[1100px]:grid-cols-2 max-[620px]:grid-cols-1"
-              aria-label="Global workflow summary"
-            >
-              {GLOBAL_METRICS.map((metric) => (
-                <DashboardMetricCard
-                  key={metric.label}
-                  label={metric.label}
-                  value={metric.value(dashboard)}
-                  detail={metric.detail}
-                />
-              ))}
-            </div>
-          </DataPanel>
-
-          <DataPanel aria-label="Account-scoped Dashboard" className="p-4">
-            <div className="mb-4 flex items-end justify-between gap-4 max-[620px]:flex-col max-[620px]:items-start [&_label]:grid [&_label]:gap-[7px] [&_label>span]:text-[9px] [&_label>span]:font-extrabold [&_label>span]:tracking-[0.11em] [&_label>span]:text-[#71869d] [&_label>span]:uppercase [&_select]:min-h-10 [&_select]:min-w-[260px] [&_select]:rounded-lg [&_select]:border [&_select]:border-[#294256] [&_select]:bg-[#0a1826] [&_select]:px-[11px] [&_select]:text-xs [&_select]:text-[#e5edf7] [&_select]:outline-none focus-within:[&_select]:border-[#4ee1a0] focus-within:[&_select]:ring-2 focus-within:[&_select]:ring-[rgba(78,225,160,0.14)] max-[620px]:[&_label]:w-full max-[620px]:[&_select]:w-full">
-              <div>
-                <h2 className="m-0 text-sm font-extrabold tracking-[0.12em] text-[#d7e3f4] uppercase">
-                  Account scope
-                </h2>
-                <p className="mt-1.5 mb-0 text-xs text-[#7f8fa6]">
-                  Trade Plans, Positions, Journal and performance for the selected scope.
-                </p>
-              </div>
-              <label>
-                <span>Account Scope</span>
-                <select
-                  value={selectedAccountId}
-                  onChange={(event) => setSelectedAccountId(event.target.value)}
-                  disabled={state.loading && !dashboard}
-                >
-                  <option value="">All Accounts</option>
-                  {state.accounts.map((account) => (
-                    <option key={account.id} value={account.id}>
-                      {account.id} — {account.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4 max-[900px]:grid-cols-2 max-[620px]:grid-cols-1">
-              {ACCOUNT_METRICS.map((metric) => (
-                <DashboardMetricCard
-                  key={metric.key}
-                  label={metric.label}
-                  value={dashboard.summary[metric.key]}
-                  detail={metric.detail}
-                />
-              ))}
-            </div>
-
-            <div className="mt-4 grid grid-cols-3 gap-4 max-[900px]:grid-cols-1">
-              <DetailPanel title="Performance">
-                <dl className="grid grid-cols-2 gap-4 p-5 text-sm">
-                  <div>
-                    <dt className="text-[#7f8fa6]">Realized Equity</dt>
-                    <dd className="m-0 text-xl font-bold">
-                      {displayMoney(dashboard.performance.realizedEquity, currency)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-[#7f8fa6]">Net External Capital</dt>
-                    <dd className="m-0 text-xl font-bold">
-                      {displayMoney(dashboard.performance.netExternalCapital, currency)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-[#7f8fa6]">Realized P&L</dt>
-                    <dd className="m-0 text-xl font-bold text-[#4ee1a0]">
-                      {displayMoney(dashboard.performance.realizedPnl, currency)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-[#7f8fa6]">Win Rate</dt>
-                    <dd className="m-0 text-xl font-bold">
-                      {displayPercent(dashboard.performance.winRate)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-[#7f8fa6]">Profit Factor</dt>
-                    <dd className="m-0 text-xl font-bold">
-                      {displayNumber(dashboard.performance.profitFactor)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-[#7f8fa6]">Average R</dt>
-                    <dd className="m-0 text-xl font-bold">
-                      {displayNumber(dashboard.performance.averageR)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-[#7f8fa6]">Total R</dt>
-                    <dd className="m-0 text-xl font-bold">
-                      {displayNumber(dashboard.performance.totalR)}
-                    </dd>
-                  </div>
-                </dl>
-              </DetailPanel>
-
-              <DetailPanel
-                title="Open Position Actions"
-                action={
-                  <small className="rounded-full border border-[#2f5f52] px-3 py-1 text-[10px] font-bold tracking-[0.1em] text-[#69f0ae] uppercase">
-                    {dashboard.actions.openPositions.length} active
-                  </small>
-                }
-              >
-                <div className="grid grid-cols-1 text-center text-sm">
-                  <div className="p-5">
-                    <strong className="block text-2xl">
-                      {dashboard.actions.openPositions.length}
-                    </strong>
-                    <span className="text-[#7f8fa6]">Scoped open positions</span>
-                  </div>
+        <div className="space-y-4">
+          <section className="grid grid-cols-[minmax(320px,0.82fr)_minmax(0,1.18fr)] gap-4 max-[980px]:grid-cols-1">
+            <DataPanel aria-label="Discovery" className="p-4">
+              <div className="mb-4 flex items-end justify-between gap-4 max-[620px]:flex-col max-[620px]:items-start">
+                <div>
+                  <h2 className="m-0 text-sm font-extrabold tracking-[0.12em] text-[#d7e3f4] uppercase">
+                    Discovery
+                  </h2>
+                  <p className="mt-1.5 mb-0 text-xs text-[#7f8fa6]">
+                    Opportunities discovered and candidates currently tracked.
+                  </p>
                 </div>
-              </DetailPanel>
+              </div>
 
-              <DetailPanel title="Account">
-                <dl className="grid grid-cols-2 gap-4 p-5 text-sm">
-                  <div>
-                    <dt className="text-[#7f8fa6]">Scope</dt>
-                    <dd className="m-0 font-bold">{scopeLabel}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-[#7f8fa6]">Currency</dt>
-                    <dd className="m-0 font-bold">{dashboard.account.currency || '—'}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-[#7f8fa6]">Accounts</dt>
-                    <dd className="m-0 font-bold">{dashboard.account.accountCount ?? '—'}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-[#7f8fa6]">Realized Equity</dt>
-                    <dd className="m-0 font-bold">
-                      {displayMoney(dashboard.account.realizedEquity, currency)}
-                    </dd>
-                  </div>
-                </dl>
-              </DetailPanel>
-            </div>
-          </DataPanel>
+              <div
+                className="grid grid-cols-2 gap-4 max-[620px]:grid-cols-1"
+                aria-label="Global discovery summary"
+              >
+                {GLOBAL_METRICS.map((metric) => (
+                  <MetricCard
+                    key={metric.label}
+                    label={metric.label}
+                    value={metric.value(dashboard)}
+                    detail={metric.detail}
+                  />
+                ))}
+              </div>
+            </DataPanel>
+
+            <DataPanel aria-label="Account-scoped Dashboard" className="p-4">
+              <div className="mb-4 flex items-end justify-between gap-4 max-[620px]:flex-col max-[620px]:items-start [&_label]:grid [&_label]:gap-[7px] [&_label>span]:text-[9px] [&_label>span]:font-extrabold [&_label>span]:tracking-[0.11em] [&_label>span]:text-[#71869d] [&_label>span]:uppercase [&_select]:min-h-10 [&_select]:min-w-[240px] [&_select]:rounded-lg [&_select]:border [&_select]:border-[#294256] [&_select]:bg-[#0a1826] [&_select]:px-[11px] [&_select]:text-xs [&_select]:text-[#e5edf7] [&_select]:outline-none focus-within:[&_select]:border-[#4ee1a0] focus-within:[&_select]:ring-2 focus-within:[&_select]:ring-[rgba(78,225,160,0.14)] max-[620px]:[&_label]:w-full max-[620px]:[&_select]:w-full">
+                <div>
+                  <h2 className="m-0 text-sm font-extrabold tracking-[0.12em] text-[#d7e3f4] uppercase">
+                    Account scope
+                  </h2>
+                  <p className="mt-1.5 mb-0 text-xs text-[#7f8fa6]">
+                    Plans, Positions, Journal and performance for the selected scope.
+                  </p>
+                </div>
+                <label>
+                  <select
+                    aria-label="Account Scope"
+                    value={selectedAccountId}
+                    onChange={(event) => setSelectedAccountId(event.target.value)}
+                    disabled={state.loading && !dashboard}
+                  >
+                    <option value="">All Accounts</option>
+                    {state.accounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.id} — {account.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 max-[760px]:grid-cols-1">
+                {ACCOUNT_METRICS.map((metric) => (
+                  <MetricCard
+                    key={metric.key}
+                    label={metric.label}
+                    value={dashboard.summary[metric.key]}
+                    detail={metric.detail}
+                  />
+                ))}
+              </div>
+            </DataPanel>
+          </section>
+
+          <DetailPanel title="Scoped Performance" action={<ScopeBadge>{scopeLabel}</ScopeBadge>}>
+            <ScopeContextBar>
+              <span>Calculated for the selected account scope</span>
+              <span className="mx-2 text-[#36506a]">•</span>
+              <span>
+                Currency <b>{dashboard.account.currency || '—'}</b>
+              </span>
+              <span className="mx-2 text-[#36506a]">•</span>
+              <span>
+                Accounts <b>{dashboard.account.accountCount ?? '—'}</b>
+              </span>
+              {dashboard.account.accountId && (
+                <>
+                  <span className="mx-2 text-[#36506a]">•</span>
+                  <span>
+                    Account ID <b>{dashboard.account.accountId}</b>
+                  </span>
+                </>
+              )}
+            </ScopeContextBar>
+            <MetricDetailGrid>
+              <div>
+                <dt className="text-[#7f8fa6]">Realized Equity</dt>
+                <dd className="m-0 text-lg font-bold">
+                  {displayMoney(dashboard.performance.realizedEquity, currency)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[#7f8fa6]">Net External Capital</dt>
+                <dd className="m-0 text-lg font-bold">
+                  {displayMoney(dashboard.performance.netExternalCapital, currency)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[#7f8fa6]">Realized P&L</dt>
+                <dd className="m-0 text-lg font-bold text-[#4ee1a0]">
+                  {displayMoney(dashboard.performance.realizedPnl, currency)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[#7f8fa6]">Win Rate</dt>
+                <dd className="m-0 text-lg font-bold">
+                  {displayPercent(dashboard.performance.winRate)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[#7f8fa6]">Profit Factor</dt>
+                <dd className="m-0 text-lg font-bold">
+                  {displayNumber(dashboard.performance.profitFactor)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[#7f8fa6]">Average R</dt>
+                <dd className="m-0 text-lg font-bold">
+                  {displayNumber(dashboard.performance.averageR)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[#7f8fa6]">Total R</dt>
+                <dd className="m-0 text-lg font-bold">
+                  {displayNumber(dashboard.performance.totalR)}
+                </dd>
+              </div>
+            </MetricDetailGrid>
+          </DetailPanel>
 
           <section className="grid grid-cols-3 gap-4 max-[1100px]:grid-cols-1">
             <DetailPanel title="Top Momentum">
@@ -425,7 +374,13 @@ export function Dashboard({ gateway }: DashboardProps) {
                       className="grid grid-cols-[1fr_auto_auto] items-center gap-4 px-5 py-4 text-sm"
                       key={position.ticker}
                     >
-                      <strong>{position.ticker}</strong>
+                      <div>
+                        <strong>{position.ticker}</strong>
+                        <span className="mt-1 block text-[11px] text-[#7f8fa6]">
+                          Entry {displayMoney(position.actualEntry, currency)} · Stop{' '}
+                          {displayMoney(position.currentStop, currency)}
+                        </span>
+                      </div>
                       <span className="text-[#9fb0c6]">
                         {displayMoney(position.currentPrice, currency)}
                       </span>
@@ -437,26 +392,6 @@ export function Dashboard({ gateway }: DashboardProps) {
                 }}
               />
             </DetailPanel>
-          </section>
-
-          <section className="mt-5 flex items-center justify-between gap-7 rounded-[14px] border border-[#1b2b3f] bg-[rgba(10,22,37,0.72)] px-7 py-[26px] max-[900px]:flex-col max-[900px]:items-start">
-            <div>
-              <p className="mb-2 text-[10px] font-extrabold tracking-[0.18em] text-[#4ee1a0] uppercase">
-                Workflow pulse
-              </p>
-              <h2 className="m-0 text-xl font-bold">From signal to closed trade</h2>
-            </div>
-            <div className="flex items-center gap-2.5 text-[11px] text-[#8da0b8] max-[620px]:flex-wrap">
-              <span>Signals</span>
-              <i className="h-px w-[18px] bg-[#31524d]" />
-              <span>Watchlist</span>
-              <i className="h-px w-[18px] bg-[#31524d]" />
-              <span>Plans</span>
-              <i className="h-px w-[18px] bg-[#31524d]" />
-              <span>Positions</span>
-              <i className="h-px w-[18px] bg-[#31524d]" />
-              <span>Journal</span>
-            </div>
           </section>
         </div>
       )}

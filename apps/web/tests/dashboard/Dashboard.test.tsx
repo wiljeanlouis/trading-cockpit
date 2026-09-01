@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { DashboardDto } from '@trading-cockpit/contracts';
 import { Dashboard } from '../../src/features/dashboard/Dashboard';
@@ -130,14 +130,38 @@ describe('Dashboard', () => {
     expect(await screen.findByText('12')).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /Account Scope/i })).toHaveValue('');
     expect(screen.getByRole('option', { name: 'A1 — Main Account' })).toBeInTheDocument();
-    expect(screen.getByText('Market pipeline')).toBeInTheDocument();
+    expect(within(screen.getByLabelText('Discovery')).getByText('Discovery')).toBeInTheDocument();
+    expect(screen.queryByText('Workflow Pulse')).not.toBeInTheDocument();
     expect(screen.getByText('Account scope')).toBeInTheDocument();
-    expect(screen.getByText('Performance')).toBeInTheDocument();
-    expect(screen.getByText('Open Position Actions')).toBeInTheDocument();
+    expect(screen.getByText('Scoped Performance')).toBeInTheDocument();
+    expect(screen.getByText('Calculated for the selected account scope')).toBeInTheDocument();
+    expect(screen.queryByText('Candidates ready to plan')).not.toBeInTheDocument();
+    expect(screen.queryByText('Candidates approaching trigger')).not.toBeInTheDocument();
+    expect(screen.queryByText('Open Position Actions')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Realized Equity')).toHaveLength(1);
     expect(screen.getAllByText('BOX').length).toBeGreaterThan(0);
+    expect(screen.getByText(/Entry/)).toHaveTextContent('Stop');
     expect(screen.getByText(/Updated/)).toBeInTheDocument();
     expect(load).toHaveBeenCalledWith({ accountId: null });
     expect(getTradingAccounts).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows Discovery and Account Scope as sibling Dashboard sections', async () => {
+    render(
+      <Dashboard gateway={createGatewayStub({ getDashboard: vi.fn(async () => dashboard) })} />
+    );
+
+    const discovery = await screen.findByLabelText('Discovery');
+    const accountScope = screen.getByLabelText('Account-scoped Dashboard');
+
+    expect(within(discovery).getByText('Signals')).toBeInTheDocument();
+    expect(within(discovery).getByText('Watchlist')).toBeInTheDocument();
+    expect(discovery).not.toContainElement(accountScope);
+    expect(within(accountScope).getByText('Account scope')).toBeInTheDocument();
+    expect(within(accountScope).getByText('Trade plans')).toBeInTheDocument();
+    expect(within(accountScope).getByText('Open positions')).toBeInTheDocument();
+    expect(within(accountScope).getByText('Closed trades')).toBeInTheDocument();
+    expect(screen.queryByText('Workflow Pulse')).not.toBeInTheDocument();
   });
 
   it('shows a useful error and permits retry', async () => {
