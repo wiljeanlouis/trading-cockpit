@@ -143,9 +143,7 @@ describe('Watchlist', () => {
     const cockpit = createGatewayStub({
       getWatchlist: load,
       getTradingAccounts: vi.fn(async () => ({
-        accounts: [
-          { id: 'A1', name: 'Primary', baseCurrency: 'CAD', riskPercentPerTrade: 0.005 }
-        ]
+        accounts: [{ id: 'A1', name: 'Primary', baseCurrency: 'CAD', riskPercentPerTrade: 0.005 }]
       })),
       createTradePlan: vi.fn(async () => ({
         kind: 'created' as const,
@@ -178,9 +176,7 @@ describe('Watchlist', () => {
     const cockpit = createGatewayStub({
       getWatchlist: vi.fn(async () => data),
       getTradingAccounts: vi.fn(async () => ({
-        accounts: [
-          { id: 'A1', name: 'Primary', baseCurrency: 'CAD', riskPercentPerTrade: 0.005 }
-        ]
+        accounts: [{ id: 'A1', name: 'Primary', baseCurrency: 'CAD', riskPercentPerTrade: 0.005 }]
       })),
       createTradePlan: vi.fn(async () => {
         throw new Error('Initial Funding absent pour le compte A1.');
@@ -206,9 +202,7 @@ describe('Watchlist', () => {
         items: [{ ...data.items[0], invalidationLevel: null }]
       })),
       getTradingAccounts: vi.fn(async () => ({
-        accounts: [
-          { id: 'A1', name: 'Primary', baseCurrency: 'CAD', riskPercentPerTrade: 0.005 }
-        ]
+        accounts: [{ id: 'A1', name: 'Primary', baseCurrency: 'CAD', riskPercentPerTrade: 0.005 }]
       }))
     });
     render(<Watchlist gateway={cockpit} />);

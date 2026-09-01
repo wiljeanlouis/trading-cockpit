@@ -6,25 +6,28 @@ import {
   type MutationContext
 } from '../../adapters/outbound/google-sheets-api/cockpit-mutation-repositories';
 import {
-  addMomentumCandidateToWatchlistForCloudRun,
-  checkFinvizAuthForCloudRun,
-  closePositionForCloudRun,
+  checkFinvizAuthMutationForCloudRun,
   createFundedTradingAccountForCloudRun,
   createTradingAccountForCloudRun,
-  createTradePlanForCloudRun,
   deleteFinvizTokenForCloudRun,
-  executeTradePlanForCloudRun,
   recordCapitalTransactionForCloudRun,
-  refreshFinvizForCloudRun,
-  refreshMomentumRankingForCloudRun,
   setFinvizTokenForCloudRun,
   setupCockpitConfigForCloudRun,
   setupMomentumRankingForCloudRun,
   setupStrategiesForCloudRun,
   setupTradingAccountsForCloudRun,
-  updateTradingAccountForCloudRun,
+  updateTradingAccountForCloudRun
+} from '../../composition/admin';
+import {
+  refreshFinvizForCloudRun,
+  refreshMomentumRankingForCloudRun
+} from '../../composition/discovery';
+import { addMomentumCandidateToWatchlistForCloudRun } from '../../composition/watchlist';
+import {
+  createTradePlanForCloudRun,
   updateTradePlanPlanningForCloudRun
-} from '../../composition/mutations';
+} from '../../composition/trade-plans';
+import { closePositionForCloudRun, executeTradePlanForCloudRun } from '../../composition/positions';
 import { elapsedMs, nowMs } from '../../timing';
 import { ValidationError } from '../errors';
 import type { RequestContext } from '../request-context';
@@ -174,7 +177,7 @@ const exactRoutes: Record<string, MutationHandler> = {
   'POST /api/admin/trading-accounts': createTradingAccountForCloudRun,
   'POST /api/admin/trading-accounts/funded': createFundedTradingAccountForCloudRun,
   'POST /api/admin/capital-transactions': recordCapitalTransactionForCloudRun,
-  'GET /api/admin/finviz/auth': checkFinvizAuthForCloudRun,
+  'GET /api/admin/finviz/auth': checkFinvizAuthMutationForCloudRun,
   'PUT /api/admin/finviz/token': setFinvizTokenForCloudRun,
   'DELETE /api/admin/finviz/token': deleteFinvizTokenForCloudRun,
   'POST /api/admin/momentum-ranking/setup': setupMomentumRankingForCloudRun,

@@ -36,9 +36,7 @@ interface CockpitScriptRunner {
   ): CockpitScriptRunner;
   withSuccessHandler(handler: (value: AnalyticsDto) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: TradingAccountsDto) => void): CockpitScriptRunner;
-  withSuccessHandler(
-    handler: (value: TradingAccountMutationResponse) => void
-  ): CockpitScriptRunner;
+  withSuccessHandler(handler: (value: TradingAccountMutationResponse) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: TradingConfigDto) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: number) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: boolean) => void): CockpitScriptRunner;

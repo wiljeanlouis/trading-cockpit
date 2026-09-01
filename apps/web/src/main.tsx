@@ -31,9 +31,7 @@ function shouldUseMockGateway(): boolean {
     return false;
   }
 
-  const gatewayMode = String(
-    import.meta.env.VITE_TRADING_COCKPIT_GATEWAY ?? 'mock'
-  )
+  const gatewayMode = String(import.meta.env.VITE_TRADING_COCKPIT_GATEWAY ?? 'mock')
     .trim()
     .toLowerCase();
 

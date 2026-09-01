@@ -183,9 +183,7 @@ describe('AppsScriptCockpitGateway', () => {
 
   it('loads trading accounts through the Apps Script callback bridge', async () => {
     const accounts = {
-      accounts: [
-        { id: 'A1', name: 'Primary', baseCurrency: 'CAD', riskPercentPerTrade: 0.005 }
-      ]
+      accounts: [{ id: 'A1', name: 'Primary', baseCurrency: 'CAD', riskPercentPerTrade: 0.005 }]
     };
     let success: ((value: typeof accounts) => void) | undefined;
     const runner = {

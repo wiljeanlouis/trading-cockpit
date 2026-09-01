@@ -266,8 +266,18 @@ describe('Cloud Run Google Sheets API query readers', () => {
         sheets({
           [SHEET_DEFINITIONS.accounts.range]: [
             [...headers],
-            rowFor(headers, { 'Account ID': 'A1', Name: 'One', 'Base Currency': 'CAD' }),
-            rowFor(headers, { 'Account ID': 'a1', Name: 'Duplicate', 'Base Currency': 'CAD' })
+            rowFor(headers, {
+              'Account ID': 'A1',
+              Name: 'One',
+              'Base Currency': 'CAD',
+              'Risk % Per Trade': 0.005
+            }),
+            rowFor(headers, {
+              'Account ID': 'a1',
+              Name: 'Duplicate',
+              'Base Currency': 'CAD',
+              'Risk % Per Trade': 0.005
+            })
           ]
         })
       )
