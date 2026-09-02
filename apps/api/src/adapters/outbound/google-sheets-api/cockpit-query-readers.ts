@@ -17,7 +17,10 @@ import {
 import type { WatchlistEntry } from '@trading-cockpit/core/domain/watchlist';
 import type { DashboardRepositorySnapshot } from '@trading-cockpit/core/ports/outbound/dashboard-repository';
 import type { JournalReader } from '@trading-cockpit/core/ports/outbound/journal-reader';
-import type { MomentumRankingReader } from '@trading-cockpit/core/ports/outbound/momentum-ranking-reader';
+import type {
+  MomentumRankingIdentity,
+  MomentumRankingReader
+} from '@trading-cockpit/core/ports/outbound/momentum-ranking-reader';
 import type { PositionReader } from '@trading-cockpit/core/ports/outbound/position-reader';
 import type { TradePlanReader } from '@trading-cockpit/core/ports/outbound/trade-plan-reader';
 import type { TradingAccountRepository } from '@trading-cockpit/core/ports/outbound/trading-account-repository';
@@ -293,11 +296,26 @@ export class LoadedJournalReader implements JournalReader {
 
 export class LoadedMomentumRankingReader implements MomentumRankingReader {
   constructor(private readonly records: readonly MomentumRankingRecord[]) {}
+
   findAll(): MomentumRankingRecord[] {
     return [...this.records];
   }
-  findByIdentity(): MomentumRankingRecord | null {
-    return null;
+
+  findByIdentity(identity: MomentumRankingIdentity): MomentumRankingRecord | null {
+    const expectedStrategyId = textValue(identity.strategyId).toUpperCase();
+    const expectedStrategyVersion = textValue(identity.strategyVersion);
+    const expectedSignalDate = textValue(identity.signalDate);
+    const expectedTicker = textValue(identity.ticker).toUpperCase();
+
+    return (
+      this.records.find(
+        (record) =>
+          textValue(record.strategyId).toUpperCase() === expectedStrategyId &&
+          textValue(record.strategyVersion) === expectedStrategyVersion &&
+          textValue(record.signalDate) === expectedSignalDate &&
+          textValue(record.ticker).toUpperCase() === expectedTicker
+      ) ?? null
+    );
   }
 }
 
