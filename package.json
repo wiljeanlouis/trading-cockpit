@@ -10,38 +10,46 @@
     "apps/web",
     "packages/*"
   ],
-  "scripts": {
+"scripts": {
+    "dev": "./scripts/dev.sh",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run test && npm run check:architecture && npm run check:apps-script",
+    "build": "npm run build:sheets && npm run build:web && npm run build:api",
+
+    "deploy:prepare": "npm run build && npm run check && clasp status",
+    "deploy:sheets": "./scripts/deploy-sheets.sh",
+    "deploy:api": "npm run build:cloud && ./scripts/deploy-api.sh",
+    "deploy:all": "npm run deploy:prepare && npm run deploy:sheets && npm run deploy:api",
+
     "dev:web": "./scripts/dev-web.sh",
     "dev:api": "./scripts/dev-api.sh",
-    "dev": "./scripts/dev.sh",
-    "build:sheets": "npm run build --workspace @trading-cockpit/sheets",
-    "build:api": "npm run build --workspace @trading-cockpit/api",
+
     "build:web": "npm run build --workspace @trading-cockpit/web",
-    "build": "npm run build:sheets && npm run build:web && npm run build:api",
+    "build:api": "npm run build --workspace @trading-cockpit/api",
+    "build:sheets": "npm run build --workspace @trading-cockpit/sheets",
     "build:prod": "./scripts/build-prod.sh",
     "build:cloud": "./scripts/build-cloud.sh",
+
+    "typecheck:contracts": "tsc -p packages/contracts/tsconfig.json",
     "typecheck:core": "npm run typecheck --workspace @trading-cockpit/core",
     "typecheck:sheets": "npm run typecheck --workspace @trading-cockpit/sheets",
-    "typecheck:contracts": "tsc -p packages/contracts/tsconfig.json",
     "typecheck:api": "npm run typecheck --workspace @trading-cockpit/api",
     "typecheck:web": "npm run typecheck --workspace @trading-cockpit/web",
     "typecheck": "npm run typecheck:contracts && npm run typecheck:core && npm run typecheck:sheets && npm run typecheck:api && npm run typecheck:web",
+
     "lint": "eslint .",
     "format": "prettier --write . --ignore-unknown",
     "format:check": "prettier --check . --ignore-unknown",
+
     "test:core": "npm run test --workspace @trading-cockpit/core",
     "test:sheets": "npm run test --workspace @trading-cockpit/sheets",
     "test:api": "npm run test --workspace @trading-cockpit/api",
     "test:web": "npm run test --workspace @trading-cockpit/web",
     "test": "npm run test:core && npm run test:sheets && npm run test:api && npm run test:web",
+
     "test:watch": "npm run test:watch --workspace @trading-cockpit/sheets",
+
     "check:architecture": "npm run check:architecture --workspace @trading-cockpit/sheets",
-    "check:apps-script": "npm run check:apps-script --workspace @trading-cockpit/sheets",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm run test && npm run check:architecture && npm run check:apps-script",
-    "deploy:prepare": "npm run build && npm run check && clasp status",
-    "deploy:api": "./scripts/deploy-api.sh",
-    "deploy:sheets": "./scripts/deploy-sheets.sh",
-    "deploy:all": "npm run deploy:sheets && npm run deploy:api"
+    "check:apps-script": "npm run check:apps-script --workspace @trading-cockpit/sheets"
   },
   "engines": {
     "node": ">=20.19.0"

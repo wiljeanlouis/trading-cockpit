@@ -53,7 +53,10 @@ require_env() {
 }
 
 require_image_tag() {
-  require_env IMAGE_TAG
+  if [[ -z "${IMAGE_TAG:-}" ]]; then
+    IMAGE_TAG="$(git -C "$(repo_root)" rev-parse --short HEAD)"
+    export IMAGE_TAG
+  fi
 }
 
 cloud_image_uri() {
