@@ -67,8 +67,7 @@ function mutableSheetsClientByRange(
         'Accounts',
         'Strategies',
         'Capital Ledger',
-        'Momentum Ranking',
-        'Cockpit Config'
+        'Momentum Ranking'
       ]
     })),
     batchUpdateSpreadsheet: vi.fn(async () => undefined)
@@ -1062,34 +1061,7 @@ describe('Cloud Run Trading Cockpit API', () => {
     );
   });
 
-  it('sets up Cockpit Config without obsolete account financial fields', async () => {
-    const client = mutableSheetsClientByRange(
-      queryFixtureByRange({
-        cockpitConfig: []
-      })
-    );
-
-    const response = await handleCloudRunRequest({
-      method: 'POST',
-      url: '/api/admin/trading-config/setup',
-      headers: authorizationHeaders(),
-      spreadsheetId: 'spreadsheet-id',
-      auth: testAuthConfig(),
-      cors: testCorsConfig(),
-      sheetsClientFactory: async () => client,
-      tokenVerifier: authorizedTokenVerifier()
-    });
-
-    expect(response.statusCode).toBe(200);
-    expect(client.updateValues).toHaveBeenCalledWith(
-      expect.objectContaining({
-        range: "'Cockpit Config'!A1:C1",
-        values: [['Parameter', 'Value', 'Description']]
-      })
-    );
-  });
-
-  it('sets up Momentum sheets using canonical tabular score config headers', async () => {
+  it('sets up Momentum Ranking using the canonical data sheet headers', async () => {
     const client = mutableSheetsClientByRange(queryFixtureByRange());
 
     const response = await handleCloudRunRequest({
@@ -1104,16 +1076,9 @@ describe('Cloud Run Trading Cockpit API', () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(client.updateValues).toHaveBeenCalledWith(
-      expect.objectContaining({
-        range: "'Momentum Score Config'!A1:D23",
-        values: expect.arrayContaining([
-          ['Component', 'Condition', 'Points', 'Max'],
-          ['52W High', '0% à -1%', 25, 25],
-          ['SMA20 Extension', '> 12%', 5, '']
-        ])
-      })
-    );
+    expect(client.updateValues.mock.calls.map(([request]) => request.range)).toEqual([
+      "'Momentum Ranking'!A1:U"
+    ]);
     expect(client.updateValues).toHaveBeenCalledWith(
       expect.objectContaining({ range: "'Momentum Ranking'!A1:U" })
     );
@@ -1130,7 +1095,6 @@ describe('Cloud Run Trading Cockpit API', () => {
       '/api/journal',
       '/api/analytics',
       '/api/admin/trading-accounts',
-      '/api/admin/trading-config',
       '/api/admin/strategies/validation'
     ];
 
@@ -1467,7 +1431,6 @@ function queryFixtureByRange(
     journal?: unknown[][];
     accounts?: unknown[][];
     capitalLedger?: unknown[][];
-    cockpitConfig?: unknown[][];
   } = {}
 ): Record<string, unknown[][]> {
   const tradePlanHeaders = [...SHEET_DEFINITIONS.tradePlans.requiredHeaders];
@@ -1638,9 +1601,6 @@ function queryFixtureByRange(
         'Momentum Score': 87,
         'Review Status': 'REVIEW'
       })
-    ],
-    [SHEET_DEFINITIONS.cockpitConfig.range]: overrides.cockpitConfig ?? [
-      ['Parameter', 'Value', 'Description']
     ]
   };
 }

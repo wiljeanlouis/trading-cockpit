@@ -24,7 +24,6 @@ import type {
   PositionItemDto,
   TradePlanItemDto,
   TradePlansDto,
-  TradingConfigDto,
   TradingAccountsDto,
   TradingAccountMutationResponse,
   AdminAccountDto,
@@ -343,10 +342,6 @@ const DEVELOPMENT_ANALYTICS: AnalyticsDto = {
   ]
 };
 
-const DEVELOPMENT_TRADING_CONFIG: TradingConfigDto = {
-  settings: []
-};
-
 export class MockCockpitGateway implements CockpitGateway {
   private watchlistItems = DEVELOPMENT_WATCHLIST.items.map((item) => ({ ...item }));
   private momentumRankingItems = DEVELOPMENT_MOMENTUM_RANKING.map((item) => ({ ...item }));
@@ -355,7 +350,6 @@ export class MockCockpitGateway implements CockpitGateway {
   private journalItems = DEVELOPMENT_JOURNAL.map((item) => ({ ...item }));
   private analytics = { ...DEVELOPMENT_ANALYTICS };
   private finvizConfigured = true;
-  private tradingConfig = { ...DEVELOPMENT_TRADING_CONFIG };
   private accounts: AdminAccountDto[] = [
     {
       id: 'DEMO-CAD',
@@ -606,11 +600,6 @@ export class MockCockpitGateway implements CockpitGateway {
     };
   }
 
-  async getTradingConfig(): Promise<TradingConfigDto> {
-    await new Promise((resolve) => setTimeout(resolve, 150));
-    return { ...this.tradingConfig };
-  }
-
   async setupMomentumRanking(): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 150));
   }
@@ -686,10 +675,6 @@ export class MockCockpitGateway implements CockpitGateway {
   async validateStrategies(): Promise<boolean> {
     await new Promise((resolve) => setTimeout(resolve, 150));
     return true;
-  }
-
-  async setupCockpitConfig(): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, 150));
   }
 
   async setupTradingAccounts(): Promise<void> {

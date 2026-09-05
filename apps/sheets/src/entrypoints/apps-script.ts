@@ -17,7 +17,6 @@ import {
   runGetMomentumRanking,
   runRefreshMomentumRanking
 } from '../composition/momentum';
-import { runGetLegacyTradingConfiguration } from '../composition/configuration';
 import {
   runCheckFinvizAuth,
   runConfigureFinvizToken,
@@ -42,7 +41,6 @@ import type {
   MomentumRankingDto,
   TradePlansDto,
   TradingAccountsDto,
-  TradingConfigDto,
   WatchlistDto,
   UpdateTradePlanPlanningRequest,
   UpdateTradePlanPlanningResponse
@@ -127,10 +125,6 @@ export function initializeTradingCockpit(): WorkbookSetupReport {
 
 export function validateTradingCockpit(): WorkbookSetupReport {
   return runValidateTradingCockpit();
-}
-
-export function getTradingConfig(): TradingConfigDto {
-  return runGetLegacyTradingConfiguration();
 }
 
 export function refreshFinviz(): number {

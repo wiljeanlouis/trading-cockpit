@@ -19,7 +19,6 @@ import type {
   OpenPositionsDto,
   JournalDto,
   TradePlansDto,
-  TradingConfigDto,
   TradingAccountsDto,
   TradingAccountMutationResponse,
   UpdateTradingAccountRequest,
@@ -50,11 +49,9 @@ export interface CockpitGateway {
   getAnalytics(query?: AnalyticsQuery): Promise<AnalyticsDto>;
   getAdminOverview(): Promise<AdminOverviewDto>;
   getTradingAccounts(): Promise<TradingAccountsDto>;
-  getTradingConfig(): Promise<TradingConfigDto>;
   setupMomentumRanking(): Promise<void>;
   setupStrategies(): Promise<void>;
   validateStrategies(): Promise<boolean>;
-  setupCockpitConfig(): Promise<void>;
   setupTradingAccounts(): Promise<void>;
   createTradingAccount(
     request: CreateTradingAccountRequest

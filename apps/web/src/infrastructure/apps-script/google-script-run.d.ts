@@ -17,7 +17,6 @@ import type {
   OpenPositionsDto,
   JournalDto,
   TradePlansDto,
-  TradingConfigDto,
   TradingAccountsDto,
   TradingAccountMutationResponse,
   UpdateTradePlanPlanningRequest,
@@ -37,7 +36,6 @@ interface CockpitScriptRunner {
   withSuccessHandler(handler: (value: AnalyticsDto) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: TradingAccountsDto) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: TradingAccountMutationResponse) => void): CockpitScriptRunner;
-  withSuccessHandler(handler: (value: TradingConfigDto) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: number) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: boolean) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: void) => void): CockpitScriptRunner;
@@ -64,11 +62,9 @@ interface CockpitScriptRunner {
   getAnalytics(): void;
   refreshAnalytics(): void;
   getTradingAccounts(): void;
-  getTradingConfig(): void;
   setupMomentumRanking(): void;
   setupStrategies(): void;
   validateStrategies(): void;
-  setupCockpitConfig(): void;
   setupTradingAccounts(): void;
   createTradingAccount(request: CreateTradingAccountRequest): void;
   updateTradingAccount(request: UpdateTradingAccountRequest): void;

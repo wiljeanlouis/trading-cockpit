@@ -3,11 +3,6 @@ import {
   FINVIZ_MOMENTUM_EXPORT_HEADERS,
   SIGNALS_HISTORY_HEADERS
 } from '@trading-cockpit/contracts';
-import {
-  COCKPIT_CONFIG_HEADERS,
-  COCKPIT_CONFIG_SHEET_NAME,
-  hasCockpitConfigHeaders
-} from '../../../outbound/google-sheets/cockpit-config/cockpit-configuration-sheet';
 import { JOURNAL_HEADERS } from '../../../outbound/google-sheets/journal/journal-mapper';
 import {
   refreshJournalValidations,
@@ -38,12 +33,7 @@ import {
   refreshWatchlistValidations,
   validateWatchlistHeaders
 } from '../../../outbound/google-sheets/watchlist/watchlist-sheet';
-import {
-  createMomentumRankingInSheets,
-  createMomentumScoreConfigInSheets,
-  MOMENTUM_SCORE_CONFIG_HEADERS,
-  MOMENTUM_SCORE_CONFIG_VALUES
-} from './setup-momentum-ranking';
+import { createMomentumRankingInSheets } from './setup-momentum-ranking';
 import { setupStrategiesInSheets, STRATEGY_HEADERS } from './setup-strategies';
 
 export type WorkbookSheetClassification =
@@ -172,12 +162,6 @@ function tableDefinitions(): TableSheetDefinition[] {
       initialize: setupStrategiesInSheets
     },
     {
-      sheetName: COCKPIT_CONFIG_SHEET_NAME,
-      classification: 'CONFIG',
-      headers: COCKPIT_CONFIG_HEADERS,
-      initialize: initializeCockpitConfig
-    },
-    {
       sheetName: FINVIZ_MOMENTUM_SHEET_NAME,
       classification: 'TECHNICAL',
       headers: FINVIZ_MOMENTUM_HEADERS,
@@ -195,7 +179,6 @@ export function initializeTradingCockpitWorkbook(): WorkbookSetupReport {
     items.push(initializeDefinition(spreadsheet, definition));
   }
 
-  items.push(initializeMomentumScoreConfig(spreadsheet));
   items.push(...LEGACY_REPORT_SHEETS.map(skippedLegacy));
   items.push(...OPTIONAL_REPORT_SHEETS.map(skippedOptional));
   items.push(...LEGACY_UNUSED_SHEETS.map(skippedLegacy));
@@ -219,7 +202,6 @@ export function validateTradingCockpitWorkbook(): WorkbookSetupReport {
     items.push(validateDefinition(spreadsheet, definition));
   }
 
-  items.push(validateMomentumScoreConfig(spreadsheet));
   items.push(...LEGACY_REPORT_SHEETS.map(skippedLegacy));
   items.push(...OPTIONAL_REPORT_SHEETS.map(skippedOptional));
   items.push(...LEGACY_UNUSED_SHEETS.map(skippedLegacy));
@@ -338,83 +320,9 @@ function initializeAccounts(): void {
   new GoogleSheetsTradingAccountRiskPolicyRepository().ensureReady();
 }
 
-function initializeCockpitConfig(): void {
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet =
-    spreadsheet.getSheetByName(COCKPIT_CONFIG_SHEET_NAME) ??
-    spreadsheet.insertSheet(COCKPIT_CONFIG_SHEET_NAME);
-  sheet.clear();
-  sheet.getRange(1, 1, 1, COCKPIT_CONFIG_HEADERS.length).setValues([[...COCKPIT_CONFIG_HEADERS]]);
-  sheet.getRange('A1:C1').setFontWeight('bold');
-  sheet.setFrozenRows(1);
-  sheet.autoResizeColumns(1, 3);
-}
-
-function initializeMomentumScoreConfig(
-  spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet
-): WorkbookSetupItem {
-  const sheet = spreadsheet.getSheetByName('Momentum Score Config');
-  if (!sheet) {
-    createMomentumScoreConfigInSheets();
-    return created('Momentum Score Config', 'CONFIG');
-  }
-  if (isContentEmpty(sheet)) {
-    createMomentumScoreConfigInSheets();
-    return initialized('Momentum Score Config', 'CONFIG');
-  }
-  return validateMomentumScoreConfig(spreadsheet);
-}
-
-function validateMomentumScoreConfig(
-  spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet
-): WorkbookSetupItem {
-  const sheet = spreadsheet.getSheetByName('Momentum Score Config');
-  if (!sheet) return failed('Momentum Score Config', 'CONFIG', 'Momentum Score Config est absent.');
-  if (isContentEmpty(sheet))
-    return failed('Momentum Score Config', 'CONFIG', 'Momentum Score Config est vide.');
-  const values = sheet.getRange(1, 1, sheet.getLastRow(), 4).getValues();
-  const headers = (values[0] ?? []).map((value) => String(value || '').trim());
-  const rows = values.slice(1);
-  const hasCanonicalHeaders = MOMENTUM_SCORE_CONFIG_HEADERS.every(
-    (header, index) => headers[index] === header
-  );
-  const hasExpectedRecords =
-    rows.length === MOMENTUM_SCORE_CONFIG_VALUES.length &&
-    rows.every((row, rowIndex) =>
-      MOMENTUM_SCORE_CONFIG_VALUES[rowIndex].every(
-        (value, columnIndex) => row[columnIndex] === value
-      )
-    );
-  if (!hasCanonicalHeaders || !hasExpectedRecords || rows.some(isBlankRow)) {
-    return {
-      sheetName: 'Momentum Score Config',
-      classification: 'CONFIG',
-      status: 'SCHEMA_MISMATCH',
-      message:
-        'Momentum Score Config doit utiliser Component / Condition / Points / Max en ligne 1.'
-    };
-  }
-  return preserveCanonicalSheet({
-    sheetName: 'Momentum Score Config',
-    classification: 'CONFIG',
-    headers: [],
-    initialize: createMomentumScoreConfigInSheets
-  });
-}
-
-function isBlankRow(row: readonly unknown[]): boolean {
-  return row.every((value) => !String(value || '').trim());
-}
-
 function validateRequiredRows(sheetName: string, sheet: GoogleAppsScript.Spreadsheet.Sheet): void {
   if (sheetName === 'Strategies' && sheet.getLastRow() < 2) {
     throw new Error('Strategies doit contenir au moins la stratégie MOMENTUM_BREAKOUT.');
-  }
-  if (sheetName === COCKPIT_CONFIG_SHEET_NAME) {
-    const headers = readSheetHeaders(sheet);
-    if (!hasCockpitConfigHeaders(headers)) {
-      throw new Error('Cockpit Config doit utiliser Parameter / Value / Description en ligne 1.');
-    }
   }
 }
 

@@ -12,7 +12,6 @@ import {
   deleteFinvizTokenForCloudRun,
   recordCapitalTransactionForCloudRun,
   setFinvizTokenForCloudRun,
-  setupCockpitConfigForCloudRun,
   setupMomentumRankingForCloudRun,
   setupStrategiesForCloudRun,
   setupTradingAccountsForCloudRun,
@@ -182,6 +181,5 @@ const exactRoutes: Record<string, MutationHandler> = {
   'DELETE /api/admin/finviz/token': deleteFinvizTokenForCloudRun,
   'POST /api/admin/momentum-ranking/setup': setupMomentumRankingForCloudRun,
   'POST /api/admin/strategies/setup': setupStrategiesForCloudRun,
-  'POST /api/admin/trading-config/setup': setupCockpitConfigForCloudRun,
   'POST /api/admin/trading-accounts/setup': setupTradingAccountsForCloudRun
 };

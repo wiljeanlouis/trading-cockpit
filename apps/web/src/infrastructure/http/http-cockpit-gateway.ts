@@ -21,7 +21,6 @@ import type {
   TradePlansDto,
   TradingAccountsDto,
   TradingAccountMutationResponse,
-  TradingConfigDto,
   UpdateTradingAccountRequest,
   UpdateTradePlanPlanningRequest,
   UpdateTradePlanPlanningResponse,
@@ -104,10 +103,6 @@ export class HttpCockpitGateway implements CockpitGateway {
     return this.get('/api/admin/trading-accounts');
   }
 
-  getTradingConfig(): Promise<TradingConfigDto> {
-    return this.get('/api/admin/trading-config');
-  }
-
   async setupMomentumRanking(): Promise<void> {
     await this.post('/api/admin/momentum-ranking/setup');
   }
@@ -118,10 +113,6 @@ export class HttpCockpitGateway implements CockpitGateway {
 
   validateStrategies(): Promise<boolean> {
     return this.get('/api/admin/strategies/validation');
-  }
-
-  async setupCockpitConfig(): Promise<void> {
-    await this.post('/api/admin/trading-config/setup');
   }
 
   async setupTradingAccounts(): Promise<void> {

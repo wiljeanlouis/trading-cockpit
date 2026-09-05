@@ -9,7 +9,6 @@ import type {
   RecordCapitalTransactionResponse,
   CreateTradingAccountRequest,
   TradingAccountMutationResponse,
-  TradingConfigDto,
   UpdateTradingAccountRequest
 } from '@trading-cockpit/contracts';
 import type { CockpitGateway } from '../../src/infrastructure/cockpit-gateway';
@@ -93,10 +92,6 @@ const EMPTY_DASHBOARD: DashboardDto = {
   }
 };
 
-const EMPTY_TRADING_CONFIG: TradingConfigDto = {
-  settings: []
-};
-
 const EMPTY_CAPITAL_TRANSACTION_RESPONSE: RecordCapitalTransactionResponse = {
   transactionId: '',
   accountId: '',
@@ -133,11 +128,9 @@ export function createGatewayStub(overrides: Partial<CockpitGateway> = {}): Cock
     getAnalytics: vi.fn(async () => EMPTY_ANALYTICS),
     getAdminOverview: vi.fn(async () => EMPTY_ADMIN_OVERVIEW),
     getTradingAccounts: vi.fn(async () => ({ accounts: [] })),
-    getTradingConfig: vi.fn(async () => EMPTY_TRADING_CONFIG),
     setupMomentumRanking: vi.fn(async () => {}),
     setupStrategies: vi.fn(async () => {}),
     validateStrategies: vi.fn(async () => true),
-    setupCockpitConfig: vi.fn(async () => {}),
     setupTradingAccounts: vi.fn(async () => {}),
     createTradingAccount: vi.fn(
       async (request: CreateTradingAccountRequest): Promise<TradingAccountMutationResponse> => ({

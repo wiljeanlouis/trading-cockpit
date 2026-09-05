@@ -13,14 +13,12 @@ import type {
   CreateFundedTradingAccountRequest,
   RecordCapitalTransactionResponse,
   TradingAccountMutationResponse,
-  TradingAccountsDto,
-  TradingConfigDto
+  TradingAccountsDto
 } from '@trading-cockpit/contracts';
 import {
   readCapitalTransactions,
   readJournalEntries,
   readTradingAccountRecords,
-  readTradingConfig,
   SHEET_DEFINITIONS,
   validateStrategies as validateStrategiesFromSheets
 } from '../adapters/outbound/google-sheets-api/cockpit-query-readers';
@@ -100,12 +98,6 @@ export async function getAdminOverviewForCloudRun(dependencies: {
       };
     })
   };
-}
-
-export async function getTradingConfigForCloudRun(dependencies: {
-  sheets: RequestScopedSheets;
-}): Promise<TradingConfigDto> {
-  return readTradingConfig(dependencies.sheets);
 }
 
 export async function validateStrategiesForCloudRun(dependencies: {
@@ -215,32 +207,7 @@ export async function recordCapitalTransactionForCloudRun({
 export async function setupMomentumRankingForCloudRun({
   mutationContext
 }: MutationDependencies): Promise<{ ok: true }> {
-  await ensureSheets(mutationContext, ['Momentum Score Config', 'Momentum Ranking']);
-  mutationContext.writer.update("'Momentum Score Config'!A1:D23", [
-    ['Component', 'Condition', 'Points', 'Max'],
-    ['52W High', '0% à -1%', 25, 25],
-    ['52W High', '-1% à -2%', 22, ''],
-    ['52W High', '-2% à -3%', 18, ''],
-    ['52W High', '-3% à -4%', 14, ''],
-    ['52W High', '-4% à -5%', 10, ''],
-    ['Relative Volume', '>= 2.0', 25, 25],
-    ['Relative Volume', '1.5 à 1.99', 20, ''],
-    ['Relative Volume', '1.25 à 1.49', 15, ''],
-    ['Relative Volume', '1.0 à 1.24', 10, ''],
-    ['Performance Month', '>= 20%', 20, 20],
-    ['Performance Month', '15% à 19.99%', 17, ''],
-    ['Performance Month', '10% à 14.99%', 14, ''],
-    ['Performance Month', '5% à 9.99%', 10, ''],
-    ['Performance Month', '0% à 4.99%', 5, ''],
-    ['RSI', '60 à 67', 15, 15],
-    ['RSI', '55 à 59.99', 12, ''],
-    ['RSI', '67.01 à 70', 10, ''],
-    ['RSI', '50 à 54.99', 7, ''],
-    ['SMA20 Extension', '2% à 8%', 15, 15],
-    ['SMA20 Extension', '0% à 2%', 10, ''],
-    ['SMA20 Extension', '8% à 12%', 10, ''],
-    ['SMA20 Extension', '> 12%', 5, '']
-  ]);
+  await ensureSheets(mutationContext, ['Momentum Ranking']);
   mutationContext.writer.update("'Momentum Ranking'!A1:U", [
     [...SHEET_DEFINITIONS.momentumRanking.requiredHeaders]
   ]);
@@ -273,15 +240,6 @@ export async function setupStrategiesForCloudRun({
   return { ok: true };
 }
 
-export async function setupCockpitConfigForCloudRun({
-  mutationContext
-}: MutationDependencies): Promise<{ ok: true }> {
-  await ensureSheets(mutationContext, ['Cockpit Config']);
-  if (await sheetRangeHasAnyContent(mutationContext, "'Cockpit Config'!A:C")) return { ok: true };
-  mutationContext.writer.update("'Cockpit Config'!A1:C1", [['Parameter', 'Value', 'Description']]);
-  return { ok: true };
-}
-
 export async function setupTradingAccountsForCloudRun({
   mutationContext
 }: MutationDependencies): Promise<{ ok: true }> {
@@ -303,18 +261,6 @@ async function tableHasData(
   } catch {
     return false;
   }
-}
-
-async function sheetRangeHasAnyContent(context: MutationContext, range: string): Promise<boolean> {
-  const client = context.writer['dependencies'].sheetsClient;
-  const spreadsheetId = context.writer['dependencies'].spreadsheetId;
-  const response = await client.getValues({
-    spreadsheetId,
-    range,
-    valueRenderOption: 'UNFORMATTED_VALUE',
-    dateTimeRenderOption: 'SERIAL_NUMBER'
-  });
-  return (response.values ?? []).some((row) => row.some((value) => textValue(value)));
 }
 
 async function ensureSheets(context: MutationContext, sheetNames: string[]): Promise<void> {

@@ -30,8 +30,6 @@ export type {
   RecordCapitalTransactionRequest,
   RecordCapitalTransactionResponse,
   AccountFinancialSummaryDto,
-  TradingConfigDto,
-  TradingConfigSettingDto,
   TradingAccountMutationResponse,
   UpdateTradingAccountRequest
 } from './admin';

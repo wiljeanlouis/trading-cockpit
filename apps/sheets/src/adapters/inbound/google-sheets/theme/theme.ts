@@ -94,10 +94,6 @@ export function applyCockpitTheme(): void {
 
   themeSimpleSheet(ss, 'Strategies');
 
-  themeSimpleSheet(ss, 'Cockpit Config');
-
-  themeSimpleSheet(ss, 'Momentum Score Config');
-
   themeSimpleSheet(ss, 'Finviz Screener');
 
   themeTechnicalSheet(ss, 'Lists');
@@ -554,8 +550,6 @@ export function themeJournal(ss: Spreadsheet): void {
  * ============================================================
  *
  * Strategies
- * Cockpit Config
- * Momentum Score Config
  * Finviz Screener
  */
 

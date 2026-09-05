@@ -234,25 +234,23 @@ Non-empty incompatible schemas are invalid; the system does not silently guess h
 
 Canonical workbook inventory:
 
-| Sheet                 |  Classification | Contract                       | Role                                                               |
-| --------------------- | --------------: | ------------------------------ | ------------------------------------------------------------------ |
-| Momentum Ranking      |            DATA | row 1 headers / row 2+ records | Derived ranked Momentum candidates                                 |
-| Watchlist             |            DATA | row 1 headers / row 2+ records | Authoritative selected candidates                                  |
-| Trade Plans           |            DATA | row 1 headers / row 2+ records | Authoritative planning workflow                                    |
-| Positions             |            DATA | row 1 headers / row 2+ records | Authoritative open/closed position records                         |
-| Journal               |            DATA | row 1 headers / row 2+ records | Authoritative closed-trade history                                 |
-| Capital Ledger        |            DATA | row 1 headers / row 2+ records | Append-only external capital history                               |
-| Signals History       |            DATA | row 1 headers / row 2+ records | Complete historical Finviz snapshots plus Trading Cockpit metadata |
-| Strategies            |          CONFIG | row 1 headers / row 2+ records | Strategy reference/configuration                                   |
-| Accounts              |          CONFIG | row 1 headers / row 2+ records | Trading account identity and risk policy                           |
-| Cockpit Config        |          CONFIG | row 1 headers / row 2+ records | Global settings table; no account capital/risk authority           |
-| Momentum Score Config |          CONFIG | row 1 headers / row 2+ records | Human-readable Momentum scoring reference                          |
-| Finviz - Momentum     |       TECHNICAL | row 1 headers / row 2+ records | Current Finviz provider projection                                 |
-| Documentation         | OPTIONAL_REPORT | generated utility              | Sheets help surface                                                |
-| Dashboard             |   LEGACY_UNUSED | none                           | Retired Sheets report; React Dashboard is the supported UI         |
-| Analytics             |   LEGACY_UNUSED | none                           | Retired Sheets report; React Analytics is the supported UI         |
-| Lists                 |   LEGACY_UNUSED | none                           | Not recreated by canonical setup                                   |
-| Finviz Screener       |   LEGACY_UNUSED | none                           | Not recreated by canonical setup                                   |
+| Sheet             |  Classification | Contract                       | Role                                                               |
+| ----------------- | --------------: | ------------------------------ | ------------------------------------------------------------------ |
+| Momentum Ranking  |            DATA | row 1 headers / row 2+ records | Derived ranked Momentum candidates                                 |
+| Watchlist         |            DATA | row 1 headers / row 2+ records | Authoritative selected candidates                                  |
+| Trade Plans       |            DATA | row 1 headers / row 2+ records | Authoritative planning workflow                                    |
+| Positions         |            DATA | row 1 headers / row 2+ records | Authoritative open/closed position records                         |
+| Journal           |            DATA | row 1 headers / row 2+ records | Authoritative closed-trade history                                 |
+| Capital Ledger    |            DATA | row 1 headers / row 2+ records | Append-only external capital history                               |
+| Signals History   |            DATA | row 1 headers / row 2+ records | Complete historical Finviz snapshots plus Trading Cockpit metadata |
+| Strategies        |          CONFIG | row 1 headers / row 2+ records | Strategy reference/configuration                                   |
+| Accounts          |          CONFIG | row 1 headers / row 2+ records | Trading account identity and risk policy                           |
+| Finviz - Momentum |       TECHNICAL | row 1 headers / row 2+ records | Current Finviz provider projection                                 |
+| Documentation     | OPTIONAL_REPORT | generated utility              | Sheets help surface                                                |
+| Dashboard         |   LEGACY_UNUSED | none                           | Retired Sheets report; React Dashboard is the supported UI         |
+| Analytics         |   LEGACY_UNUSED | none                           | Retired Sheets report; React Analytics is the supported UI         |
+| Lists             |   LEGACY_UNUSED | none                           | Not recreated by canonical setup                                   |
+| Finviz Screener   |   LEGACY_UNUSED | none                           | Not recreated by canonical setup                                   |
 
 Physical headers are authoritative in code, especially `packages/contracts` and sheet adapter schema
 modules. This document explains the contract for humans.

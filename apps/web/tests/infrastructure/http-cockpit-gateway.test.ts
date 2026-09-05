@@ -27,8 +27,8 @@ describe('HttpCockpitGateway', () => {
     ['getWatchlist', 'GET', '/api/watchlist', undefined],
     ['getMomentumRanking', 'GET', '/api/discovery/momentum-ranking', undefined],
     ['getAnalytics', 'GET', '/api/analytics', undefined],
+    ['getAdminOverview', 'GET', '/api/admin/overview', undefined],
     ['getTradingAccounts', 'GET', '/api/admin/trading-accounts', undefined],
-    ['getTradingConfig', 'GET', '/api/admin/trading-config', undefined],
     ['validateStrategies', 'GET', '/api/admin/strategies/validation', undefined],
     ['refreshFinviz', 'POST', '/api/discovery/finviz/refresh-signals', undefined],
     ['refreshMomentumRanking', 'POST', '/api/discovery/momentum-ranking/refresh', undefined],
@@ -45,8 +45,19 @@ describe('HttpCockpitGateway', () => {
     ],
     ['setupMomentumRanking', 'POST', '/api/admin/momentum-ranking/setup', undefined],
     ['setupStrategies', 'POST', '/api/admin/strategies/setup', undefined],
-    ['setupCockpitConfig', 'POST', '/api/admin/trading-config/setup', undefined],
     ['setupTradingAccounts', 'POST', '/api/admin/trading-accounts/setup', undefined],
+    [
+      'createFundedTradingAccount',
+      'POST',
+      '/api/admin/trading-accounts/funded',
+      {
+        accountId: 'A1',
+        name: 'Main',
+        baseCurrency: 'CAD',
+        riskPercentPerTrade: 0.005,
+        initialAmount: 10_000
+      }
+    ],
     [
       'recordCapitalTransaction',
       'POST',

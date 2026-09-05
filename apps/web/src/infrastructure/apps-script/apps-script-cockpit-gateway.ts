@@ -19,7 +19,6 @@ import type {
   OpenPositionsDto,
   JournalDto,
   TradePlansDto,
-  TradingConfigDto,
   TradingAccountsDto,
   TradingAccountMutationResponse,
   UpdateTradePlanPlanningRequest,
@@ -125,15 +124,6 @@ export class AppsScriptCockpitGateway implements CockpitGateway {
     });
   }
 
-  getTradingConfig(): Promise<TradingConfigDto> {
-    return new Promise((resolve, reject) => {
-      google.script.run
-        .withSuccessHandler(resolve)
-        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
-        .getTradingConfig();
-    });
-  }
-
   setupMomentumRanking(): Promise<void> {
     return new Promise((resolve, reject) => {
       google.script.run
@@ -158,15 +148,6 @@ export class AppsScriptCockpitGateway implements CockpitGateway {
         .withSuccessHandler(resolve)
         .withFailureHandler((error) => reject(new Error(failureMessage(error))))
         .validateStrategies();
-    });
-  }
-
-  setupCockpitConfig(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      google.script.run
-        .withSuccessHandler(resolve)
-        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
-        .setupCockpitConfig();
     });
   }
 

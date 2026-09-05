@@ -40,7 +40,7 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.CockpitBundle?.refreshMomentumRanking).toBeTypeOf('function');
     expect(context.CockpitBundle?.initializeTradingCockpit).toBeTypeOf('function');
     expect(context.CockpitBundle?.validateTradingCockpit).toBeTypeOf('function');
-    expect(context.CockpitBundle?.getTradingConfig).toBeTypeOf('function');
+    expect(context.CockpitBundle?.getTradingConfig).toBeUndefined();
     expect(context.CockpitBundle?.configureFinvizToken).toBeTypeOf('function');
     expect(context.CockpitBundle?.getFinvizToken).toBeTypeOf('function');
     expect(context.CockpitBundle?.setFinvizToken).toBeTypeOf('function');
@@ -83,7 +83,7 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.refreshMomentumRanking).toBeTypeOf('function');
     expect(context.initializeTradingCockpit).toBeTypeOf('function');
     expect(context.validateTradingCockpit).toBeTypeOf('function');
-    expect(context.getTradingConfig).toBeTypeOf('function');
+    expect(context.getTradingConfig).toBeUndefined();
     expect(context.configureFinvizToken).toBeTypeOf('function');
     expect(context.getFinvizToken).toBeTypeOf('function');
     expect(context.setFinvizToken).toBeTypeOf('function');

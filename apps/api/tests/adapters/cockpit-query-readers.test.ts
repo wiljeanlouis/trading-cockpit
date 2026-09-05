@@ -7,7 +7,6 @@ import {
   readPositions,
   readStrategyIds,
   readTradePlans,
-  readTradingConfig,
   readTradingAccounts,
   readWatchlistEntries,
   SHEET_DEFINITIONS,
@@ -220,27 +219,6 @@ describe('Cloud Run Google Sheets API query readers', () => {
         outcome: 'WIN'
       })
     ]);
-  });
-
-  it('reads normalized Cockpit Config rows as generic global settings', async () => {
-    const config = await readTradingConfig(
-      sheets({
-        [SHEET_DEFINITIONS.cockpitConfig.range]: [
-          ['Parameter', 'Value', 'Description'],
-          ['Some Global Setting', 'enabled', 'A valid future global setting']
-        ]
-      })
-    );
-
-    expect(config).toEqual({
-      settings: [
-        {
-          parameter: 'Some Global Setting',
-          value: 'enabled',
-          description: 'A valid future global setting'
-        }
-      ]
-    });
   });
 
   it('maps Trading Accounts and rejects duplicate account IDs through domain validation', async () => {

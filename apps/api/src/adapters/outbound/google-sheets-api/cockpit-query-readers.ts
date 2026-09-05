@@ -25,7 +25,6 @@ import type { PositionReader } from '@trading-cockpit/core/ports/outbound/positi
 import type { TradePlanReader } from '@trading-cockpit/core/ports/outbound/trade-plan-reader';
 import type { TradingAccountRepository } from '@trading-cockpit/core/ports/outbound/trading-account-repository';
 import type { WatchlistReader } from '@trading-cockpit/core/ports/outbound/watchlist-reader';
-import type { TradingConfigDto } from '@trading-cockpit/contracts';
 import { SIGNALS_HISTORY_HEADERS } from '@trading-cockpit/contracts';
 import {
   nullableText,
@@ -250,13 +249,6 @@ export const SHEET_DEFINITIONS = {
     ],
     dateHeaders: ['Signal Date']
   },
-  cockpitConfig: {
-    key: 'cockpitConfig',
-    sheetName: 'Cockpit Config',
-    range: "'Cockpit Config'!A:C",
-    requiredHeaders: ['Parameter', 'Value', 'Description'],
-    required: true
-  },
   signalsHistory: {
     key: 'signalsHistory',
     sheetName: 'Signals History',
@@ -430,19 +422,6 @@ export async function readMomentumRankingRecords(
     .filter(
       (record) => record.strategyId && record.strategyVersion && record.signalDate && record.ticker
     );
-}
-
-export async function readTradingConfig(sheets: RequestScopedSheets): Promise<TradingConfigDto> {
-  const loaded = await sheets.getTable(SHEET_DEFINITIONS.cockpitConfig);
-  return {
-    settings: loaded.table.rows
-      .map((row) => ({
-        parameter: textValue(row[0]),
-        value: row[1] === undefined || row[1] === '' ? null : (row[1] as string | number | boolean),
-        description: textValue(row[2])
-      }))
-      .filter((setting) => setting.parameter)
-  };
 }
 
 export async function readDashboardSnapshot(

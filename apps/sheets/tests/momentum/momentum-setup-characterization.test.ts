@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  MOMENTUM_SCORE_CONFIG_HEADERS,
-  MOMENTUM_RANKING_SETUP_HEADERS,
-  MOMENTUM_SCORE_CONFIG_VALUES
-} from '../../src/adapters/inbound/google-sheets/ui/setup-momentum-ranking';
+import { MOMENTUM_RANKING_SETUP_HEADERS } from '../../src/adapters/inbound/google-sheets/ui/setup-momentum-ranking';
 import {
   STRATEGY_HEADERS,
   STRATEGY_TYPE_VALUES
@@ -29,15 +25,6 @@ describe('legacy setup data characterization', () => {
       'EVENT_DRIVEN',
       'OTHER'
     ]);
-  });
-
-  it('preserves the score matrix as a contiguous CONFIG table', () => {
-    expect(MOMENTUM_SCORE_CONFIG_HEADERS).toEqual(['Component', 'Condition', 'Points', 'Max']);
-    expect(MOMENTUM_SCORE_CONFIG_VALUES).toHaveLength(22);
-    expect(MOMENTUM_SCORE_CONFIG_VALUES[0]).toEqual(['52W High', '0% à -1%', 25, 25]);
-    expect(MOMENTUM_SCORE_CONFIG_VALUES[18]).toEqual(['SMA20 Extension', '2% à 8%', 15, 15]);
-    expect(MOMENTUM_SCORE_CONFIG_VALUES[21]).toEqual(['SMA20 Extension', '> 12%', 5, '']);
-    expect(MOMENTUM_SCORE_CONFIG_VALUES).not.toContainEqual(['', '', '', '']);
   });
 
   it('uses the normalized DATA-sheet ranking schema in setup', () => {

@@ -6,15 +6,13 @@ import {
   validateTradingCockpitWorkbook
 } from '../../src/adapters/inbound/google-sheets/ui/trading-cockpit-workbook';
 import {
-  MOMENTUM_SCORE_CONFIG_HEADERS,
-  MOMENTUM_SCORE_CONFIG_VALUES
-} from '../../src/adapters/inbound/google-sheets/ui/setup-momentum-ranking';
-import {
   FINVIZ_MOMENTUM_EXPORT_HEADERS,
   SIGNALS_HISTORY_HEADERS
 } from '@trading-cockpit/contracts';
 import { MOMENTUM_RANKING_HEADERS } from '../../src/adapters/outbound/google-sheets/momentum/momentum-ranking-schema';
 import { TRADE_PLAN_HEADERS } from '../../src/adapters/outbound/google-sheets/trade-plan/trade-plan-mapper';
+
+const REMOVED_MOMENTUM_SCORING_REFERENCE_SHEET = ['Momentum', 'Score', 'Config'].join(' ');
 
 class FakeRange {
   constructor(
@@ -226,18 +224,7 @@ describe('Trading Cockpit workbook setup and validation', () => {
     expect(spreadsheet.getSheetByName('Accounts')?.values).toEqual([
       ['Account ID', 'Name', 'Base Currency', 'Risk % Per Trade']
     ]);
-    expect(spreadsheet.getSheetByName('Momentum Score Config')?.values[0]).toEqual([
-      ...MOMENTUM_SCORE_CONFIG_HEADERS
-    ]);
-    expect(spreadsheet.getSheetByName('Momentum Score Config')?.values[1]).toEqual(
-      MOMENTUM_SCORE_CONFIG_VALUES[0]
-    );
-    expect(spreadsheet.getSheetByName('Momentum Score Config')?.values).not.toContainEqual([
-      '',
-      '',
-      '',
-      ''
-    ]);
+    expect(spreadsheet.getSheetByName(REMOVED_MOMENTUM_SCORING_REFERENCE_SHEET)).toBeNull();
     expect(initialization.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ sheetName: 'Accounts', status: 'MANUAL_CONFIGURATION' }),
@@ -266,15 +253,11 @@ describe('Trading Cockpit workbook setup and validation', () => {
 
     initializeTradingCockpitWorkbook();
     const writesAfterFirstRun = canonicalTradePlans.writeCount;
-    const scoreConfigWritesAfterFirstRun =
-      spreadsheet.getSheetByName('Momentum Score Config')?.writeCount;
     const secondRun = initializeTradingCockpitWorkbook();
 
     expect(canonicalTradePlans.values[1]).toEqual(['TP-1', 'WL-1']);
     expect(canonicalTradePlans.writeCount).toBe(writesAfterFirstRun);
-    expect(spreadsheet.getSheetByName('Momentum Score Config')?.writeCount).toBe(
-      scoreConfigWritesAfterFirstRun
-    );
+    expect(spreadsheet.getSheetByName(REMOVED_MOMENTUM_SCORING_REFERENCE_SHEET)).toBeNull();
     expect(secondRun.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ sheetName: 'Trade Plans', status: 'ALREADY_VALID' })
@@ -351,26 +334,6 @@ describe('Trading Cockpit workbook setup and validation', () => {
     expect(report.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ sheetName: 'Momentum Ranking', status: 'SCHEMA_MISMATCH' })
-      ])
-    );
-  });
-
-  it('treats the historical Momentum Score Config row-3 header layout as invalid', () => {
-    const legacyScoreConfig = new FakeSheet('Momentum Score Config', [
-      ['MOMENTUM BREAKOUT SCORE V1', '', '', ''],
-      ['', '', '', ''],
-      [...MOMENTUM_SCORE_CONFIG_HEADERS],
-      ...MOMENTUM_SCORE_CONFIG_VALUES
-    ]);
-    const spreadsheet = new FakeSpreadsheet([legacyScoreConfig]);
-    installSpreadsheet(spreadsheet);
-
-    const report = validateTradingCockpitWorkbook();
-
-    expect(report.overallStatus).toBe('INVALID');
-    expect(report.items).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sheetName: 'Momentum Score Config', status: 'SCHEMA_MISMATCH' })
       ])
     );
   });
