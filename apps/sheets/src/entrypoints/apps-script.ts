@@ -1,5 +1,4 @@
 import {
-  runAddSelectedToWatchlist,
   runCreateTradePlanFromSelectedWatchlist,
   runCloseSelectedPosition,
   runReconcileSelectedPosition,
@@ -11,12 +10,6 @@ import {
 } from '../composition/cockpit';
 import { installCockpitMenu } from '../adapters/inbound/google-sheets/ui/install-cockpit-menu';
 import { refreshDocumentation as refreshDocumentationSheet } from '../adapters/inbound/google-sheets/documentation/documentation';
-import { applyCockpitTheme as applyCockpitThemeToSheets } from '../adapters/inbound/google-sheets/theme/theme';
-import {
-  runAddMomentumCandidateToWatchlist,
-  runGetMomentumRanking,
-  runRefreshMomentumRanking
-} from '../composition/momentum';
 import {
   runCheckFinvizAuth,
   runConfigureFinvizToken,
@@ -26,8 +19,6 @@ import {
   runSetFinvizToken
 } from '../composition/finviz';
 import type {
-  AddMomentumCandidateToWatchlistRequest,
-  AddMomentumCandidateToWatchlistResponse,
   CreateTradePlanRequest,
   CreateTradePlanResponse,
   ClosePositionRequest,
@@ -38,7 +29,8 @@ import type {
   ExecuteTradePlanResponse,
   OpenPositionsDto,
   JournalDto,
-  MomentumRankingDto,
+  RefreshSignalsRequest,
+  RefreshSignalsResponse,
   TradePlansDto,
   TradingAccountsDto,
   WatchlistDto,
@@ -64,16 +56,6 @@ import type { WorkbookSetupReport } from '../adapters/inbound/google-sheets/ui/t
 
 export function getWatchlist(): WatchlistDto {
   return runGetWatchlist();
-}
-
-export function getMomentumRanking(): MomentumRankingDto {
-  return runGetMomentumRanking();
-}
-
-export function addMomentumCandidateToWatchlist(
-  request: AddMomentumCandidateToWatchlistRequest
-): AddMomentumCandidateToWatchlistResponse {
-  return runAddMomentumCandidateToWatchlist(request);
 }
 
 export function getTradingAccounts(): TradingAccountsDto {
@@ -115,10 +97,6 @@ export function onOpen(): void {
   rememberActiveTradingCockpitSpreadsheet();
 }
 
-export function refreshMomentumRanking(): void {
-  runRefreshMomentumRanking();
-}
-
 export function initializeTradingCockpit(): WorkbookSetupReport {
   return runInitializeTradingCockpit();
 }
@@ -129,6 +107,24 @@ export function validateTradingCockpit(): WorkbookSetupReport {
 
 export function refreshFinviz(): number {
   return runRefreshFinviz();
+}
+
+export function refreshSignals(request: RefreshSignalsRequest): RefreshSignalsResponse {
+  const archived = runRefreshFinviz(request.strategyId);
+  return {
+    scope: 'STRATEGY',
+    archived,
+    refreshed: []
+  };
+}
+
+export function refreshAllSignals(): RefreshSignalsResponse {
+  const archived = runRefreshFinviz();
+  return {
+    scope: 'ALL',
+    archived,
+    refreshed: []
+  };
 }
 
 export function configureFinvizToken(): void {
@@ -149,10 +145,6 @@ export function checkFinvizAuth(): boolean {
 
 export function deleteFinvizToken(): void {
   runDeleteFinvizToken();
-}
-
-export function addSelectedToWatchlist(): void {
-  runAddSelectedToWatchlist();
 }
 
 export function createTradePlanFromSelectedWatchlist(): void {
@@ -198,10 +190,6 @@ export function recordDeposit(): void {
 
 export function recordWithdrawal(): void {
   runRecordWithdrawal();
-}
-
-export function applyCockpitTheme(): void {
-  applyCockpitThemeToSheets();
 }
 
 export function refreshDocumentation(): void {

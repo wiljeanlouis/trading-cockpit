@@ -1,7 +1,7 @@
 import type {
   AnalyticsDto,
-  AddMomentumCandidateToWatchlistRequest,
-  AddMomentumCandidateToWatchlistResponse,
+  AddDiscoveryCandidateToWatchlistRequest,
+  AddDiscoveryCandidateToWatchlistResponse,
   CreateTradePlanRequest,
   CreateTradePlanResponse,
   ClosePositionRequest,
@@ -13,9 +13,11 @@ import type {
   RecordCapitalTransactionResponse,
   ExecuteTradePlanRequest,
   ExecuteTradePlanResponse,
-  MomentumRankingDto,
+  DiscoveryDto,
   OpenPositionsDto,
   JournalDto,
+  RefreshSignalsRequest,
+  RefreshSignalsResponse,
   TradePlansDto,
   TradingAccountsDto,
   TradingAccountMutationResponse,
@@ -29,9 +31,10 @@ interface CockpitScriptRunner {
   withSuccessHandler(handler: (value: DashboardDto) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: DashboardSummaryDto) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: WatchlistDto) => void): CockpitScriptRunner;
-  withSuccessHandler(handler: (value: MomentumRankingDto) => void): CockpitScriptRunner;
+  withSuccessHandler(handler: (value: DiscoveryDto) => void): CockpitScriptRunner;
+  withSuccessHandler(handler: (value: RefreshSignalsResponse) => void): CockpitScriptRunner;
   withSuccessHandler(
-    handler: (value: AddMomentumCandidateToWatchlistResponse) => void
+    handler: (value: AddDiscoveryCandidateToWatchlistResponse) => void
   ): CockpitScriptRunner;
   withSuccessHandler(handler: (value: AnalyticsDto) => void): CockpitScriptRunner;
   withSuccessHandler(handler: (value: TradingAccountsDto) => void): CockpitScriptRunner;
@@ -55,14 +58,14 @@ interface CockpitScriptRunner {
   getDashboard(): void;
   getDashboardSummary(): void;
   getWatchlist(): void;
-  getMomentumRanking(): void;
+  getDiscovery(): void;
+  refreshSignals(request: RefreshSignalsRequest): void;
+  refreshAllSignals(): void;
   refreshFinviz(): void;
-  refreshMomentumRanking(): void;
-  addMomentumCandidateToWatchlist(request: AddMomentumCandidateToWatchlistRequest): void;
+  addDiscoveryCandidateToWatchlist(request: AddDiscoveryCandidateToWatchlistRequest): void;
   getAnalytics(): void;
   refreshAnalytics(): void;
   getTradingAccounts(): void;
-  setupMomentumRanking(): void;
   setupStrategies(): void;
   validateStrategies(): void;
   setupTradingAccounts(): void;

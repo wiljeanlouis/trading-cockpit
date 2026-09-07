@@ -99,7 +99,7 @@ describe('Watchlist', () => {
     render(<Watchlist gateway={createGatewayStub({ getWatchlist: load })} />);
     expect(await screen.findByText('BOX')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh Finviz' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh All Signals' }));
     expect(screen.getByText('BOX')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Refreshing signals' })).toBeDisabled();
 

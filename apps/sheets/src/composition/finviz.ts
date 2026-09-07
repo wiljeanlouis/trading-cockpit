@@ -25,12 +25,22 @@ function tokenService(): FinvizTokenService {
   return new FinvizTokenService(new AppsScriptFinvizTokenStorage());
 }
 
-function finvizFeeds(): FinvizFeedConfiguration[] {
+function finvizFeeds(strategyId?: string): FinvizFeedConfiguration[] {
+  const normalizedStrategyId = strategyId ? String(strategyId).trim().toUpperCase() : null;
   const reader = new GoogleSheetsTradingStrategyReader();
-  const strategies = reader.listEnabled();
+  const allStrategies = reader.listAll();
+  const strategies = allStrategies.filter((strategy) => strategy.enabled);
+  if (normalizedStrategyId) {
+    const strategy = allStrategies.find((candidate) => candidate.id === normalizedStrategyId);
+    if (!strategy) throw new Error(`Stratégie inconnue : ${normalizedStrategyId}`);
+    if (!strategy.enabled) throw new Error(`La stratégie ${normalizedStrategyId} est désactivée.`);
+    const activeVersion = reader.findActiveVersion(normalizedStrategyId);
+    if (!activeVersion) throw new Error(`Aucune version active pour ${normalizedStrategyId}.`);
+  }
   const feeds = reader
     .listVersions()
     .filter((version) => version.enabled && version.screener === 'FINVIZ')
+    .filter((version) => !normalizedStrategyId || version.strategyId === normalizedStrategyId)
     .map((version) => {
       const strategy = strategies.find((candidate) => candidate.id === version.strategyId);
       if (!strategy) throw new Error(`Stratégie inconnue : ${version.strategyId}`);
@@ -42,13 +52,16 @@ function finvizFeeds(): FinvizFeedConfiguration[] {
         query: version.screenerUrl
       };
     });
-  if (feeds.length === 0) {
+  if (normalizedStrategyId && feeds.length === 0) {
+    throw new Error(`Aucun feed Finviz actif configuré pour ${normalizedStrategyId}.`);
+  }
+  if (!normalizedStrategyId && feeds.length === 0) {
     throw new Error('Aucune stratégie Finviz active configurée.');
   }
   return feeds;
 }
 
-export function runRefreshFinviz(): number {
+export function runRefreshFinviz(strategyId?: string): number {
   const logger = new RuntimeLogger('refresh-market-signals');
   logger.start();
   const runtime = new AppsScriptRuntime();
@@ -66,7 +79,7 @@ export function runRefreshFinviz(): number {
     } else if (event === 'VALID_EMPTY_RESULT') logger.warn(event, fields);
     else logger.info(event, fields);
   };
-  const feeds = finvizFeeds();
+  const feeds = finvizFeeds(strategyId);
   const source = new FinvizMarketSignalSource(
     '',
     feeds,
@@ -85,7 +98,7 @@ export function runRefreshFinviz(): number {
       source,
       strategyCatalog: new GoogleSheetsTradingStrategyCatalog(),
       projection: new GoogleSheetsFinvizSignalProjection(
-        Object.fromEntries(feeds.map((feed) => [feed.id, 'Finviz - Momentum'])),
+        Object.fromEntries(feeds.map((feed) => [feed.id, 'Finviz Signals'])),
         diagnostics
       ),
       archiveSignals,
@@ -93,7 +106,8 @@ export function runRefreshFinviz(): number {
       observe
     });
     return refreshFinvizFromSheets(() => {
-      const archived = refresh();
+      const result = refresh(strategyId ? { strategyId } : undefined);
+      const archived = result.archived;
       logger.success({ archived });
       return archived;
     });

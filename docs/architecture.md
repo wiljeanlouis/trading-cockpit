@@ -185,7 +185,7 @@ Strategy identity and strategy version configuration are separated:
   Enabled, Screener Code, Screener, Finviz URL.
 
 `Strategy ID + Version` is the immutable historical configuration identity once it is persisted or
-referenced by Signals History, Momentum Ranking, Watchlist, Trade Plans, Positions, or Journal.
+referenced by Signals History, Watchlist, Trade Plans, Positions, or Journal.
 Only one Strategy Version may be enabled for a given Strategy ID, and a version may only be enabled
 when its parent Strategy is enabled.
 
@@ -225,8 +225,9 @@ plus Journal realized P&L.
 
 ### Momentum Discovery
 
-Discovery refreshes Finviz market signals, archives snapshots in Signals History, refreshes
-Momentum Ranking, then requires human selection before adding candidates to Watchlist.
+Discovery reads the latest strategy-version snapshots from Signals History for human selection
+before adding candidates to Watchlist. Provider refresh is explicit: normal manual usage refreshes
+the selected Strategy's active version, while `Refresh All` refreshes every eligible active feed.
 
 ## 5. Google Sheets Data Contract V1
 
@@ -247,7 +248,6 @@ Canonical workbook inventory:
 
 | Sheet             |  Classification | Contract                       | Role                                                               |
 | ----------------- | --------------: | ------------------------------ | ------------------------------------------------------------------ |
-| Momentum Ranking  |            DATA | row 1 headers / row 2+ records | Derived ranked Momentum candidates                                 |
 | Watchlist         |            DATA | row 1 headers / row 2+ records | Authoritative selected candidates                                  |
 | Trade Plans       |            DATA | row 1 headers / row 2+ records | Authoritative planning workflow                                    |
 | Positions         |            DATA | row 1 headers / row 2+ records | Authoritative open/closed position records                         |
@@ -257,7 +257,7 @@ Canonical workbook inventory:
 | Strategies        |          CONFIG | row 1 headers / row 2+ records | Stable strategy identity                                           |
 | Strategy Versions |          CONFIG | row 1 headers / row 2+ records | Versioned screener/provider configuration                          |
 | Accounts          |          CONFIG | row 1 headers / row 2+ records | Trading account identity and risk policy                           |
-| Finviz - Momentum |       TECHNICAL | row 1 headers / row 2+ records | Current Finviz provider projection                                 |
+| Finviz Signals    |       TECHNICAL | row 1 headers / row 2+ records | Current Finviz provider projection                                 |
 | Documentation     | OPTIONAL_REPORT | generated utility              | Sheets help surface                                                |
 | Dashboard         |   LEGACY_UNUSED | none                           | Retired Sheets report; React Dashboard is the supported UI         |
 | Analytics         |   LEGACY_UNUSED | none                           | Retired Sheets report; React Analytics is the supported UI         |
@@ -275,7 +275,7 @@ Primary workflow:
 Finviz
   -> complete provider snapshot
   -> Signals History
-  -> Momentum Ranking
+  -> Discovery
   -> Watchlist
   -> Trade Plan
   -> Position
@@ -294,8 +294,10 @@ Signal Date, Detected At, Strategy ID, Strategy, Strategy Version, Ticker
 The business `Ticker` identifies the Trading Cockpit signal. The provider CSV field `Ticker` is
 archived as `Finviz Ticker` to avoid duplicate headers.
 
-Momentum Ranking is a derived strategy-specific projection. It consumes only the Finviz fields the
-Momentum strategy needs and does not redefine Signals History as a Momentum-only store.
+Discovery is the operational candidate review workspace. It reads the latest archived signals by
+active Strategy Version from Signals History. Strategy-specific scoring can still exist behind a
+strategy capability, but a separate Momentum Ranking sheet is no longer part of the canonical
+workbook contract.
 
 ## 7. Runtime and Deployment Architecture
 

@@ -36,21 +36,18 @@ function sheetWithHeaders(headers: readonly string[]) {
 }
 
 describe('Journal physical sheet contract', () => {
-  it('returns an existing sheet without reinitializing or re-theming it', () => {
+  it('returns an existing sheet without reinitializing it', () => {
     const existing = {
       getLastRow: () => 1,
       getLastColumn: () => 1,
       getRange: () => ({ getValues: () => [['existing']] })
     } as unknown as GoogleAppsScript.Spreadsheet.Sheet;
     const insertSheet = vi.fn();
-    const themeJournal = vi.fn();
-    vi.stubGlobal('themeJournal', themeJournal);
     vi.stubGlobal('SpreadsheetApp', {
       getActiveSpreadsheet: () => ({ getSheetByName: () => existing, insertSheet })
     });
     expect(getOrCreateJournalSheet()).toBe(existing);
     expect(insertSheet).not.toHaveBeenCalled();
-    expect(themeJournal).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
 

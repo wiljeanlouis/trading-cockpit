@@ -2,7 +2,6 @@ import { createTradePlanFromSelectedWatchlistRow } from '../adapters/inbound/goo
 import { executeSelectedTradePlanRow } from '../adapters/inbound/google-sheets/ui/execute-selected-trade-plan';
 import { closeSelectedPositionRow } from '../adapters/inbound/google-sheets/ui/close-selected-position';
 import { reconcileSelectedPositionRow } from '../adapters/inbound/google-sheets/ui/reconcile-selected-position';
-import { addSelectedRankingCandidateToWatchlist } from '../adapters/inbound/google-sheets/ui/add-selected-to-watchlist';
 import { AppsScriptRuntime } from '../adapters/outbound/apps-script/apps-script-runtime';
 import { RuntimeLogger } from '../adapters/outbound/apps-script/runtime-logger';
 import {
@@ -10,14 +9,12 @@ import {
   recordInitialFundingFromSheets,
   recordWithdrawalFromSheets
 } from '../adapters/inbound/google-sheets/ui/record-capital-transaction';
-import { GoogleSheetsStrategyRepository } from '../adapters/outbound/google-sheets/trading-strategy/google-sheets-strategy-repository';
 import { GoogleSheetsPositionRepository } from '../adapters/outbound/google-sheets/position/google-sheets-position-repository';
 import { GoogleSheetsJournalRepository } from '../adapters/outbound/google-sheets/journal/google-sheets-journal-repository';
 import { GoogleSheetsTradingAccountRepository } from '../adapters/outbound/google-sheets/trading-account/google-sheets-trading-account-repository';
 import { GoogleSheetsCapitalTransactionRepository } from '../adapters/outbound/google-sheets/capital-transaction/google-sheets-capital-transaction-repository';
 import { GoogleSheetsWatchlistRepository } from '../adapters/outbound/google-sheets/watchlist/google-sheets-watchlist-repository';
 import { createReconcileClosedPosition } from '@trading-cockpit/core/application/position/reconcile-closed-position';
-import { createAddCandidateToWatchlist } from '@trading-cockpit/core/application/watchlist/add-candidate-to-watchlist';
 import {
   createRecordDeposit,
   createRecordInitialFunding,
@@ -38,42 +35,6 @@ function isExpectedBlock(error: unknown): boolean {
 function logFailure(logger: RuntimeLogger, stage: string, error: unknown): void {
   if (isExpectedBlock(error)) logger.blocked(error, { stage });
   else logger.error(stage, error);
-}
-
-export function runAddSelectedToWatchlist(): void {
-  const logger = new RuntimeLogger('add-to-watchlist');
-  logger.start();
-  const addCandidateToWatchlist = createAddCandidateToWatchlist({
-    watchlistRepository: new GoogleSheetsWatchlistRepository(),
-    strategyRepository: new GoogleSheetsStrategyRepository(),
-    runtime: new AppsScriptRuntime()
-  });
-
-  try {
-    addSelectedRankingCandidateToWatchlist((command) => {
-      logger.info('CANDIDATE_SELECTED', {
-        ticker: command.ticker,
-        strategyId: command.strategyId,
-        strategyVersion: command.strategyVersion,
-        signalDate: command.signalDate
-      });
-      const result = addCandidateToWatchlist(command);
-      if (result.kind === 'duplicate') {
-        logger.warn('DUPLICATE', {
-          ticker: result.identity.ticker,
-          strategyId: result.identity.strategyId,
-          watchlistId: result.existing.id
-        });
-      } else {
-        logger.info('WATCHLIST_CREATED', { watchlistId: result.entry.id });
-        logger.success({ watchlistId: result.entry.id });
-      }
-      return result;
-    });
-  } catch (error) {
-    logFailure(logger, 'ADD_TO_WATCHLIST', error);
-    throw error;
-  }
 }
 
 function capitalDependencies(): RecordCapitalTransactionDependencies {

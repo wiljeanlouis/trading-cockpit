@@ -10,10 +10,6 @@ import {
   refreshJournalValidations,
   validateJournalHeaders
 } from '../../../outbound/google-sheets/journal/journal-sheet';
-import {
-  MOMENTUM_RANKING_HEADERS,
-  MOMENTUM_RANKING_SHEET_NAME
-} from '../../../outbound/google-sheets/momentum/momentum-ranking-schema';
 import { POSITION_HEADERS } from '../../../outbound/google-sheets/position/position-mapper';
 import {
   refreshPositionValidations,
@@ -35,7 +31,6 @@ import {
   refreshWatchlistValidations,
   validateWatchlistHeaders
 } from '../../../outbound/google-sheets/watchlist/watchlist-sheet';
-import { createMomentumRankingInSheets } from './setup-momentum-ranking';
 import { setupStrategiesInSheets, validateStrategiesInSheets } from './setup-strategies';
 
 export type WorkbookSheetClassification =
@@ -74,8 +69,8 @@ interface TableSheetDefinition {
 
 const SIGNALS_HISTORY_SHEET_NAME = 'Signals History';
 
-const FINVIZ_MOMENTUM_SHEET_NAME = 'Finviz - Momentum';
-const FINVIZ_MOMENTUM_HEADERS = [
+const FINVIZ_SIGNALS_SHEET_NAME = 'Finviz Signals';
+const FINVIZ_SIGNALS_HEADERS = [
   'Strategy ID',
   'Strategy',
   'Strategy Version',
@@ -89,14 +84,6 @@ const LEGACY_UNUSED_SHEETS = ['Lists', 'Finviz Screener'] as const;
 
 function tableDefinitions(): TableSheetDefinition[] {
   return [
-    {
-      sheetName: MOMENTUM_RANKING_SHEET_NAME,
-      classification: 'DATA',
-      headers: MOMENTUM_RANKING_HEADERS,
-      initialize: createMomentumRankingInSheets,
-      validateHeaders: (headers) =>
-        requireSheetHeaders(headers, MOMENTUM_RANKING_HEADERS, MOMENTUM_RANKING_SHEET_NAME)
-    },
     {
       sheetName: 'Watchlist',
       classification: 'DATA',
@@ -171,10 +158,10 @@ function tableDefinitions(): TableSheetDefinition[] {
       validateHeaders: () => validateStrategiesInSheets()
     },
     {
-      sheetName: FINVIZ_MOMENTUM_SHEET_NAME,
+      sheetName: FINVIZ_SIGNALS_SHEET_NAME,
       classification: 'TECHNICAL',
-      headers: FINVIZ_MOMENTUM_HEADERS,
-      initialize: () => initializeSimpleTable(FINVIZ_MOMENTUM_SHEET_NAME, FINVIZ_MOMENTUM_HEADERS),
+      headers: FINVIZ_SIGNALS_HEADERS,
+      initialize: () => initializeSimpleTable(FINVIZ_SIGNALS_SHEET_NAME, FINVIZ_SIGNALS_HEADERS),
       allowAdditionalHeaders: true
     }
   ];

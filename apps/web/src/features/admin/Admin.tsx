@@ -494,14 +494,14 @@ export function Admin({ gateway }: AdminProps) {
                 <Button
                   onClick={() =>
                     void runAction(
-                      'refresh-finviz',
-                      () => gateway.refreshFinviz(),
-                      'Finviz refreshed.'
+                      'refresh-signals',
+                      () => gateway.refreshAllSignals(),
+                      'Signals refreshed.'
                     )
                   }
                   disabled={busyAction !== null}
                 >
-                  Refresh Finviz
+                  Refresh All Signals
                 </Button>
               </div>
             </div>
@@ -619,7 +619,6 @@ export function Admin({ gateway }: AdminProps) {
               )}
             </div>
           </DataPanel>
-
         </div>
       )}
 

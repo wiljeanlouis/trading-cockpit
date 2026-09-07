@@ -56,10 +56,9 @@ describe('Finviz runtime regression', () => {
     vi.stubGlobal('SpreadsheetApp', {
       getActiveSpreadsheet: () => ({ getSheetByName: () => sheet })
     });
-    vi.stubGlobal('themeSimpleSheet', vi.fn());
 
     const projection = new GoogleSheetsFinvizSignalProjection({
-      MOMENTUM_BREAKOUT_V1: 'Finviz - Momentum'
+      MOMENTUM_BREAKOUT_V1: 'Finviz Signals'
     });
     const snapshots: SignalSnapshot[] = [];
     const archiveSignals = createArchiveMarketSignals({
@@ -81,7 +80,17 @@ describe('Finviz runtime regression', () => {
       now: () => new Date('2026-08-28T12:00:00Z')
     });
 
-    expect(refresh()).toBe(1);
+    expect(refresh()).toEqual({
+      archived: 1,
+      refreshed: [
+        {
+          archived: 1,
+          signalCount: 1,
+          strategyId: 'MOMENTUM_BREAKOUT',
+          strategyVersion: 'V1'
+        }
+      ]
+    });
     expect(written[0][1]).toEqual([
       'MOMENTUM_BREAKOUT',
       'Momentum Breakout',

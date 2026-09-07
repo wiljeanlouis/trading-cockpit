@@ -24,8 +24,7 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.CockpitBundle?.getDashboard).toBeUndefined();
     expect(context.CockpitBundle?.refreshDashboard).toBeUndefined();
     expect(context.CockpitBundle?.getWatchlist).toBeTypeOf('function');
-    expect(context.CockpitBundle?.getMomentumRanking).toBeTypeOf('function');
-    expect(context.CockpitBundle?.addMomentumCandidateToWatchlist).toBeTypeOf('function');
+    expect(context.CockpitBundle?.getMomentumRanking).toBeUndefined();
     expect(context.CockpitBundle?.getTradingAccounts).toBeTypeOf('function');
     expect(context.CockpitBundle?.createTradePlan).toBeTypeOf('function');
     expect(context.CockpitBundle?.getTradePlans).toBeTypeOf('function');
@@ -35,9 +34,11 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.CockpitBundle?.closePosition).toBeTypeOf('function');
     expect(context.CockpitBundle?.getJournal).toBeTypeOf('function');
     expect(context.CockpitBundle?.refreshFinviz).toBeTypeOf('function');
+    expect(context.CockpitBundle?.refreshSignals).toBeTypeOf('function');
+    expect(context.CockpitBundle?.refreshAllSignals).toBeTypeOf('function');
     expect(context.CockpitBundle?.getAnalytics).toBeUndefined();
     expect(context.CockpitBundle?.refreshAnalytics).toBeUndefined();
-    expect(context.CockpitBundle?.refreshMomentumRanking).toBeTypeOf('function');
+    expect(context.CockpitBundle?.refreshMomentumRanking).toBeUndefined();
     expect(context.CockpitBundle?.initializeTradingCockpit).toBeTypeOf('function');
     expect(context.CockpitBundle?.validateTradingCockpit).toBeTypeOf('function');
     expect(context.CockpitBundle?.getTradingConfig).toBeUndefined();
@@ -46,7 +47,7 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.CockpitBundle?.setFinvizToken).toBeTypeOf('function');
     expect(context.CockpitBundle?.checkFinvizAuth).toBeTypeOf('function');
     expect(context.CockpitBundle?.deleteFinvizToken).toBeTypeOf('function');
-    expect(context.CockpitBundle?.addSelectedToWatchlist).toBeTypeOf('function');
+    expect(context.CockpitBundle?.addSelectedToWatchlist).toBeUndefined();
     expect(context.CockpitBundle?.createTradePlanFromSelectedWatchlist).toBeTypeOf('function');
     expect(context.CockpitBundle?.executeSelectedTradePlan).toBeTypeOf('function');
     expect(context.CockpitBundle?.closeSelectedPosition).toBeTypeOf('function');
@@ -54,7 +55,7 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.CockpitBundle?.recordInitialFunding).toBeTypeOf('function');
     expect(context.CockpitBundle?.recordDeposit).toBeTypeOf('function');
     expect(context.CockpitBundle?.recordWithdrawal).toBeTypeOf('function');
-    expect(context.addSelectedToWatchlist).toBeTypeOf('function');
+    expect(context.addSelectedToWatchlist).toBeUndefined();
     expect(context.createTradePlanFromSelectedWatchlist).toBeTypeOf('function');
     expect(context.executeSelectedTradePlan).toBeTypeOf('function');
     expect(context.closeSelectedPosition).toBeTypeOf('function');
@@ -67,8 +68,7 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.getDashboard).toBeUndefined();
     expect(context.refreshDashboard).toBeUndefined();
     expect(context.getWatchlist).toBeTypeOf('function');
-    expect(context.getMomentumRanking).toBeTypeOf('function');
-    expect(context.addMomentumCandidateToWatchlist).toBeTypeOf('function');
+    expect(context.getMomentumRanking).toBeUndefined();
     expect(context.getTradingAccounts).toBeTypeOf('function');
     expect(context.createTradePlan).toBeTypeOf('function');
     expect(context.getTradePlans).toBeTypeOf('function');
@@ -78,9 +78,11 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.closePosition).toBeTypeOf('function');
     expect(context.getJournal).toBeTypeOf('function');
     expect(context.refreshFinviz).toBeTypeOf('function');
+    expect(context.refreshSignals).toBeTypeOf('function');
+    expect(context.refreshAllSignals).toBeTypeOf('function');
     expect(context.getAnalytics).toBeUndefined();
     expect(context.refreshAnalytics).toBeUndefined();
-    expect(context.refreshMomentumRanking).toBeTypeOf('function');
+    expect(context.refreshMomentumRanking).toBeUndefined();
     expect(context.initializeTradingCockpit).toBeTypeOf('function');
     expect(context.validateTradingCockpit).toBeTypeOf('function');
     expect(context.getTradingConfig).toBeUndefined();
@@ -96,14 +98,12 @@ describe('Cockpit Apps Script bundle', () => {
     const targets = [...bundleSource.matchAll(/\.addItem\(\s*"[^"]+"\s*,\s*"([^"]+)"/gs)].map(
       (match) => match[1]
     );
-    expect(targets).toHaveLength(15);
+    expect(targets).toHaveLength(12);
     expect(targets).toEqual(
       expect.arrayContaining([
         'initializeTradingCockpit',
         'validateTradingCockpit',
-        'refreshFinviz',
-        'refreshMomentumRanking',
-        'addSelectedToWatchlist',
+        'refreshAllSignals',
         'createTradePlanFromSelectedWatchlist',
         'executeSelectedTradePlan',
         'closeSelectedPosition',
@@ -112,7 +112,6 @@ describe('Cockpit Apps Script bundle', () => {
         'recordDeposit',
         'recordWithdrawal',
         'configureFinvizToken',
-        'applyCockpitTheme',
         'refreshDocumentation'
       ])
     );
@@ -120,6 +119,8 @@ describe('Cockpit Apps Script bundle', () => {
       expect.arrayContaining([
         'refreshDashboard',
         'refreshAnalytics',
+        'refreshMomentumRanking',
+        'addSelectedToWatchlist',
         'setupMomentumRanking',
         'setupCockpitConfig',
         'setupTradingAccounts',

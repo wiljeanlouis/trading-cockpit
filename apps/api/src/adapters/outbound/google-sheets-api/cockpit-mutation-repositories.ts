@@ -35,11 +35,6 @@ import type {
   TradingAccountReferenceSummary
 } from '@trading-cockpit/core/ports/outbound/trading-account-management-repository';
 import type { TradingAccountRiskPolicyRepository } from '@trading-cockpit/core/ports/outbound/trading-account-risk-policy-repository';
-import type { MomentumRankingProjection } from '@trading-cockpit/core/ports/outbound/momentum-ranking-projection';
-import type {
-  MomentumSignalRepository,
-  MomentumStrategyRepository
-} from '@trading-cockpit/core/ports/outbound/momentum-signal-repository';
 import type { SignalHistoryRepository } from '@trading-cockpit/core/ports/outbound/signal-history-repository';
 import type { MarketSignalProjection } from '@trading-cockpit/core/ports/outbound/market-signal-projection';
 import type { TradingStrategyCatalog } from '@trading-cockpit/core/ports/outbound/trading-strategy-catalog';
@@ -49,10 +44,6 @@ import {
   MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS,
   signalsHistoryHeaderForFinvizHeader
 } from '@trading-cockpit/contracts';
-import type {
-  RankedMomentumCandidate,
-  MomentumCandidate
-} from '@trading-cockpit/core/domain/momentum';
 import type { SheetsValuesClient } from './google-sheets-api-client';
 import {
   readJournalEntries,
@@ -65,7 +56,6 @@ import {
   SHEET_DEFINITIONS
 } from './cockpit-query-readers';
 import {
-  requireColumn,
   textValue,
   valueByHeader,
   type RequestScopedSheets,
@@ -611,105 +601,6 @@ function tradingAccountToRow(account: TradingAccountRecord): unknown[] {
   return [account.id, account.name, account.baseCurrency, account.riskPercentPerTrade];
 }
 
-export class CloudRunMomentumRankingProjection implements MomentumRankingProjection {
-  constructor(private readonly context: MutationContext) {}
-  replace(
-    ranked: RankedMomentumCandidate[],
-    signalDate: string,
-    strategy: { id: string; name: string; version: string }
-  ): void {
-    const rows = ranked.map((candidate, index) => [
-      index + 1,
-      strategy.id,
-      strategy.name,
-      strategy.version,
-      signalDate,
-      candidate.ticker,
-      candidate.company,
-      candidate.sector,
-      candidate.price,
-      candidate.high52,
-      candidate.high52Score,
-      candidate.relativeVolume,
-      candidate.relativeVolumeScore,
-      candidate.performanceMonth,
-      candidate.performanceScore,
-      candidate.rsi,
-      candidate.rsiScore,
-      candidate.sma20,
-      candidate.sma20Score,
-      candidate.total,
-      'REVIEW'
-    ]);
-    this.context.writer.update("'Momentum Ranking'!A1:U", [
-      [...SHEET_DEFINITIONS.momentumRanking.requiredHeaders],
-      ...rows
-    ]);
-  }
-}
-
-export class CloudRunMomentumSignalRepository
-  implements MomentumSignalRepository, MomentumStrategyRepository
-{
-  private candidates: MomentumCandidate[] | null = null;
-  private strategies: TradingStrategy[] | null = null;
-  private versions: TradingStrategyVersion[] | null = null;
-
-  constructor(private readonly context: MutationContext) {}
-
-  async load(): Promise<this> {
-    await this.context.sheets.batchLoad([
-      SHEET_DEFINITIONS.signalsHistory,
-      SHEET_DEFINITIONS.strategies,
-      SHEET_DEFINITIONS.strategyVersions
-    ]);
-    this.strategies = await readStrategyRecords(this.context.sheets);
-    this.versions = await readStrategyVersionRecords(this.context.sheets);
-    this.candidates = await readMomentumCandidates(this.context.sheets);
-    return this;
-  }
-
-  findByStrategy(strategyId: string, strategyVersion: string): MomentumCandidate[] {
-    const expectedId = textValue(strategyId).toUpperCase();
-    const expectedVersion = textValue(strategyVersion);
-    return this.loadedCandidates().filter(
-      (candidate) =>
-        candidate.strategyId.toUpperCase() === expectedId &&
-        candidate.strategyVersion === expectedVersion
-    );
-  }
-  getById(strategyId: string) {
-    const id = textValue(strategyId).toUpperCase();
-    const strategy = this.loadedStrategies().find((candidate) => candidate.id === id);
-    if (!strategy) throw new Error(`Stratégie inconnue : ${id}`);
-    const version = this.loadedVersions().find(
-      (candidate) => candidate.strategyId === id && candidate.enabled
-    );
-    if (!version) throw new Error(`Aucune version active pour ${id}.`);
-    return {
-      id: strategy.id,
-      name: strategy.name,
-      version: version.version,
-      enabled: strategy.enabled
-    };
-  }
-
-  private loadedCandidates(): MomentumCandidate[] {
-    if (!this.candidates) throw new Error('Momentum signals must be loaded before use.');
-    return this.candidates;
-  }
-
-  private loadedStrategies() {
-    if (!this.strategies) throw new Error('Momentum strategies must be loaded before use.');
-    return this.strategies;
-  }
-
-  private loadedVersions() {
-    if (!this.versions) throw new Error('Momentum strategy versions must be loaded before use.');
-    return this.versions;
-  }
-}
-
 export class CloudRunSignalHistoryRepository implements SignalHistoryRepository {
   constructor(
     private readonly context: MutationContext,
@@ -738,7 +629,7 @@ export class CloudRunSignalHistoryRepository implements SignalHistoryRepository 
 export class CloudRunMarketSignalProjection implements MarketSignalProjection {
   constructor(private readonly context: MutationContext) {}
   replace(batch: MarketSignalBatch, refreshedAt: Date): void {
-    this.context.writer.update("'Finviz - Momentum'!A1:Z", [
+    this.context.writer.update("'Finviz Signals'!A1:Z", [
       ['Strategy ID', 'Strategy', 'Strategy Version', 'Refreshed At', ...batch.attributeNames],
       ...batch.signals.map((signal) => [
         batch.feed.strategyId,
@@ -766,68 +657,6 @@ export class LoadedTradingStrategyCatalog implements TradingStrategyCatalog {
     if (!version) throw new Error(`Aucune version active pour ${expected}.`);
     return { id: strategy.id, version: version.version, enabled: strategy.enabled };
   }
-}
-
-async function readMomentumCandidates(sheets: RequestScopedSheets): Promise<MomentumCandidate[]> {
-  const table = (await sheets.getTable(SHEET_DEFINITIONS.signalsHistory)).table;
-  const tickerIndex = requireColumn(table.headers, 'Ticker');
-  const companyIndex = requireColumnAfter(table.headers, 'Company', tickerIndex);
-  const sectorIndex = requireColumnAfter(table.headers, 'Sector', tickerIndex);
-  const priceIndex = requireColumnAfter(table.headers, 'Price', tickerIndex);
-  const high52Index = requireColumnAfter(table.headers, '52-Week High', tickerIndex);
-  const relativeVolumeIndex = requireColumnAfter(table.headers, 'Relative Volume', tickerIndex);
-  const performanceMonthIndex = requireColumnAfter(
-    table.headers,
-    'Performance (Month)',
-    tickerIndex
-  );
-  const rsiIndex = requireColumnAfter(table.headers, 'Relative Strength Index (14)', tickerIndex);
-  const sma20Index = requireColumnAfter(table.headers, '20-Day Simple Moving Average', tickerIndex);
-  return table.rows.map((row) => ({
-    strategyId: textValue(valueByHeader(table.headers, row, 'Strategy ID')).toUpperCase(),
-    strategy: textValue(valueByHeader(table.headers, row, 'Strategy')),
-    strategyVersion: textValue(valueByHeader(table.headers, row, 'Strategy Version')),
-    signalDate: normalizeSignalDate(valueByHeader(table.headers, row, 'Signal Date')),
-    ticker: textValue(row[tickerIndex]).toUpperCase(),
-    company: row[companyIndex] || '',
-    sector: row[sectorIndex] || '',
-    price: parseNumber(row[priceIndex]),
-    high52: parsePercent(row[high52Index]),
-    relativeVolume: parseNumber(row[relativeVolumeIndex]),
-    performanceMonth: parsePercent(row[performanceMonthIndex]),
-    rsi: parseNumber(row[rsiIndex]),
-    sma20: parsePercent(row[sma20Index])
-  }));
-}
-
-function requireColumnAfter(headers: string[], name: string, afterIndex: number): number {
-  const expected = name.trim().toLowerCase();
-  for (let index = afterIndex + 1; index < headers.length; index += 1) {
-    if (headers[index].trim().toLowerCase() === expected) return index;
-  }
-  throw new Error(`Colonne Finviz absente : ${name}`);
-}
-
-function parseNumber(value: unknown): number | null {
-  if (value === null || value === undefined || value === '') return null;
-  if (typeof value === 'number') return value;
-  const parsed = Number(String(value).replace(/,/g, '').trim());
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function parsePercent(value: unknown): number | null {
-  if (value === null || value === undefined || value === '') return null;
-  if (typeof value === 'number') return value;
-  const text = String(value).trim();
-  const parsed = Number(text.replace('%', '').replace(/,/g, ''));
-  if (!Number.isFinite(parsed)) return null;
-  return text.endsWith('%') ? parsed / 100 : parsed;
-}
-
-function normalizeSignalDate(value: unknown): string {
-  if (!value) return '';
-  if (value instanceof Date) return value.toISOString().substring(0, 10);
-  return String(value).trim().substring(0, 10);
 }
 
 export async function loadMutationRepositories(context: MutationContext) {

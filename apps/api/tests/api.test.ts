@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createGetWatchlist } from '@trading-cockpit/core/application/watchlist/get-watchlist';
 import { createCloudRunApp, createCloudRunRequestHandler, handleCloudRunRequest } from '../src/app';
+import { isMutationRoute } from '../src/http/routes/mutations';
 import { loadConfig, requireSpreadsheetId } from '../src/config';
 import { getWatchlistForCloudRun } from '../src/composition/watchlist';
 import type { GoogleIdTokenVerifier, GoogleTokenPayload } from '../src/auth/google-id-token-auth';
@@ -68,7 +69,7 @@ function mutableSheetsClientByRange(
         'Strategies',
         'Strategy Versions',
         'Capital Ledger',
-        'Momentum Ranking'
+        'Signals History'
       ]
     })),
     batchUpdateSpreadsheet: vi.fn(async () => undefined)
@@ -249,6 +250,29 @@ describe('Cloud Run Trading Cockpit API', () => {
     expect(response.statusCode).toBe(200);
     expect(response.body).toEqual({ ok: true });
     expect(sheetsClientFactory).not.toHaveBeenCalled();
+  });
+
+  it('validates scoped signal refresh requests before provider access', async () => {
+    const response = await handleCloudRunRequest({
+      method: 'POST',
+      url: '/api/discovery/signals/refresh',
+      headers: authorizationHeaders(),
+      body: '{}',
+      spreadsheetId: 'spreadsheet-id',
+      auth: testAuthConfig(),
+      cors: testCorsConfig(),
+      sheetsClientFactory: async () => sheetsClient([]),
+      tokenVerifier: authorizedTokenVerifier()
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toEqual({ error: 'strategyId is required.' });
+  });
+
+  it('recognizes the scoped and all-strategy signal refresh routes', () => {
+    expect(isMutationRoute('POST', '/api/discovery/signals/refresh')).toBe(true);
+    expect(isMutationRoute('POST', '/api/discovery/signals/refresh-all')).toBe(true);
+    expect(isMutationRoute('POST', '/api/discovery/finviz/refresh-signals')).toBe(false);
   });
 
   it('serves the React SPA from static web assets without accessing Google Sheets', async () => {
@@ -1216,35 +1240,12 @@ describe('Cloud Run Trading Cockpit API', () => {
     );
   });
 
-  it('sets up Momentum Ranking using the canonical data sheet headers', async () => {
-    const client = mutableSheetsClientByRange(queryFixtureByRange());
-
-    const response = await handleCloudRunRequest({
-      method: 'POST',
-      url: '/api/admin/momentum-ranking/setup',
-      headers: authorizationHeaders(),
-      spreadsheetId: 'spreadsheet-id',
-      auth: testAuthConfig(),
-      cors: testCorsConfig(),
-      sheetsClientFactory: async () => client,
-      tokenVerifier: authorizedTokenVerifier()
-    });
-
-    expect(response.statusCode).toBe(200);
-    expect(vi.mocked(client.updateValues!).mock.calls.map(([request]) => request.range)).toEqual([
-      "'Momentum Ranking'!A1:U"
-    ]);
-    expect(client.updateValues).toHaveBeenCalledWith(
-      expect.objectContaining({ range: "'Momentum Ranking'!A1:U" })
-    );
-  });
-
   it('serves all migrated query routes behind authentication', async () => {
     const client = sheetsClientByRange(queryFixtureByRange());
     const routes = [
       '/api/dashboard',
       '/api/dashboard/summary',
-      '/api/discovery/momentum-ranking',
+      '/api/discovery/candidates',
       '/api/trade-plans',
       '/api/positions/open',
       '/api/journal',
@@ -1594,7 +1595,7 @@ function queryFixtureByRange(
   const accountHeaders = [...SHEET_DEFINITIONS.accounts.requiredHeaders];
   const strategyHeaders = [...SHEET_DEFINITIONS.strategies.requiredHeaders];
   const strategyVersionHeaders = [...SHEET_DEFINITIONS.strategyVersions.requiredHeaders];
-  const momentumHeaders = [...SHEET_DEFINITIONS.momentumRanking.requiredHeaders];
+  const signalHeaders = [...SHEET_DEFINITIONS.signalsHistory.requiredHeaders];
   const capitalLedgerHeaders = [
     'Transaction ID',
     'Account ID',
@@ -1740,30 +1741,23 @@ function queryFixtureByRange(
         'Finviz URL': 'https://elite.finviz.com/export/screener?v=151'
       })
     ],
-    [SHEET_DEFINITIONS.momentumRanking.range]: [
-      momentumHeaders,
-      rowForHeaders(momentumHeaders, {
-        Rank: 1,
+    [SHEET_DEFINITIONS.signalsHistory.range]: [
+      signalHeaders,
+      rowForHeaders(signalHeaders, {
+        'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
+        'Detected At': sheetsSerialDate('2026-08-27T14:30:00.000Z'),
         'Strategy ID': 'MOMENTUM_BREAKOUT',
         Strategy: 'Momentum Breakout',
         'Strategy Version': '1.0',
-        'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
         Ticker: 'BOX',
+        'Finviz Ticker': 'BOX',
         Company: 'Box Inc',
         Sector: 'Technology',
         Price: 34,
-        '52W High': 36,
-        '52W Score': 20,
+        '52-Week High': 36,
         'Relative Volume': 1.5,
-        'RelVol Score': 20,
-        'Performance Month': 0.12,
-        'Performance Score': 20,
-        RSI: 60,
-        'RSI Score': 15,
-        SMA20: 32,
-        'SMA20 Score': 12,
-        'Momentum Score': 87,
-        'Review Status': 'REVIEW'
+        'Performance (Month)': 0.12,
+        'Relative Strength Index (14)': 60
       })
     ]
   };

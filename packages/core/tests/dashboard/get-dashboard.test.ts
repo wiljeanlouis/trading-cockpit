@@ -48,7 +48,7 @@ const portfolioEquity: PortfolioEquitySummary = {
 
 function snapshot(): DashboardRepositorySnapshot {
   return {
-    momentumCandidates: [
+    discoveryCandidates: [
       {
         rank: 1,
         ticker: 'BOX',

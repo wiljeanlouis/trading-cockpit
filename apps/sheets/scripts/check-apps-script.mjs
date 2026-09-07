@@ -72,13 +72,7 @@ const supersededWorkflowFunctions = [
   'updateCurrentScreenerSheet',
   'validateScreenerConfig',
   'archiveSignals',
-  'writeMomentumRanking',
   'findLatestSignalDate',
-  'score52WeekHigh',
-  'scoreRelativeVolume',
-  'scoreMonthlyPerformance',
-  'scoreRsi',
-  'scoreSma20',
   'updateWatchlistStatus'
 ];
 const reintroducedWorkflowFunctions = supersededWorkflowFunctions.filter((name) =>

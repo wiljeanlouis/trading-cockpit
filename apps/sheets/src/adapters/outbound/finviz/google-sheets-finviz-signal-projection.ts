@@ -1,6 +1,5 @@
 import type { MarketSignalBatch } from '@trading-cockpit/core/domain/market-signal';
 import type { MarketSignalProjection } from '@trading-cockpit/core/ports/outbound/market-signal-projection';
-import { themeSimpleSheet } from '../../inbound/google-sheets/theme/theme';
 
 export class GoogleSheetsFinvizSignalProjection implements MarketSignalProjection {
   constructor(
@@ -44,6 +43,5 @@ export class GoogleSheetsFinvizSignalProjection implements MarketSignalProjectio
     }
     sheet.setFrozenRows(1);
     sheet.autoResizeColumns(1, sheet.getLastColumn());
-    themeSimpleSheet(spreadsheet, sheetName);
   }
 }

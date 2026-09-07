@@ -7,10 +7,8 @@ export function installCockpitMenu(): void {
         .addItem('Initialize Trading Cockpit', 'initializeTradingCockpit')
         .addItem('Validate Trading Cockpit', 'validateTradingCockpit')
     )
-    .addItem('Refresh Finviz', 'refreshFinviz')
-    .addItem('Refresh Momentum Ranking', 'refreshMomentumRanking')
+    .addItem('Refresh All Signals', 'refreshAllSignals')
     .addSeparator()
-    .addItem('Ajouter à Watchlist', 'addSelectedToWatchlist')
     .addItem('Créer Trade Plan', 'createTradePlanFromSelectedWatchlist')
     .addItem('Exécuter Trade Plan', 'executeSelectedTradePlan')
     .addItem('Fermer Position', 'closeSelectedPosition')
@@ -22,7 +20,6 @@ export function installCockpitMenu(): void {
     .addItem('Record Withdrawal', 'recordWithdrawal')
     .addSeparator()
     .addItem('Configurer le token Finviz', 'configureFinvizToken')
-    .addItem('Appliquer thème', 'applyCockpitTheme')
     .addItem('Refresh Documentation', 'refreshDocumentation')
     .addToUi();
 }

@@ -95,7 +95,7 @@ describe('AuthenticatedCockpit', () => {
         averageR: 0,
         totalR: 0
       },
-      topMomentum: [],
+      topDiscoveryCandidates: [],
       watchlistPreview: [],
       openPositionsPreview: [],
       actions: { nearBreakout: [], ready: [], openPositions: [] }

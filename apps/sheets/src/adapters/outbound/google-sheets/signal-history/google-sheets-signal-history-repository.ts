@@ -8,7 +8,6 @@ import {
   signalsHistoryHeaderForFinvizHeader
 } from '@trading-cockpit/contracts';
 import { readSheetHeaders, requireColumn } from '../sheet-headers';
-import { themeTechnicalSheet } from '../../../inbound/google-sheets/theme/theme';
 
 const SHEET_NAME = 'Signals History';
 
@@ -38,7 +37,6 @@ export class GoogleSheetsSignalHistoryRepository implements SignalHistoryReposit
         .getRange(1, 1, 1, SIGNALS_HISTORY_HEADERS.length)
         .setValues([[...SIGNALS_HISTORY_HEADERS]]);
       sheet.setFrozenRows(1);
-      themeTechnicalSheet(spreadsheet, SHEET_NAME);
       return;
     }
     const headers = readSheetHeaders(sheet);
@@ -88,13 +86,11 @@ export class GoogleSheetsSignalHistoryRepository implements SignalHistoryReposit
         signalAttributeValue(snapshot, header)
       )
     ]);
-    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
     const sheet = this.sheet();
     const startRow = sheet.getLastRow() + 1;
     sheet.getRange(startRow, 1, rows.length, SIGNALS_HISTORY_HEADERS.length).setValues(rows);
     sheet.getRange(startRow, 1, rows.length, 1).setNumberFormat('yyyy-mm-dd');
     sheet.getRange(startRow, 2, rows.length, 1).setNumberFormat('yyyy-mm-dd hh:mm:ss');
-    themeTechnicalSheet(spreadsheet, SHEET_NAME);
   }
 
   private sheet(): GoogleAppsScript.Spreadsheet.Sheet {

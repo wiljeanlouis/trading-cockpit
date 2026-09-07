@@ -16,7 +16,6 @@ import {
 } from './watchlist-sheet';
 import { readSheetHeaders, requireColumn } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
-import { themeWatchlist } from '../../../inbound/google-sheets/theme/theme';
 
 const WATCHLIST_SHEET_NAME = 'Watchlist';
 
@@ -80,7 +79,6 @@ export class GoogleSheetsWatchlistRepository implements WatchlistRepository {
 
     addWatchlistFormulas(sheet, insertedRow);
     formatWatchlistRow(sheet, insertedRow);
-    themeWatchlist(getTradingCockpitSpreadsheet());
   }
 
   updateTradePlanningInputs(

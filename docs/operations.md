@@ -157,8 +157,8 @@ For the Apps Script / Sheets runtime, configure the Finviz token through the sup
 For the Cloud Run API runtime, configure the token through the current Google Cloud secret/runtime
 configuration. Do not commit tokens or secret values.
 
-Signals History archives the complete configured Finviz CSV snapshot. Momentum Ranking is refreshed
-from Signals History and uses only the fields required by the Momentum strategy.
+Signals History archives the complete configured Finviz CSV snapshot. React Discovery reads the
+latest snapshots from Signals History and lets the trader manually select candidates for Watchlist.
 
 ## 8. Cloud Run Build and Deployment
 
@@ -242,17 +242,17 @@ A concise end-to-end smoke test after deployment:
 2. Call `/health` or confirm the app shell loads.
 3. In the Google Sheet, run `Validate Trading Cockpit` and require `VALID`.
 4. Configure Finviz if needed.
-5. In React Discovery, run `Refresh Signals`.
+5. In React Discovery, select a Strategy and run `Refresh Signals`, or explicitly run
+   `Refresh All` when all active strategy feeds should be refreshed.
 6. Confirm Signals History receives rows with complete canonical headers.
-7. Run `Refresh Ranking`.
-8. Add one candidate to Watchlist.
-9. Create a Trade Plan from Watchlist.
-10. Complete planning inputs until the backend marks it execution-eligible.
-11. Execute the Trade Plan into a Position.
-12. Manage/close the Position with explicit exit data.
-13. Confirm a Journal entry exists.
-14. Confirm React Analytics and React Dashboard load current backend-calculated data.
-15. If account equity is used, confirm Accounts and Capital Ledger contain the required account
+7. Add one Discovery candidate to Watchlist.
+8. Create a Trade Plan from Watchlist.
+9. Complete planning inputs until the backend marks it execution-eligible.
+10. Execute the Trade Plan into a Position.
+11. Manage/close the Position with explicit exit data.
+12. Confirm a Journal entry exists.
+13. Confirm React Analytics and React Dashboard load current backend-calculated data.
+14. If account equity is used, confirm Accounts and Capital Ledger contain the required account
     setup and initial funding.
 
 ## 11. Logging and Troubleshooting

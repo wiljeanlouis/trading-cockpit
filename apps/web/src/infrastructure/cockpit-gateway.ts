@@ -1,8 +1,8 @@
 import type {
   AnalyticsDto,
   AdminOverviewDto,
-  AddMomentumCandidateToWatchlistRequest,
-  AddMomentumCandidateToWatchlistResponse,
+  AddDiscoveryCandidateToWatchlistRequest,
+  AddDiscoveryCandidateToWatchlistResponse,
   CreateTradePlanRequest,
   CreateTradePlanResponse,
   ClosePositionRequest,
@@ -17,7 +17,9 @@ import type {
   RecordCapitalTransactionResponse,
   ExecuteTradePlanRequest,
   ExecuteTradePlanResponse,
-  MomentumRankingDto,
+  DiscoveryDto,
+  RefreshSignalsRequest,
+  RefreshSignalsResponse,
   OpenPositionsDto,
   JournalDto,
   TradePlansDto,
@@ -44,16 +46,15 @@ export interface CockpitGateway {
   getDashboard(query?: AccountScopedQuery): Promise<DashboardDto>;
   getDashboardSummary(): Promise<DashboardSummaryDto>;
   getWatchlist(): Promise<WatchlistDto>;
-  getMomentumRanking(): Promise<MomentumRankingDto>;
-  refreshFinviz(): Promise<number>;
-  refreshMomentumRanking(): Promise<void>;
-  addMomentumCandidateToWatchlist(
-    request: AddMomentumCandidateToWatchlistRequest
-  ): Promise<AddMomentumCandidateToWatchlistResponse>;
+  getDiscovery(): Promise<DiscoveryDto>;
+  refreshSignals(request: RefreshSignalsRequest): Promise<RefreshSignalsResponse>;
+  refreshAllSignals(): Promise<RefreshSignalsResponse>;
+  addDiscoveryCandidateToWatchlist(
+    request: AddDiscoveryCandidateToWatchlistRequest
+  ): Promise<AddDiscoveryCandidateToWatchlistResponse>;
   getAnalytics(query?: AnalyticsQuery): Promise<AnalyticsDto>;
   getAdminOverview(): Promise<AdminOverviewDto>;
   getTradingAccounts(): Promise<TradingAccountsDto>;
-  setupMomentumRanking(): Promise<void>;
   setupStrategies(): Promise<void>;
   validateStrategies(): Promise<boolean>;
   createStrategy(request: CreateStrategyRequest): Promise<void>;

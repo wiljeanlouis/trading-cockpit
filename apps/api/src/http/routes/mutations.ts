@@ -14,7 +14,6 @@ import {
   deleteFinvizTokenForCloudRun,
   recordCapitalTransactionForCloudRun,
   setFinvizTokenForCloudRun,
-  setupMomentumRankingForCloudRun,
   setupStrategiesForCloudRun,
   setupTradingAccountsForCloudRun,
   updateStrategyForCloudRun,
@@ -22,10 +21,10 @@ import {
   updateTradingAccountForCloudRun
 } from '../../composition/admin';
 import {
-  refreshFinvizForCloudRun,
-  refreshMomentumRankingForCloudRun
+  refreshAllSignalsForCloudRun,
+  refreshSignalsForCloudRun
 } from '../../composition/discovery';
-import { addMomentumCandidateToWatchlistForCloudRun } from '../../composition/watchlist';
+import { addDiscoveryCandidateToWatchlistForCloudRun } from '../../composition/watchlist';
 import {
   createTradePlanForCloudRun,
   updateTradePlanPlanningForCloudRun
@@ -192,9 +191,9 @@ function matchMutationRoute(method: string, pathname: string): RouteMatch | null
 }
 
 const exactRoutes: Record<string, MutationHandler> = {
-  'POST /api/discovery/finviz/refresh-signals': refreshFinvizForCloudRun,
-  'POST /api/discovery/momentum-ranking/refresh': refreshMomentumRankingForCloudRun,
-  'POST /api/discovery/momentum-ranking/watchlist': addMomentumCandidateToWatchlistForCloudRun,
+  'POST /api/discovery/signals/refresh': refreshSignalsForCloudRun,
+  'POST /api/discovery/signals/refresh-all': refreshAllSignalsForCloudRun,
+  'POST /api/discovery/candidates/watchlist': addDiscoveryCandidateToWatchlistForCloudRun,
   'POST /api/trade-plans': createTradePlanForCloudRun,
   'POST /api/admin/strategies': createStrategyForCloudRun,
   'POST /api/admin/strategy-versions': createStrategyVersionForCloudRun,
@@ -204,7 +203,6 @@ const exactRoutes: Record<string, MutationHandler> = {
   'GET /api/admin/finviz/auth': checkFinvizAuthMutationForCloudRun,
   'PUT /api/admin/finviz/token': setFinvizTokenForCloudRun,
   'DELETE /api/admin/finviz/token': deleteFinvizTokenForCloudRun,
-  'POST /api/admin/momentum-ranking/setup': setupMomentumRankingForCloudRun,
   'POST /api/admin/strategies/setup': setupStrategiesForCloudRun,
   'POST /api/admin/trading-accounts/setup': setupTradingAccountsForCloudRun
 };

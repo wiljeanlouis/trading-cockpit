@@ -1,10 +1,12 @@
 import { vi } from 'vitest';
 import type {
-  AddMomentumCandidateToWatchlistRequest,
+  AddDiscoveryCandidateToWatchlistRequest,
   AdminOverviewDto,
   AnalyticsDto,
   CreateFundedTradingAccountRequest,
   DashboardDto,
+  RefreshSignalsRequest,
+  RefreshSignalsResponse,
   RecordCapitalTransactionRequest,
   RecordCapitalTransactionResponse,
   CreateTradingAccountRequest,
@@ -83,7 +85,7 @@ const EMPTY_DASHBOARD: DashboardDto = {
     averageR: 0,
     totalR: 0
   },
-  topMomentum: [],
+  topDiscoveryCandidates: [],
   watchlistPreview: [],
   openPositionsPreview: [],
   actions: {
@@ -115,11 +117,25 @@ export function createGatewayStub(overrides: Partial<CockpitGateway> = {}): Cock
       closedTrades: 0
     })),
     getWatchlist: vi.fn(),
-    getMomentumRanking: vi.fn(async () => ({ generatedAt: new Date().toISOString(), items: [] })),
-    refreshFinviz: vi.fn(async () => 0),
-    refreshMomentumRanking: vi.fn(async () => {}),
-    addMomentumCandidateToWatchlist: vi.fn(
-      async (_request: AddMomentumCandidateToWatchlistRequest) => ({
+    getDiscovery: vi.fn(async () => ({
+      generatedAt: new Date().toISOString(),
+      strategies: [],
+      items: []
+    })),
+    refreshSignals: vi.fn(
+      async (_request: RefreshSignalsRequest): Promise<RefreshSignalsResponse> => ({
+        scope: 'STRATEGY',
+        archived: 0,
+        refreshed: []
+      })
+    ),
+    refreshAllSignals: vi.fn(async (): Promise<RefreshSignalsResponse> => ({
+      scope: 'ALL',
+      archived: 0,
+      refreshed: []
+    })),
+    addDiscoveryCandidateToWatchlist: vi.fn(
+      async (_request: AddDiscoveryCandidateToWatchlistRequest) => ({
         kind: 'added' as const,
         watchlistId: '',
         ticker: '',
@@ -129,7 +145,6 @@ export function createGatewayStub(overrides: Partial<CockpitGateway> = {}): Cock
     getAnalytics: vi.fn(async () => EMPTY_ANALYTICS),
     getAdminOverview: vi.fn(async () => EMPTY_ADMIN_OVERVIEW),
     getTradingAccounts: vi.fn(async () => ({ accounts: [] })),
-    setupMomentumRanking: vi.fn(async () => {}),
     setupStrategies: vi.fn(async () => {}),
     validateStrategies: vi.fn(async () => true),
     createStrategy: vi.fn(async () => {}),

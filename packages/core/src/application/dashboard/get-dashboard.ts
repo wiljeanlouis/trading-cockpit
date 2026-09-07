@@ -105,7 +105,7 @@ export function createGetDashboard({
     const ready = watchlistWithTicker.filter((entry) => isReadyWatchlistStatus(entry.status));
 
     const pipeline = {
-      signals: snapshot.momentumCandidates.length,
+      signals: snapshot.discoveryCandidates.length,
       watchlist: watchlistWithTicker.length,
       ready: ready.length,
       nearBreakout: nearBreakout.length,
@@ -169,7 +169,7 @@ export function createGetDashboard({
         averageR: analytics.summary.averageR,
         totalR: analytics.summary.totalR
       },
-      topMomentum: snapshot.momentumCandidates.slice(0, 5),
+      topDiscoveryCandidates: snapshot.discoveryCandidates.slice(0, 5),
       watchlistPreview: watchlistWithTicker
         .filter((entry) => !isRejectedWatchlistStatus(entry.status))
         .slice(0, 5),

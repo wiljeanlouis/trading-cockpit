@@ -1,6 +1,5 @@
 import type { ClosePosition } from '@trading-cockpit/core/application/position/close-position';
 import { closePositionCommand, selectedPositionForClose } from './position-close-selection-mapper';
-import { themePositions } from '../theme/theme';
 
 const POSITIONS_SHEET_NAME = 'Positions';
 
@@ -36,7 +35,6 @@ export function closeSelectedPositionRow(closePosition: ClosePosition): void {
   const result = closePosition(
     closePositionCommand(selected.positionId, response.getResponseText())
   );
-  themePositions(spreadsheet);
   spreadsheet.toast(
     `${result.position.ticker} fermé — P&L : ${Number(result.position.realizedPnl).toFixed(2)}`,
     'Trading Cockpit',

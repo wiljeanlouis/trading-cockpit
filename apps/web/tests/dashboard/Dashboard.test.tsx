@@ -48,7 +48,7 @@ const dashboard: DashboardDto = {
     averageR: 1.3,
     totalR: 18.2
   },
-  topMomentum: [
+  topDiscoveryCandidates: [
     {
       rank: 1,
       ticker: 'BOX',

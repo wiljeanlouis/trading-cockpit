@@ -484,47 +484,6 @@ function getDocumentationDefinitions_(): DocumentationSheetDefinition[] {
     },
 
     // ========================================================
-    // MOMENTUM RANKING
-    // ========================================================
-
-    {
-      name: 'Momentum Ranking',
-
-      role: 'Projection des signaux permettant de classer les candidats Momentum Breakout.',
-
-      source: 'Signals History + calculs du Cockpit.',
-
-      fields: [
-        ['Strategy ID', 'Identité stable de la stratégie.'],
-
-        ['Strategy', 'Nom lisible de la stratégie.'],
-
-        ['Strategy Version', 'Version ayant produit le signal.'],
-
-        ['Signal Date', 'Date du signal analysé.'],
-
-        ['Ticker', 'Symbole boursier.'],
-
-        ['Price', 'Prix associé au signal.'],
-
-        ['Change', 'Variation du titre.'],
-
-        ['Volume', 'Volume observé.'],
-
-        ['Relative Volume', 'Volume relatif du titre.'],
-
-        ['RSI', 'Indicateur RSI du titre.'],
-
-        [
-          'Momentum Score',
-          'Score calculé par le Cockpit pour classer les candidats selon les critères de momentum.'
-        ],
-
-        ['Rank', 'Position relative du candidat dans le classement lorsque présente.']
-      ]
-    },
-
-    // ========================================================
     // WATCHLIST
     // ========================================================
 
@@ -533,7 +492,7 @@ function getDocumentationDefinitions_(): DocumentationSheetDefinition[] {
 
       role: 'Contient les titres sélectionnés pour une surveillance et une analyse plus approfondies.',
 
-      source: 'Sélection humaine depuis le ranking.',
+      source: 'Sélection humaine depuis Discovery.',
 
       lifecycle: 'WATCHING → READY → PLANNED → ENTERED → CLOSED',
 
@@ -554,7 +513,7 @@ function getDocumentationDefinitions_(): DocumentationSheetDefinition[] {
 
         ['Current Price', 'Prix courant indicatif, généralement récupéré automatiquement.'],
 
-        ['Momentum Score', 'Score du candidat provenant du ranking.'],
+        ['Momentum Score', 'Score historique du candidat lorsque disponible.'],
 
         ['Setup Status', 'État qualitatif du setup observé.'],
 
@@ -971,9 +930,13 @@ function writeDocumentationWorkflow_(sheet: Sheet, row: number): number {
   row = writeDocumentationSection_(sheet, row, '6. GUIDE D’UTILISATION');
 
   const steps = [
-    ['1', 'Refresh Finviz', 'Récupérer les nouveaux candidats correspondant aux screeners actifs.'],
+    [
+      '1',
+      'Refresh All Signals',
+      'Récupérer les nouveaux candidats correspondant aux screeners actifs.'
+    ],
 
-    ['2', 'Momentum Ranking', 'Examiner les candidats classés par le Cockpit.'],
+    ['2', 'Discovery', 'Examiner les derniers candidats disponibles par stratégie active.'],
 
     ['3', 'Sélection', 'Choisir les titres méritant une analyse plus approfondie.'],
 

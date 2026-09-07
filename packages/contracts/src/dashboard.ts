@@ -47,7 +47,7 @@ export interface DashboardAccountDto {
   accountCount?: number;
 }
 
-export interface DashboardMomentumCandidateDto {
+export interface DashboardDiscoveryCandidateDto {
   rank: number | null;
   ticker: string;
   score: number | null;
@@ -116,7 +116,7 @@ export interface DashboardDto {
   account: DashboardAccountDto;
   pipeline: DashboardPipelineDto;
   performance: DashboardPerformanceDto;
-  topMomentum: DashboardMomentumCandidateDto[];
+  topDiscoveryCandidates: DashboardDiscoveryCandidateDto[];
   watchlistPreview: DashboardWatchlistPreviewDto[];
   openPositionsPreview: DashboardPositionPreviewDto[];
   actions: DashboardActionsDto;

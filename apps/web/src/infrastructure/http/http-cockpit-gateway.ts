@@ -1,6 +1,6 @@
 import type {
-  AddMomentumCandidateToWatchlistRequest,
-  AddMomentumCandidateToWatchlistResponse,
+  AddDiscoveryCandidateToWatchlistRequest,
+  AddDiscoveryCandidateToWatchlistResponse,
   AdminOverviewDto,
   AnalyticsDto,
   ClosePositionRequest,
@@ -16,7 +16,9 @@ import type {
   ExecuteTradePlanRequest,
   ExecuteTradePlanResponse,
   JournalDto,
-  MomentumRankingDto,
+  DiscoveryDto,
+  RefreshSignalsRequest,
+  RefreshSignalsResponse,
   OpenPositionsDto,
   RecordCapitalTransactionRequest,
   RecordCapitalTransactionResponse,
@@ -74,25 +76,22 @@ export class HttpCockpitGateway implements CockpitGateway {
     return this.get('/api/watchlist');
   }
 
-  getMomentumRanking(): Promise<MomentumRankingDto> {
-    return this.get('/api/discovery/momentum-ranking');
+  getDiscovery(): Promise<DiscoveryDto> {
+    return this.get('/api/discovery/candidates');
   }
 
-  async refreshFinviz(): Promise<number> {
-    const response = await this.post<{ archived?: number } | number>(
-      '/api/discovery/finviz/refresh-signals'
-    );
-    return typeof response === 'number' ? response : Number(response.archived ?? 0);
+  refreshSignals(request: RefreshSignalsRequest): Promise<RefreshSignalsResponse> {
+    return this.post('/api/discovery/signals/refresh', request);
   }
 
-  async refreshMomentumRanking(): Promise<void> {
-    await this.post('/api/discovery/momentum-ranking/refresh');
+  refreshAllSignals(): Promise<RefreshSignalsResponse> {
+    return this.post('/api/discovery/signals/refresh-all');
   }
 
-  addMomentumCandidateToWatchlist(
-    request: AddMomentumCandidateToWatchlistRequest
-  ): Promise<AddMomentumCandidateToWatchlistResponse> {
-    return this.post('/api/discovery/momentum-ranking/watchlist', request);
+  addDiscoveryCandidateToWatchlist(
+    request: AddDiscoveryCandidateToWatchlistRequest
+  ): Promise<AddDiscoveryCandidateToWatchlistResponse> {
+    return this.post('/api/discovery/candidates/watchlist', request);
   }
 
   getAnalytics(query?: AnalyticsQuery): Promise<AnalyticsDto> {
@@ -105,10 +104,6 @@ export class HttpCockpitGateway implements CockpitGateway {
 
   getTradingAccounts(): Promise<TradingAccountsDto> {
     return this.get('/api/admin/trading-accounts');
-  }
-
-  async setupMomentumRanking(): Promise<void> {
-    await this.post('/api/admin/momentum-ranking/setup');
   }
 
   async setupStrategies(): Promise<void> {

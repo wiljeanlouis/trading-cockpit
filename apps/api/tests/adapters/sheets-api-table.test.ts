@@ -116,7 +116,7 @@ describe('Sheets API request-scoped table loader', () => {
     const client: SheetsValuesClient = {
       getValues: vi.fn(async () => ({ values: [] })),
       batchGetValues: vi.fn(async () => ({
-        'Momentum Ranking!A1:U1000': {
+        'Candidate Table!A1:U1000': {
           values: [
             ['Rank', 'Ticker'],
             [1, 'BOX']
@@ -128,15 +128,15 @@ describe('Sheets API request-scoped table loader', () => {
             ['WL-1', 'BOX']
           ]
         },
-        "'Momentum Ranking'!A:U": {},
+        "'Candidate Table'!A:U": {},
         "'Watchlist'!A:V": {}
       }))
     };
     const sheets = createRequestScopedSheets({ sheetsClient: client, spreadsheetId: 'sheet-id' });
-    const momentum = {
-      key: 'momentumRanking',
-      sheetName: 'Momentum Ranking',
-      range: "'Momentum Ranking'!A:U",
+    const candidates = {
+      key: 'candidateTable',
+      sheetName: 'Candidate Table',
+      range: "'Candidate Table'!A:U",
       requiredHeaders: ['Rank', 'Ticker']
     };
     const watchlist = {
@@ -146,11 +146,11 @@ describe('Sheets API request-scoped table loader', () => {
       requiredHeaders: ['Watchlist ID', 'Ticker']
     };
 
-    await sheets.batchLoad([momentum, watchlist]);
+    await sheets.batchLoad([candidates, watchlist]);
 
-    expect((await sheets.getTable(momentum)).table.headers).toEqual(['Rank', 'Ticker']);
+    expect((await sheets.getTable(candidates)).table.headers).toEqual(['Rank', 'Ticker']);
     expect((await sheets.getTable(watchlist)).table.headers).toEqual(['Watchlist ID', 'Ticker']);
-    expect((await sheets.getTable(momentum)).table.rows).toEqual([[1, 'BOX']]);
+    expect((await sheets.getTable(candidates)).table.rows).toEqual([[1, 'BOX']]);
     expect(client.getValues).not.toHaveBeenCalled();
   });
 

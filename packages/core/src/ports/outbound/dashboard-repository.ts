@@ -1,4 +1,4 @@
-export interface DashboardMomentumCandidateSnapshot {
+export interface DashboardDiscoveryCandidateSnapshot {
   rank: number | null;
   ticker: string;
   score: number | null;
@@ -39,7 +39,7 @@ export interface DashboardPositionSnapshot {
 }
 
 export interface DashboardRepositorySnapshot {
-  momentumCandidates: DashboardMomentumCandidateSnapshot[];
+  discoveryCandidates: DashboardDiscoveryCandidateSnapshot[];
   watchlist: DashboardWatchlistSnapshot[];
   tradePlans: DashboardTradePlanSnapshot[];
   positions: DashboardPositionSnapshot[];

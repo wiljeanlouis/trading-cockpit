@@ -33,8 +33,9 @@ describe('App navigation', () => {
 
   it('opens the Discovery workspace from navigation', async () => {
     const gateway = createGatewayStub({
-      getMomentumRanking: vi.fn(async () => ({
+      getDiscovery: vi.fn(async () => ({
         generatedAt: '2026-08-28T16:04:00.000Z',
+        strategies: [],
         items: []
       }))
     });
@@ -47,7 +48,7 @@ describe('App navigation', () => {
     fireEvent.click(screen.getByRole('link', { name: 'Discovery' }));
 
     expect(await screen.findByRole('heading', { name: 'Discovery' })).toBeInTheDocument();
-    expect(gateway.getMomentumRanking).toHaveBeenCalledOnce();
+    expect(gateway.getDiscovery).toHaveBeenCalledOnce();
   });
 
   it('opens the Watchlist directly from its route', async () => {

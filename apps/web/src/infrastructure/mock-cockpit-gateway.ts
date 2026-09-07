@@ -1,7 +1,7 @@
 import type {
   AnalyticsDto,
-  AddMomentumCandidateToWatchlistRequest,
-  AddMomentumCandidateToWatchlistResponse,
+  AddDiscoveryCandidateToWatchlistRequest,
+  AddDiscoveryCandidateToWatchlistResponse,
   AdminOverviewDto,
   CreateTradePlanRequest,
   CreateTradePlanResponse,
@@ -13,6 +13,7 @@ import type {
   CreateTradingAccountRequest,
   DashboardDto,
   DashboardSummaryDto,
+  DiscoveryDto,
   RecordCapitalTransactionRequest,
   RecordCapitalTransactionResponse,
   CapitalTransactionDto,
@@ -21,9 +22,10 @@ import type {
   OpenPositionsDto,
   JournalDto,
   JournalItemDto,
-  MomentumRankingDto,
-  MomentumRankingItemDto,
+  DiscoveryCandidateDto,
   PositionItemDto,
+  RefreshSignalsRequest,
+  RefreshSignalsResponse,
   TradePlanItemDto,
   TradePlansDto,
   TradingAccountsDto,
@@ -94,28 +96,30 @@ const DEVELOPMENT_WATCHLIST: WatchlistDto = {
   ]
 };
 
-const DEVELOPMENT_MOMENTUM_RANKING: MomentumRankingItemDto[] = [
+const DEVELOPMENT_DISCOVERY_CANDIDATES: DiscoveryCandidateDto[] = [
   {
     strategyId: 'MOMENTUM_BREAKOUT',
     strategyName: 'Momentum Breakout',
     strategyVersion: '1.0',
     signalDate: '2026-08-28',
+    detectedAt: '2026-08-28T14:30:00.000Z',
     ticker: 'NVDA',
     company: 'NVIDIA Corp',
     sector: 'Technology',
+    industry: null,
+    country: null,
+    marketCap: null,
+    volume: null,
     price: 217.55,
-    high52: 220,
-    high52Score: 20,
+    change: null,
+    averageVolume: null,
     relativeVolume: 1.8,
-    relativeVolumeScore: 18,
+    high52: 220,
+    performanceWeek: null,
     performanceMonth: 0.12,
-    performanceScore: 16,
     rsi: 63,
-    rsiScore: 14,
-    sma20: 1.03,
-    sma20Score: 18,
-    momentumScore: 86,
-    reviewStatus: 'READY',
+    earningsDate: null,
+    attributes: {},
     watchlistStatus: null
   },
   {
@@ -123,22 +127,24 @@ const DEVELOPMENT_MOMENTUM_RANKING: MomentumRankingItemDto[] = [
     strategyName: 'Momentum Breakout',
     strategyVersion: '1.0',
     signalDate: '2026-08-27',
+    detectedAt: '2026-08-27T14:30:00.000Z',
     ticker: 'BOX',
     company: 'Box, Inc.',
     sector: 'Technology',
+    industry: null,
+    country: null,
+    marketCap: null,
+    volume: null,
     price: 34.98,
-    high52: 36,
-    high52Score: 18,
+    change: null,
+    averageVolume: null,
     relativeVolume: 1.5,
-    relativeVolumeScore: 16,
+    high52: 36,
+    performanceWeek: null,
     performanceMonth: 0.09,
-    performanceScore: 14,
     rsi: 59,
-    rsiScore: 13,
-    sma20: 1.02,
-    sma20Score: 17,
-    momentumScore: 87,
-    reviewStatus: 'WATCH',
+    earningsDate: null,
+    attributes: {},
     watchlistStatus: 'READY'
   },
   {
@@ -146,22 +152,24 @@ const DEVELOPMENT_MOMENTUM_RANKING: MomentumRankingItemDto[] = [
     strategyName: 'Momentum Breakout',
     strategyVersion: '1.0',
     signalDate: '2026-08-26',
+    detectedAt: '2026-08-26T14:30:00.000Z',
     ticker: 'URNB',
     company: 'Ur-Nergy Inc.',
     sector: 'Energy',
+    industry: null,
+    country: null,
+    marketCap: null,
+    volume: null,
     price: 1.74,
-    high52: 1.9,
-    high52Score: 15,
+    change: null,
+    averageVolume: null,
     relativeVolume: 1.2,
-    relativeVolumeScore: 13,
+    high52: 1.9,
+    performanceWeek: null,
     performanceMonth: 0.07,
-    performanceScore: 12,
     rsi: 55,
-    rsiScore: 12,
-    sma20: 1.01,
-    sma20Score: 14,
-    momentumScore: 72,
-    reviewStatus: 'REVIEW',
+    earningsDate: null,
+    attributes: {},
     watchlistStatus: null
   }
 ];
@@ -348,7 +356,7 @@ const DEVELOPMENT_ANALYTICS: AnalyticsDto = {
 
 export class MockCockpitGateway implements CockpitGateway {
   private watchlistItems = DEVELOPMENT_WATCHLIST.items.map((item) => ({ ...item }));
-  private momentumRankingItems = DEVELOPMENT_MOMENTUM_RANKING.map((item) => ({ ...item }));
+  private discoveryItems = DEVELOPMENT_DISCOVERY_CANDIDATES.map((item) => ({ ...item }));
   private tradePlanItems = DEVELOPMENT_TRADE_PLANS.map((item) => ({ ...item }));
   private positionItems = DEVELOPMENT_POSITIONS.map((item) => ({ ...item }));
   private journalItems = DEVELOPMENT_JOURNAL.map((item) => ({ ...item }));
@@ -440,7 +448,7 @@ export class MockCockpitGateway implements CockpitGateway {
     const openPositions = this.positionItems.filter((item) => item.status === 'OPEN');
     const closedTrades = this.analytics.summary.trades;
     const pipeline = {
-      signals: this.momentumRankingItems.length,
+      signals: this.discoveryItems.length,
       watchlist: activeWatchlist.length,
       ready: ready.length,
       nearBreakout: nearBreakout.length,
@@ -487,15 +495,15 @@ export class MockCockpitGateway implements CockpitGateway {
         averageR: this.analytics.summary.averageR,
         totalR: this.analytics.summary.totalR
       },
-      topMomentum: this.momentumRankingItems.slice(0, 5).map((item, index) => ({
+      topDiscoveryCandidates: this.discoveryItems.slice(0, 5).map((item, index) => ({
         rank: index + 1,
         ticker: item.ticker,
-        score: item.momentumScore,
+        score: null,
         price: item.price,
         high52: item.high52,
         relativeVolume: item.relativeVolume,
         rsi: item.rsi,
-        reviewStatus: item.reviewStatus
+        reviewStatus: item.watchlistStatus
       })),
       watchlistPreview: activeWatchlist
         .filter((item) => item.status !== 'REJECTED')
@@ -554,9 +562,36 @@ export class MockCockpitGateway implements CockpitGateway {
     return { ...DEVELOPMENT_SUMMARY, generatedAt: new Date().toISOString() };
   }
 
-  async refreshFinviz(): Promise<number> {
+  async refreshSignals(request: RefreshSignalsRequest): Promise<RefreshSignalsResponse> {
     await new Promise((resolve) => setTimeout(resolve, 250));
-    return 2;
+    return {
+      scope: 'STRATEGY',
+      archived: 2,
+      refreshed: [
+        {
+          strategyId: request.strategyId,
+          strategyVersion: '1.0',
+          signalCount: 2,
+          archived: 2
+        }
+      ]
+    };
+  }
+
+  async refreshAllSignals(): Promise<RefreshSignalsResponse> {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    return {
+      scope: 'ALL',
+      archived: 2,
+      refreshed: [
+        {
+          strategyId: 'MOMENTUM_BREAKOUT',
+          strategyVersion: '1.0',
+          signalCount: 2,
+          archived: 2
+        }
+      ]
+    };
   }
 
   async getAnalytics(): Promise<AnalyticsDto> {
@@ -572,11 +607,19 @@ export class MockCockpitGateway implements CockpitGateway {
     };
   }
 
-  async getMomentumRanking(): Promise<MomentumRankingDto> {
+  async getDiscovery(): Promise<DiscoveryDto> {
     await new Promise((resolve) => setTimeout(resolve, 250));
     return {
       generatedAt: new Date().toISOString(),
-      items: this.momentumRankingItems.map((item) => ({ ...item }))
+      strategies: [
+        {
+          strategyId: 'MOMENTUM_BREAKOUT',
+          strategyName: 'Momentum Breakout',
+          strategyVersion: '1.0',
+          screener: 'FINVIZ'
+        }
+      ],
+      items: this.discoveryItems.map((item) => ({ ...item }))
     };
   }
 
@@ -624,26 +667,18 @@ export class MockCockpitGateway implements CockpitGateway {
     };
   }
 
-  async setupMomentumRanking(): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, 150));
-  }
-
-  async refreshMomentumRanking(): Promise<void> {
+  async addDiscoveryCandidateToWatchlist(
+    request: AddDiscoveryCandidateToWatchlistRequest
+  ): Promise<AddDiscoveryCandidateToWatchlistResponse> {
     await new Promise((resolve) => setTimeout(resolve, 250));
-  }
-
-  async addMomentumCandidateToWatchlist(
-    request: AddMomentumCandidateToWatchlistRequest
-  ): Promise<AddMomentumCandidateToWatchlistResponse> {
-    await new Promise((resolve) => setTimeout(resolve, 250));
-    const candidate = this.momentumRankingItems.find(
+    const candidate = this.discoveryItems.find(
       (item) =>
         item.strategyId === request.strategyId &&
         item.strategyVersion === request.strategyVersion &&
         item.signalDate === request.signalDate &&
         item.ticker === request.ticker
     );
-    if (!candidate) throw new Error(`Development Momentum candidate not found: ${request.ticker}`);
+    if (!candidate) throw new Error(`Development Discovery candidate not found: ${request.ticker}`);
 
     const existing = this.watchlistItems.find(
       (item) =>
@@ -674,7 +709,7 @@ export class MockCockpitGateway implements CockpitGateway {
       signalDate: candidate.signalDate,
       signalPrice: candidate.price,
       currentPrice: candidate.price,
-      momentumScore: candidate.momentumScore,
+      momentumScore: null,
       status: 'WATCHING',
       setupStatus: '',
       breakoutLevel: null,

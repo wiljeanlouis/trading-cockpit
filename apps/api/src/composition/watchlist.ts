@@ -1,15 +1,15 @@
 import {
-  type AddMomentumCandidateToWatchlistRequest,
-  type AddMomentumCandidateToWatchlistResponse,
+  type AddDiscoveryCandidateToWatchlistRequest,
+  type AddDiscoveryCandidateToWatchlistResponse,
   type WatchlistDto
 } from '@trading-cockpit/contracts';
 import { createAddCandidateToWatchlist } from '@trading-cockpit/core/application/watchlist/add-candidate-to-watchlist';
 import { createGetWatchlist } from '@trading-cockpit/core/application/watchlist/get-watchlist';
-import { createAddRankedMomentumCandidateToWatchlist } from '@trading-cockpit/core/application/momentum/add-ranked-momentum-candidate-to-watchlist';
+import { createAddDiscoveryCandidateToWatchlist } from '@trading-cockpit/core/application/discovery/add-discovery-candidate-to-watchlist';
 import {
-  LoadedMomentumRankingReader,
+  LoadedDiscoverySignalReader,
   LoadedWatchlistReader,
-  readMomentumRankingRecords,
+  readSignalSnapshots,
   readStrategyRecords,
   readStrategyVersionRecords,
   readWatchlistEntries,
@@ -36,12 +36,12 @@ export async function getWatchlistForCloudRun(dependencies: {
   return getWatchlist();
 }
 
-export async function addMomentumCandidateToWatchlistForCloudRun({
+export async function addDiscoveryCandidateToWatchlistForCloudRun({
   mutationContext,
   body
-}: MutationDependencies): Promise<AddMomentumCandidateToWatchlistResponse> {
+}: MutationDependencies): Promise<AddDiscoveryCandidateToWatchlistResponse> {
   await mutationContext.sheets.batchLoad([
-    SHEET_DEFINITIONS.momentumRanking,
+    SHEET_DEFINITIONS.signalsHistory,
     SHEET_DEFINITIONS.watchlist,
     SHEET_DEFINITIONS.strategies,
     SHEET_DEFINITIONS.strategyVersions
@@ -55,11 +55,13 @@ export async function addMomentumCandidateToWatchlistForCloudRun({
     ),
     runtime: new NodeRuntime(mutationContext.now)
   });
-  const addRankedCandidate = createAddRankedMomentumCandidateToWatchlist({
-    rankingReader: new LoadedMomentumRankingReader(
-      await readMomentumRankingRecords(mutationContext.sheets)
+  const addDiscoveryCandidate = createAddDiscoveryCandidateToWatchlist({
+    signalReader: new LoadedDiscoverySignalReader(
+      await readSignalSnapshots(mutationContext.sheets),
+      await readStrategyRecords(mutationContext.sheets),
+      await readStrategyVersionRecords(mutationContext.sheets)
     ),
     addCandidateToWatchlist: addCandidate
   });
-  return addRankedCandidate(body as unknown as AddMomentumCandidateToWatchlistRequest);
+  return addDiscoveryCandidate(body as unknown as AddDiscoveryCandidateToWatchlistRequest);
 }

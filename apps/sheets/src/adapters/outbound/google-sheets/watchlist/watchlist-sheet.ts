@@ -1,7 +1,6 @@
 import { WATCHLIST_HEADERS } from './watchlist-mapper';
 import { readSheetHeaders, requireColumn, requireSheetHeaders } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
-import { themeWatchlist } from '../../../inbound/google-sheets/theme/theme';
 import { isSheetEffectivelyEmpty } from '../data-sheet';
 
 const SHEET_NAME = 'Watchlist';
@@ -16,7 +15,6 @@ export function getOrCreateWatchlistSheet(): GoogleAppsScript.Spreadsheet.Sheet 
   sheet.setFrozenRows(1);
   refreshWatchlistValidations();
   sheet.autoResizeColumns(1, WATCHLIST_HEADERS.length);
-  themeWatchlist(spreadsheet);
   return sheet;
 }
 

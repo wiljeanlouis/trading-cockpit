@@ -1,21 +1,22 @@
 import { createArchiveMarketSignals } from '@trading-cockpit/core/application/market-signals/archive-market-signals';
 import { createRefreshMarketSignals } from '@trading-cockpit/core/application/market-signals/refresh-market-signals';
-import { createRefreshMomentumRanking } from '@trading-cockpit/core/application/momentum/refresh-momentum-ranking';
-import { createGetMomentumRanking } from '@trading-cockpit/core/application/momentum/get-momentum-ranking';
+import { createGetDiscovery } from '@trading-cockpit/core/application/discovery/get-discovery';
 import { buildSignalKey } from '@trading-cockpit/core/domain/market-signal';
-import type { MomentumRankingDto } from '@trading-cockpit/contracts';
+import type {
+  TradingStrategy,
+  TradingStrategyVersion
+} from '@trading-cockpit/core/domain/trading-strategy';
+import type { DiscoveryDto, RefreshSignalsResponse } from '@trading-cockpit/contracts';
 import {
   CloudRunMarketSignalProjection,
-  CloudRunMomentumRankingProjection,
-  CloudRunMomentumSignalRepository,
   CloudRunSignalHistoryRepository,
   LoadedTradingStrategyCatalog,
   type MutationContext
 } from '../adapters/outbound/google-sheets-api/cockpit-mutation-repositories';
 import {
-  LoadedMomentumRankingReader,
+  LoadedDiscoverySignalReader,
   LoadedWatchlistReader,
-  readMomentumRankingRecords,
+  readSignalSnapshots,
   readStrategyRecords,
   readStrategyVersionRecords,
   readWatchlistEntries,
@@ -23,28 +24,56 @@ import {
   validateStrategies
 } from '../adapters/outbound/google-sheets-api/cockpit-query-readers';
 import type { RequestScopedSheets } from '../adapters/outbound/google-sheets-api/sheets-api-table';
+import { textValue, valueByHeader } from '../adapters/outbound/google-sheets-api/sheets-api-table';
 import { CloudRunFinvizMarketSignalSource } from '../adapters/outbound/finviz/finviz-market-signal-source';
 import { NodeFinvizTransport } from '../adapters/outbound/finviz/node-finviz-transport';
 import { AsyncFinvizTokenService } from '../adapters/outbound/finviz/finviz-token-service';
 import { SecretManagerFinvizTokenStorage } from '../adapters/outbound/finviz/secret-manager-finviz-token-storage';
 import type { MutationDependencies } from './common';
+import { requiredText } from './common';
 
-export async function getMomentumRankingForCloudRun(dependencies: {
+export async function getDiscoveryForCloudRun(dependencies: {
   sheets: RequestScopedSheets;
   now: () => Date;
-}): Promise<MomentumRankingDto> {
+}): Promise<DiscoveryDto> {
   await dependencies.sheets.batchLoad([
-    SHEET_DEFINITIONS.momentumRanking,
+    SHEET_DEFINITIONS.signalsHistory,
+    SHEET_DEFINITIONS.strategies,
+    SHEET_DEFINITIONS.strategyVersions,
     SHEET_DEFINITIONS.watchlist
   ]);
-  return createGetMomentumRanking({
-    reader: new LoadedMomentumRankingReader(await readMomentumRankingRecords(dependencies.sheets)),
+  return createGetDiscovery({
+    signalReader: new LoadedDiscoverySignalReader(
+      await readSignalSnapshots(dependencies.sheets),
+      await readStrategyRecords(dependencies.sheets),
+      await readStrategyVersionRecords(dependencies.sheets)
+    ),
     watchlistReader: new LoadedWatchlistReader(await readWatchlistEntries(dependencies.sheets)),
     now: dependencies.now
   })();
 }
 
-export async function refreshFinvizForCloudRun({ mutationContext }: MutationDependencies) {
+export async function refreshSignalsForCloudRun({
+  mutationContext,
+  body
+}: MutationDependencies): Promise<RefreshSignalsResponse> {
+  const strategyId = requiredText(body.strategyId, 'strategyId').toUpperCase();
+  return refreshFinvizFeedsForCloudRun({ mutationContext, strategyId });
+}
+
+export async function refreshAllSignalsForCloudRun({
+  mutationContext
+}: MutationDependencies): Promise<RefreshSignalsResponse> {
+  return refreshFinvizFeedsForCloudRun({ mutationContext });
+}
+
+async function refreshFinvizFeedsForCloudRun({
+  mutationContext,
+  strategyId
+}: {
+  mutationContext: MutationContext;
+  strategyId?: string;
+}): Promise<RefreshSignalsResponse> {
   await mutationContext.sheets.batchLoad([
     SHEET_DEFINITIONS.strategies,
     SHEET_DEFINITIONS.strategyVersions
@@ -52,19 +81,7 @@ export async function refreshFinvizForCloudRun({ mutationContext }: MutationDepe
   await validateStrategies(mutationContext.sheets);
   const strategies = await readStrategyRecords(mutationContext.sheets);
   const versions = await readStrategyVersionRecords(mutationContext.sheets);
-  const feeds = versions
-    .filter((version) => version.enabled && version.screener === 'FINVIZ')
-    .map((version) => {
-      const strategy = strategies.find((candidate) => candidate.id === version.strategyId);
-      if (!strategy) throw new Error(`Stratégie inconnue : ${version.strategyId}`);
-      return {
-        id: version.screenerCode,
-        strategyName: strategy.name,
-        strategyVersion: version.version,
-        strategyId: version.strategyId,
-        query: version.screenerUrl
-      };
-    });
+  const feeds = buildFinvizFeeds({ strategies, versions, strategyId });
   const tokenService = new AsyncFinvizTokenService(new SecretManagerFinvizTokenStorage());
   const source = new CloudRunFinvizMarketSignalSource(
     '',
@@ -73,7 +90,7 @@ export async function refreshFinvizForCloudRun({ mutationContext }: MutationDepe
     new NodeFinvizTransport()
   );
   await source.preload();
-  await ensureSheets(mutationContext, ['Signals History', 'Finviz - Momentum']);
+  await ensureSheets(mutationContext, ['Signals History', 'Finviz Signals']);
   const existingSignalKeys = await readExistingSignalKeys(mutationContext);
   const strategyCatalog = new LoadedTradingStrategyCatalog(strategies, versions);
   const archiveSignals = createArchiveMarketSignals({
@@ -88,17 +105,60 @@ export async function refreshFinvizForCloudRun({ mutationContext }: MutationDepe
     archiveSignals,
     now: mutationContext.now
   });
-  return { archived: refresh() };
+  const result = refresh(strategyId ? { strategyId } : undefined);
+  return {
+    scope: strategyId ? 'STRATEGY' : 'ALL',
+    archived: result.archived,
+    refreshed: result.refreshed
+  };
 }
 
-export async function refreshMomentumRankingForCloudRun({ mutationContext }: MutationDependencies) {
-  const signalRepository = await new CloudRunMomentumSignalRepository(mutationContext).load();
-  const result = createRefreshMomentumRanking({
-    signalRepository,
-    strategyRepository: signalRepository,
-    rankingProjection: new CloudRunMomentumRankingProjection(mutationContext)
-  })();
-  return { signalDate: result.signalDate, ranked: result.ranked.length };
+export function buildFinvizFeeds({
+  strategies,
+  versions,
+  strategyId
+}: {
+  strategies: readonly TradingStrategy[];
+  versions: readonly TradingStrategyVersion[];
+  strategyId?: string;
+}) {
+  const normalizedStrategyId = strategyId ? textValue(strategyId).toUpperCase() : null;
+  if (normalizedStrategyId) {
+    const strategy = strategies.find((candidate) => candidate.id === normalizedStrategyId);
+    if (!strategy) throw new Error(`Stratégie inconnue : ${normalizedStrategyId}`);
+    if (!strategy.enabled) throw new Error(`La stratégie ${normalizedStrategyId} est désactivée.`);
+    const activeVersions = versions.filter(
+      (version) => version.strategyId === normalizedStrategyId && version.enabled
+    );
+    if (activeVersions.length === 0) {
+      throw new Error(`Aucune version active pour ${normalizedStrategyId}.`);
+    }
+  }
+
+  const feeds = versions
+    .filter((version) => version.enabled && version.screener === 'FINVIZ')
+    .filter((version) => !normalizedStrategyId || version.strategyId === normalizedStrategyId)
+    .map((version) => {
+      const strategy = strategies.find((candidate) => candidate.id === version.strategyId);
+      if (!strategy) throw new Error(`Stratégie inconnue : ${version.strategyId}`);
+      if (!strategy.enabled) return null;
+      return {
+        id: version.screenerCode,
+        strategyName: strategy.name,
+        strategyVersion: version.version,
+        strategyId: version.strategyId,
+        query: version.screenerUrl
+      };
+    })
+    .filter((feed): feed is NonNullable<typeof feed> => Boolean(feed));
+
+  if (normalizedStrategyId && feeds.length === 0) {
+    throw new Error(`Aucun feed Finviz actif configuré pour ${normalizedStrategyId}.`);
+  }
+  if (!normalizedStrategyId && feeds.length === 0) {
+    throw new Error('Aucune stratégie Finviz active configurée.');
+  }
+  return feeds;
 }
 
 async function ensureSheets(context: MutationContext, sheetNames: string[]): Promise<void> {
@@ -119,14 +179,10 @@ async function readExistingSignalKeys(context: MutationContext): Promise<Set<str
   const keys = new Set<string>();
   const table = (await context.sheets.getTable(SHEET_DEFINITIONS.signalsHistory)).table;
   for (const row of table.rows) {
-    const signalDate = normalizeSignalDate(row[0]);
-    const strategyId = String(row[1] ?? '')
-      .trim()
-      .toUpperCase();
-    const strategyVersion = String(row[2] ?? '').trim();
-    const ticker = String(row[3] ?? '')
-      .trim()
-      .toUpperCase();
+    const signalDate = normalizeSignalDate(valueByHeader(table.headers, row, 'Signal Date'));
+    const strategyId = textValue(valueByHeader(table.headers, row, 'Strategy ID')).toUpperCase();
+    const strategyVersion = textValue(valueByHeader(table.headers, row, 'Strategy Version'));
+    const ticker = textValue(valueByHeader(table.headers, row, 'Ticker')).toUpperCase();
     if (!signalDate || !strategyId || !ticker) continue;
     keys.add(buildSignalKey(signalDate, strategyId, strategyVersion, ticker));
   }

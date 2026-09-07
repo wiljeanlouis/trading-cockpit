@@ -2,7 +2,7 @@ export type {
   DashboardActionsDto,
   DashboardAccountDto,
   DashboardDto,
-  DashboardMomentumCandidateDto,
+  DashboardDiscoveryCandidateDto,
   DashboardNearBreakoutActionDto,
   DashboardOpenPositionActionDto,
   DashboardPerformanceDto,
@@ -42,10 +42,13 @@ export type {
 } from './admin';
 export { STRATEGY_HEADERS, STRATEGY_VERSION_HEADERS } from './admin';
 export type {
-  AddMomentumCandidateToWatchlistRequest,
-  AddMomentumCandidateToWatchlistResponse,
-  MomentumRankingDto,
-  MomentumRankingItemDto
+  AddDiscoveryCandidateToWatchlistRequest,
+  AddDiscoveryCandidateToWatchlistResponse,
+  DiscoveryCandidateDto,
+  DiscoveryDto,
+  DiscoveryStrategyDto,
+  RefreshSignalsRequest,
+  RefreshSignalsResponse
 } from './discovery';
 export {
   FINVIZ_MOMENTUM_EXPORT_HEADERS,

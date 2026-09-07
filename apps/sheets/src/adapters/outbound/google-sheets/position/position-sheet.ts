@@ -1,7 +1,6 @@
 import { POSITION_HEADERS } from './position-mapper';
 import { readSheetHeaders, requireColumn, requireSheetHeaders } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
-import { themePositions } from '../../../inbound/google-sheets/theme/theme';
 import { isSheetEffectivelyEmpty } from '../data-sheet';
 
 const SHEET_NAME = 'Positions';
@@ -20,7 +19,6 @@ export function getOrCreatePositionsSheet(): GoogleAppsScript.Spreadsheet.Sheet 
   sheet.setFrozenRows(1);
   refreshPositionValidations(sheet);
   sheet.autoResizeColumns(1, POSITION_HEADERS.length);
-  themePositions(spreadsheet);
   return sheet;
 }
 

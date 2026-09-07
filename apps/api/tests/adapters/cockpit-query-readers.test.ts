@@ -3,7 +3,7 @@ import type { SheetsValuesClient } from '../../src/adapters/outbound/google-shee
 import {
   readJournalEntries,
   readDashboardSnapshot,
-  readMomentumRankingRecords,
+  readSignalSnapshots,
   readPositions,
   readStrategyRecords,
   readStrategyVersionRecords,
@@ -264,25 +264,25 @@ describe('Cloud Run Google Sheets API query readers', () => {
     ).rejects.toThrow('Trading Account ID dupliqué');
   });
 
-  it('maps Momentum Ranking rows and filters incomplete identities', async () => {
-    const headers = SHEET_DEFINITIONS.momentumRanking.requiredHeaders;
-    const records = await readMomentumRankingRecords(
+  it('maps Signals History rows and filters incomplete identities', async () => {
+    const headers = SHEET_DEFINITIONS.signalsHistory.requiredHeaders;
+    const records = await readSignalSnapshots(
       sheets({
-        [SHEET_DEFINITIONS.momentumRanking.range]: [
+        [SHEET_DEFINITIONS.signalsHistory.range]: [
           [...headers],
           rowFor(headers, {
-            Rank: 1,
+            'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
+            'Detected At': sheetsSerialDate('2026-08-27T14:30:00.000Z'),
             'Strategy ID': 'MOMENTUM_BREAKOUT',
             Strategy: 'Momentum Breakout',
             'Strategy Version': 'V1',
-            'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
             Ticker: 'BOX',
+            'Finviz Ticker': 'BOX',
             Company: 'Box Inc',
             Price: 34.82,
-            'Momentum Score': 87,
-            'Review Status': 'REVIEW'
+            'Earnings Date': sheetsSerialDate('2026-08-20T08:30:00.000Z')
           }),
-          rowFor(headers, { Rank: 2, Ticker: '' })
+          rowFor(headers, { Ticker: '' })
         ]
       })
     );
@@ -292,8 +292,12 @@ describe('Cloud Run Google Sheets API query readers', () => {
         strategyId: 'MOMENTUM_BREAKOUT',
         signalDate: '2026-08-27',
         ticker: 'BOX',
-        total: 87,
-        reviewStatus: 'REVIEW'
+        attributes: expect.objectContaining({
+          Ticker: 'BOX',
+          Company: 'Box Inc',
+          Price: 34.82,
+          'Earnings Date': new Date('2026-08-20T08:30:00.000Z')
+        })
       })
     ]);
   });
@@ -351,23 +355,24 @@ describe('Cloud Run Google Sheets API query readers', () => {
     ]);
   });
 
-  it('finds Rank when Momentum Ranking is batch-loaded with Watchlist using Google-canonical ranges', async () => {
-    const momentumHeaders = SHEET_DEFINITIONS.momentumRanking.requiredHeaders;
+  it('maps Signals History when batch-loaded with Watchlist using Google-canonical ranges', async () => {
+    const signalHeaders = SHEET_DEFINITIONS.signalsHistory.requiredHeaders;
     const watchlistHeaders = SHEET_DEFINITIONS.watchlist.requiredHeaders;
     const client: SheetsValuesClient = {
       getValues: vi.fn(async () => ({ values: [] })),
       batchGetValues: vi.fn(async () => ({
-        'Momentum Ranking!A1:U1000': {
+        'Signals History!A1:AA1000': {
           values: [
-            [...momentumHeaders],
-            rowFor(momentumHeaders, {
-              Rank: 1,
+            [...signalHeaders],
+            rowFor(signalHeaders, {
+              'Signal Date': '2026-08-27',
+              'Detected At': sheetsSerialDate('2026-08-27T14:30:00.000Z'),
               'Strategy ID': 'MOMENTUM_BREAKOUT',
               Strategy: 'Momentum Breakout',
               'Strategy Version': 'V1',
-              'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
               Ticker: 'BOX',
-              'Momentum Score': 87
+              'Finviz Ticker': 'BOX',
+              Price: 34.82
             })
           ]
         },
@@ -384,7 +389,7 @@ describe('Cloud Run Google Sheets API query readers', () => {
             })
           ]
         },
-        [SHEET_DEFINITIONS.momentumRanking.range]: {},
+        [SHEET_DEFINITIONS.signalsHistory.range]: {},
         [SHEET_DEFINITIONS.watchlist.range]: {}
       }))
     };
@@ -393,10 +398,13 @@ describe('Cloud Run Google Sheets API query readers', () => {
       spreadsheetId: 'spreadsheet-id'
     });
 
-    await requestSheets.batchLoad([SHEET_DEFINITIONS.momentumRanking, SHEET_DEFINITIONS.watchlist]);
+    await requestSheets.batchLoad([SHEET_DEFINITIONS.signalsHistory, SHEET_DEFINITIONS.watchlist]);
 
-    await expect(readMomentumRankingRecords(requestSheets)).resolves.toEqual([
-      expect.objectContaining({ ticker: 'BOX', total: 87 })
+    await expect(readSignalSnapshots(requestSheets)).resolves.toEqual([
+      expect.objectContaining({
+        ticker: 'BOX',
+        attributes: expect.objectContaining({ Price: 34.82 })
+      })
     ]);
     await expect(readWatchlistEntries(requestSheets)).resolves.toEqual([
       expect.objectContaining({ id: 'WL-1', ticker: 'BOX' })
@@ -475,23 +483,26 @@ describe('Cloud Run Google Sheets API query readers', () => {
   });
 
   it('maps Dashboard composite batch reads when Google canonicalizes returned ranges', async () => {
-    const momentumHeaders = SHEET_DEFINITIONS.momentumRanking.requiredHeaders;
+    const signalHeaders = SHEET_DEFINITIONS.signalsHistory.requiredHeaders;
     const watchlistHeaders = SHEET_DEFINITIONS.watchlist.requiredHeaders;
     const tradePlanHeaders = SHEET_DEFINITIONS.tradePlans.requiredHeaders;
     const positionHeaders = SHEET_DEFINITIONS.positions.requiredHeaders;
     const client: SheetsValuesClient = {
       getValues: vi.fn(async () => ({ values: [] })),
       batchGetValues: vi.fn(async () => ({
-        'Momentum Ranking!A1:U1000': {
+        'Signals History!A1:AA1000': {
           values: [
-            [...momentumHeaders],
-            rowFor(momentumHeaders, {
-              Rank: 1,
+            [...signalHeaders],
+            rowFor(signalHeaders, {
+              'Signal Date': '2026-08-27',
+              'Detected At': sheetsSerialDate('2026-08-27T14:30:00.000Z'),
+              'Strategy ID': 'MOMENTUM_BREAKOUT',
+              Strategy: 'Momentum Breakout',
+              'Strategy Version': 'V1',
               Ticker: 'BOX',
+              'Finviz Ticker': 'BOX',
               Price: 34,
-              '52W High': 36,
-              'Momentum Score': 87,
-              'Review Status': 'REVIEW'
+              '52-Week High': 36
             })
           ]
         },
@@ -537,7 +548,7 @@ describe('Cloud Run Google Sheets API query readers', () => {
             })
           ]
         },
-        [SHEET_DEFINITIONS.momentumRanking.range]: {},
+        [SHEET_DEFINITIONS.signalsHistory.range]: {},
         [SHEET_DEFINITIONS.watchlist.range]: {},
         [SHEET_DEFINITIONS.tradePlans.range]: {},
         [SHEET_DEFINITIONS.positions.range]: {}
@@ -550,7 +561,7 @@ describe('Cloud Run Google Sheets API query readers', () => {
 
     await expect(readDashboardSnapshot(requestSheets)).resolves.toEqual(
       expect.objectContaining({
-        momentumCandidates: [expect.objectContaining({ ticker: 'BOX', score: 87 })],
+        discoveryCandidates: [expect.objectContaining({ ticker: 'BOX', price: 34 })],
         watchlist: [expect.objectContaining({ ticker: 'BOX', status: 'READY' })],
         tradePlans: [expect.objectContaining({ status: 'READY' })],
         positions: [expect.objectContaining({ ticker: 'BOX', status: 'OPEN' })]

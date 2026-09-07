@@ -147,11 +147,11 @@ export function Watchlist({ gateway }: WatchlistProps) {
     void load();
   }, [load]);
 
-  async function refreshFinvizSignals() {
+  async function refreshAllSignals() {
     if (refreshingSignals) return;
     setRefreshingSignals(true);
     try {
-      await gateway.refreshFinviz();
+      await gateway.refreshAllSignals();
       await load();
     } finally {
       setRefreshingSignals(false);
@@ -210,7 +210,7 @@ export function Watchlist({ gateway }: WatchlistProps) {
             <UpdatedAt>Updated {formattedTimestamp(state.data.generatedAt)}</UpdatedAt>
           )}
           <Button
-            onClick={() => void refreshFinvizSignals()}
+            onClick={() => void refreshAllSignals()}
             disabled={state.loading || refreshingSignals}
           >
             <span aria-hidden="true">↻</span>
@@ -218,7 +218,7 @@ export function Watchlist({ gateway }: WatchlistProps) {
               ? 'Refreshing signals'
               : state.loading
                 ? 'Refreshing'
-                : 'Refresh Finviz'}
+                : 'Refresh All Signals'}
           </Button>
         </PageActions>
       </PageHeader>

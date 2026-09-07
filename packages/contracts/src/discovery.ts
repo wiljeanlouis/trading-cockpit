@@ -1,40 +1,65 @@
-export interface MomentumRankingItemDto {
+export interface DiscoveryCandidateDto {
   strategyId: string;
   strategyName: string;
   strategyVersion: string;
   signalDate: string | null;
+  detectedAt: string | null;
   ticker: string;
   company: string | null;
   sector: string | null;
+  industry: string | null;
+  country: string | null;
+  marketCap: string | number | null;
+  volume: number | null;
   price: number | null;
-  high52: number | null;
-  high52Score: number | null;
+  change: number | null;
+  averageVolume: number | null;
   relativeVolume: number | null;
-  relativeVolumeScore: number | null;
-  performanceMonth: number | null;
-  performanceScore: number | null;
   rsi: number | null;
-  rsiScore: number | null;
-  sma20: number | null;
-  sma20Score: number | null;
-  momentumScore: number | null;
-  reviewStatus: string;
+  high52: number | null;
+  performanceWeek: number | null;
+  performanceMonth: number | null;
+  earningsDate: string | null;
+  attributes: Record<string, string | number | boolean | null>;
   watchlistStatus: string | null;
 }
 
-export interface MomentumRankingDto {
-  generatedAt: string;
-  items: MomentumRankingItemDto[];
+export interface DiscoveryStrategyDto {
+  strategyId: string;
+  strategyName: string;
+  strategyVersion: string;
+  screener: string;
 }
 
-export interface AddMomentumCandidateToWatchlistRequest {
+export interface DiscoveryDto {
+  generatedAt: string;
+  strategies: DiscoveryStrategyDto[];
+  items: DiscoveryCandidateDto[];
+}
+
+export interface RefreshSignalsRequest {
+  strategyId: string;
+}
+
+export interface RefreshSignalsResponse {
+  scope: 'STRATEGY' | 'ALL';
+  archived: number;
+  refreshed: Array<{
+    strategyId: string;
+    strategyVersion: string;
+    signalCount: number;
+    archived: number;
+  }>;
+}
+
+export interface AddDiscoveryCandidateToWatchlistRequest {
   strategyId: string;
   strategyVersion: string;
   signalDate: string;
   ticker: string;
 }
 
-export type AddMomentumCandidateToWatchlistResponse =
+export type AddDiscoveryCandidateToWatchlistResponse =
   | {
       kind: 'added';
       watchlistId: string;

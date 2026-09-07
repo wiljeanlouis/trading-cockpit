@@ -1,7 +1,6 @@
 import { TRADE_PLAN_HEADERS } from './trade-plan-mapper';
 import { readSheetHeaders, requireColumn, requireSheetHeaders } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
-import { themeTradePlans } from '../../../inbound/google-sheets/theme/theme';
 import { isSheetEffectivelyEmpty } from '../data-sheet';
 
 const SHEET_NAME = 'Trade Plans';
@@ -19,7 +18,6 @@ export function getOrCreateTradePlansSheet(): GoogleAppsScript.Spreadsheet.Sheet
   sheet.setFrozenRows(1);
   refreshTradePlanValidations(sheet);
   sheet.autoResizeColumns(1, TRADE_PLAN_HEADERS.length);
-  themeTradePlans(spreadsheet);
   return sheet;
 }
 

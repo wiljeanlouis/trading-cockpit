@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
-  AddMomentumCandidateToWatchlistResponse,
-  MomentumRankingDto,
-  MomentumRankingItemDto
+  AddDiscoveryCandidateToWatchlistResponse,
+  DiscoveryCandidateDto,
+  DiscoveryDto
 } from '@trading-cockpit/contracts';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -56,31 +56,27 @@ interface DiscoveryProps {
 }
 
 interface DiscoveryState {
-  data: MomentumRankingDto | null;
+  data: DiscoveryDto | null;
   loading: boolean;
   error: string | null;
 }
 
 type DiscoverySortKey =
-  | 'rank'
-  | 'ticker'
-  | 'signalDate'
-  | 'sector'
-  | 'price'
-  | 'relativeVolume'
-  | 'momentumScore'
-  | 'reviewStatus'
-  | 'watchlistStatus';
+  'ticker' | 'strategy' | 'signalDate' | 'sector' | 'price' | 'relativeVolume' | 'watchlistStatus';
 
-const DEFAULT_DISCOVERY_STATUSES = ['READY', 'WATCH', 'REVIEW'] as const;
+const DEFAULT_DISCOVERY_STATUSES = ['NOT WATCHED', 'WATCHING', 'PLANNED'] as const;
 
 const DISCOVERY_SORTERS: Record<
   DiscoverySortKey,
-  (left: MomentumRankingItemDto, right: MomentumRankingItemDto) => number
+  (left: DiscoveryCandidateDto, right: DiscoveryCandidateDto) => number
 > = {
-  rank: () => 0,
   ticker: (left, right) =>
     left.ticker.localeCompare(right.ticker, undefined, { sensitivity: 'base', numeric: true }),
+  strategy: (left, right) =>
+    strategyLabel(left).localeCompare(strategyLabel(right), undefined, {
+      sensitivity: 'base',
+      numeric: true
+    }),
   signalDate: (left, right) => toMillis(left.signalDate) - toMillis(right.signalDate),
   sector: (left, right) =>
     String(left.sector ?? '').localeCompare(String(right.sector ?? ''), undefined, {
@@ -92,23 +88,11 @@ const DISCOVERY_SORTERS: Record<
   relativeVolume: (left, right) =>
     (left.relativeVolume ?? Number.NEGATIVE_INFINITY) -
     (right.relativeVolume ?? Number.NEGATIVE_INFINITY),
-  momentumScore: (left, right) =>
-    (left.momentumScore ?? Number.NEGATIVE_INFINITY) -
-    (right.momentumScore ?? Number.NEGATIVE_INFINITY),
-  reviewStatus: (left, right) =>
-    String(left.reviewStatus || '').localeCompare(String(right.reviewStatus || ''), undefined, {
+  watchlistStatus: (left, right) =>
+    getDiscoveryStatus(left).localeCompare(getDiscoveryStatus(right), undefined, {
       sensitivity: 'base',
       numeric: true
-    }),
-  watchlistStatus: (left, right) =>
-    String(left.watchlistStatus || '').localeCompare(
-      String(right.watchlistStatus || ''),
-      undefined,
-      {
-        sensitivity: 'base',
-        numeric: true
-      }
-    )
+    })
 };
 
 function displayDate(value: string | null): string {
@@ -150,13 +134,13 @@ function statusTone(status: string | null): 'positive' | 'muted' | 'planned' | '
   const normalized = String(status || '')
     .trim()
     .toUpperCase();
-  if (normalized === 'READY' || normalized === 'WATCH') return 'positive';
-  if (normalized === 'REJECT' || normalized === 'REJECTED') return 'muted';
+  if (normalized === 'NOT WATCHED') return 'muted';
   if (normalized === 'PLANNED') return 'planned';
+  if (normalized === 'READY' || normalized === 'WATCHING') return 'positive';
   return 'watching';
 }
 
-function candidateKey(candidate: MomentumRankingItemDto): string {
+function candidateKey(candidate: DiscoveryCandidateDto): string {
   return [
     candidate.strategyId,
     candidate.strategyVersion,
@@ -165,7 +149,17 @@ function candidateKey(candidate: MomentumRankingItemDto): string {
   ].join('::');
 }
 
-function resultMessage(result: AddMomentumCandidateToWatchlistResponse): string {
+function strategyKey(candidate: Pick<DiscoveryCandidateDto, 'strategyId' | 'strategyVersion'>) {
+  return `${candidate.strategyId}::${candidate.strategyVersion}`;
+}
+
+function strategyLabel(
+  candidate: Pick<DiscoveryCandidateDto, 'strategyName' | 'strategyVersion'>
+): string {
+  return `${candidate.strategyName} ${candidate.strategyVersion}`.trim();
+}
+
+function resultMessage(result: AddDiscoveryCandidateToWatchlistResponse): string {
   return result.kind === 'added'
     ? `${result.ticker} added to Watchlist as ${result.status}.`
     : `${result.ticker} is already in Watchlist as ${result.status}.`;
@@ -173,26 +167,30 @@ function resultMessage(result: AddMomentumCandidateToWatchlistResponse): string 
 
 function DiscoveryRow({
   candidate,
-  rank,
   adding,
   onOpen,
   onAdd
 }: {
-  candidate: MomentumRankingItemDto;
-  rank: number;
+  candidate: DiscoveryCandidateDto;
   adding: boolean;
   onOpen: () => void;
   onAdd: () => void;
 }) {
   const alreadyWatched = Boolean(candidate.watchlistStatus);
   const missingIdentity = !candidate.signalDate;
+  const status = getDiscoveryStatus(candidate);
 
   return (
     <TableRow>
-      <TableCell className="font-extrabold text-[#7f91a9]">#{rank}</TableCell>
       <TableCell>
         <strong className={tableTickerClassName}>{candidate.ticker}</strong>
         {candidate.company && <span className={tableDetailClassName}>{candidate.company}</span>}
+      </TableCell>
+      <TableCell>
+        <span>{candidate.strategyName}</span>
+        <span className={tableDetailClassName}>
+          {candidate.strategyId} · {candidate.strategyVersion}
+        </span>
       </TableCell>
       <TableCell>{displayDate(candidate.signalDate)}</TableCell>
       <TableCell>{candidate.sector ?? '—'}</TableCell>
@@ -200,18 +198,12 @@ function DiscoveryRow({
       <TableCell className={numericCellClassName}>
         {displayNumber(candidate.relativeVolume)}
       </TableCell>
-      <TableCell className={`${numericCellClassName} font-extrabold text-[#79e9b4]`}>
-        {displayNumber(candidate.momentumScore, 0)}
-      </TableCell>
       <TableCell>
-        <Badge tone={statusTone(candidate.reviewStatus)}>{candidate.reviewStatus || '—'}</Badge>
-        {candidate.watchlistStatus && (
-          <span className={tableDetailClassName}>Watchlist: {candidate.watchlistStatus}</span>
-        )}
+        <Badge tone={statusTone(status)}>{status}</Badge>
       </TableCell>
       <TableCell className={actionCellClassName}>
         <div className="flex justify-end gap-2">
-          <Button onClick={onOpen} aria-label={`View ${candidate.ticker} Momentum details`}>
+          <Button onClick={onOpen} aria-label={`View ${candidate.ticker} Discovery details`}>
             View
           </Button>
           <Button
@@ -227,7 +219,7 @@ function DiscoveryRow({
   );
 }
 
-function MomentumCandidateDetail({
+function DiscoveryCandidateDetail({
   candidate,
   adding,
   feedback,
@@ -235,7 +227,7 @@ function MomentumCandidateDetail({
   onAdd,
   onClose
 }: {
-  candidate: MomentumRankingItemDto;
+  candidate: DiscoveryCandidateDto;
   adding: boolean;
   feedback: string | null;
   error: string | null;
@@ -275,16 +267,16 @@ function MomentumCandidateDetail({
         ref={modalRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="momentum-candidate-detail-title"
+        aria-labelledby="discovery-candidate-detail-title"
         tabIndex={-1}
       >
         <DetailHeader>
           <div>
-            <Eyebrow>Discovery · Momentum Breakout</Eyebrow>
-            <h2 id="momentum-candidate-detail-title">{candidate.ticker}</h2>
-            <p>{candidate.company ?? candidate.strategyName}</p>
+            <Eyebrow>Discovery · Latest screener result</Eyebrow>
+            <h2 id="discovery-candidate-detail-title">{candidate.ticker}</h2>
+            <p>{candidate.company ?? strategyLabel(candidate)}</p>
           </div>
-          <Button onClick={onClose} aria-label="Close Momentum candidate details">
+          <Button onClick={onClose} aria-label="Close Discovery candidate details">
             Close
           </Button>
         </DetailHeader>
@@ -296,7 +288,7 @@ function MomentumCandidateDetail({
                 <span aria-hidden="true">01</span>
                 <div>
                   <h3>Candidate</h3>
-                  <p>Backend-ranked Momentum Breakout signal</p>
+                  <p>Latest archived screener snapshot for the selected Strategy Version</p>
                 </div>
               </header>
               <FactGrid columns={2}>
@@ -304,14 +296,14 @@ function MomentumCandidateDetail({
                   <dt>Strategy</dt>
                   <dd>{candidate.strategyName}</dd>
                   <small>
-                    {candidate.strategyId} · v{candidate.strategyVersion}
+                    {candidate.strategyId} · {candidate.strategyVersion}
                   </small>
                 </div>
                 <div>
-                  <dt>Review status</dt>
+                  <dt>Watchlist state</dt>
                   <dd>
-                    <Badge tone={statusTone(candidate.reviewStatus)}>
-                      {candidate.reviewStatus || '—'}
+                    <Badge tone={statusTone(getDiscoveryStatus(candidate))}>
+                      {getDiscoveryStatus(candidate)}
                     </Badge>
                   </dd>
                 </div>
@@ -320,8 +312,16 @@ function MomentumCandidateDetail({
                   <dd>{displayDate(candidate.signalDate)}</dd>
                 </div>
                 <div>
+                  <dt>Detected at</dt>
+                  <dd>{candidate.detectedAt ? displayTimestamp(candidate.detectedAt) : '—'}</dd>
+                </div>
+                <div>
                   <dt>Sector</dt>
                   <dd>{candidate.sector ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt>Industry</dt>
+                  <dd>{candidate.industry ?? '—'}</dd>
                 </div>
               </FactGrid>
             </FactSection>
@@ -330,8 +330,8 @@ function MomentumCandidateDetail({
               <header>
                 <span aria-hidden="true">02</span>
                 <div>
-                  <h3>Ranking inputs</h3>
-                  <p>Values returned by the backend ranked candidate workflow</p>
+                  <h3>Screener snapshot</h3>
+                  <p>Provider values archived in Signals History</p>
                 </div>
               </header>
               <FactGrid columns={3}>
@@ -342,49 +342,34 @@ function MomentumCandidateDetail({
                 <div>
                   <dt>52W High</dt>
                   <dd>{displayNumber(candidate.high52)}</dd>
-                  <small>Score: {displayNumber(candidate.high52Score, 0)}</small>
                 </div>
                 <div>
                   <dt>Relative Volume</dt>
                   <dd>{displayNumber(candidate.relativeVolume)}</dd>
-                  <small>Score: {displayNumber(candidate.relativeVolumeScore, 0)}</small>
                 </div>
                 <div>
-                  <dt>Performance Month</dt>
-                  <dd>{displayPercent(candidate.performanceMonth)}</dd>
-                  <small>Score: {displayNumber(candidate.performanceScore, 0)}</small>
+                  <dt>Average Volume</dt>
+                  <dd>{displayNumber(candidate.averageVolume, 0)}</dd>
                 </div>
                 <div>
                   <dt>RSI</dt>
                   <dd>{displayNumber(candidate.rsi)}</dd>
-                  <small>Score: {displayNumber(candidate.rsiScore, 0)}</small>
                 </div>
                 <div>
-                  <dt>SMA20</dt>
-                  <dd>{displayNumber(candidate.sma20)}</dd>
-                  <small>Score: {displayNumber(candidate.sma20Score, 0)}</small>
-                </div>
-              </FactGrid>
-            </FactSection>
-
-            <FactSection tone="risk">
-              <header>
-                <span aria-hidden="true">03</span>
-                <div>
-                  <h3>Momentum score</h3>
-                  <p>Calculated by the existing backend Momentum scoring rules</p>
-                </div>
-              </header>
-              <FactGrid columns={2}>
-                <div>
-                  <dt>Total score</dt>
-                  <dd className="font-extrabold text-[#79e9b4]">
-                    {displayNumber(candidate.momentumScore, 0)}
-                  </dd>
+                  <dt>Change</dt>
+                  <dd>{displayPercent(candidate.change)}</dd>
                 </div>
                 <div>
-                  <dt>Watchlist state</dt>
-                  <dd>{candidate.watchlistStatus ?? 'Not watched'}</dd>
+                  <dt>Performance Week</dt>
+                  <dd>{displayPercent(candidate.performanceWeek)}</dd>
+                </div>
+                <div>
+                  <dt>Performance Month</dt>
+                  <dd>{displayPercent(candidate.performanceMonth)}</dd>
+                </div>
+                <div>
+                  <dt>Earnings Date</dt>
+                  <dd>{candidate.earningsDate ?? '—'}</dd>
                 </div>
               </FactGrid>
             </FactSection>
@@ -395,8 +380,8 @@ function MomentumCandidateDetail({
               <div>
                 <strong>Add to Watchlist</strong>
                 <p>
-                  Human selection remains required. The backend resolves the persisted ranking
-                  candidate and applies the existing duplicate rule.
+                  Human selection remains required. The backend resolves this candidate from Signals
+                  History and applies the existing duplicate rule.
                 </p>
               </div>
               <Button onClick={onAdd} disabled={alreadyWatched || missingIdentity || adding}>
@@ -424,9 +409,9 @@ export function Discovery({ gateway }: DiscoveryProps) {
     loading: true,
     error: null
   });
+  const [selectedStrategy, setSelectedStrategy] = useState<string>('ALL');
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [refreshingSignals, setRefreshingSignals] = useState(false);
-  const [refreshingRanking, setRefreshingRanking] = useState(false);
   const [addingKey, setAddingKey] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -434,7 +419,7 @@ export function Discovery({ gateway }: DiscoveryProps) {
   const load = useCallback(async () => {
     setState((current) => ({ ...current, loading: true, error: null }));
     try {
-      const data = await gateway.getMomentumRanking();
+      const data = await gateway.getDiscovery();
       setState({ data, loading: false, error: null });
     } catch (error) {
       setState((current) => ({
@@ -449,30 +434,27 @@ export function Discovery({ gateway }: DiscoveryProps) {
     void load();
   }, [load]);
 
-  const rankByKey = useMemo(() => {
-    const entries =
-      state.data?.items.map((candidate, index) => [candidateKey(candidate), index + 1] as const) ??
-      [];
-    return new Map(entries);
-  }, [state.data?.items]);
+  const strategyFilteredItems = useMemo(() => {
+    const items = state.data?.items ?? [];
+    if (selectedStrategy === 'ALL') return items;
+    return items.filter((candidate) => strategyKey(candidate) === selectedStrategy);
+  }, [selectedStrategy, state.data?.items]);
 
-  const sorters = useMemo<Record<DiscoverySortKey, typeof DISCOVERY_SORTERS.rank>>(
-    () => ({
-      ...DISCOVERY_SORTERS,
-      rank: (left, right) =>
-        (rankByKey.get(candidateKey(left)) ?? 0) - (rankByKey.get(candidateKey(right)) ?? 0)
-    }),
-    [rankByKey]
+  const selectedStrategyId = selectedStrategy === 'ALL' ? null : selectedStrategy.split('::')[0];
+
+  const sorters = useMemo<Record<DiscoverySortKey, typeof DISCOVERY_SORTERS.ticker>>(
+    () => DISCOVERY_SORTERS,
+    []
   );
 
-  const table = useCockpitTable<MomentumRankingItemDto, DiscoverySortKey>({
-    items: state.data?.items ?? [],
+  const table = useCockpitTable<DiscoveryCandidateDto, DiscoverySortKey>({
+    items: strategyFilteredItems,
     getStatus: getDiscoveryStatus,
     defaultStatuses: DEFAULT_DISCOVERY_STATUSES,
     sortConfig: {
-      defaultSortKey: 'rank',
-      defaultSortDirection: 'asc',
-      descendingByDefaultKeys: ['signalDate', 'price', 'relativeVolume', 'momentumScore']
+      defaultSortKey: 'signalDate',
+      defaultSortDirection: 'desc',
+      descendingByDefaultKeys: ['signalDate', 'price', 'relativeVolume']
     },
     sorters
   });
@@ -481,13 +463,15 @@ export function Discovery({ gateway }: DiscoveryProps) {
     state.data?.items.find((candidate) => candidateKey(candidate) === selectedKey) ?? null;
 
   async function refreshSignals() {
-    if (refreshingSignals) return;
+    if (refreshingSignals || !selectedStrategyId) return;
     setRefreshingSignals(true);
     setFeedback(null);
     setActionError(null);
     try {
-      const archived = await gateway.refreshFinviz();
-      setFeedback(`${archived} Finviz signals refreshed. Refresh Ranking to rank latest signals.`);
+      const result = await gateway.refreshSignals({ strategyId: selectedStrategyId });
+      setFeedback(
+        `${result.archived} signal(s) refreshed for ${selectedStrategyId}. Discovery now reads the latest snapshot.`
+      );
       await load();
     } catch (error) {
       setActionError(error instanceof Error ? error.message : String(error));
@@ -496,23 +480,25 @@ export function Discovery({ gateway }: DiscoveryProps) {
     }
   }
 
-  async function refreshRanking() {
-    if (refreshingRanking) return;
-    setRefreshingRanking(true);
+  async function refreshAllSignals() {
+    if (refreshingSignals) return;
+    setRefreshingSignals(true);
     setFeedback(null);
     setActionError(null);
     try {
-      await gateway.refreshMomentumRanking();
+      const result = await gateway.refreshAllSignals();
+      setFeedback(
+        `${result.archived} signal(s) refreshed across all active strategies. Discovery now reads the latest snapshots.`
+      );
       await load();
-      setFeedback('Momentum Breakout candidates refreshed from archived signals.');
     } catch (error) {
       setActionError(error instanceof Error ? error.message : String(error));
     } finally {
-      setRefreshingRanking(false);
+      setRefreshingSignals(false);
     }
   }
 
-  async function addCandidate(candidate: MomentumRankingItemDto) {
+  async function addCandidate(candidate: DiscoveryCandidateDto) {
     const key = candidateKey(candidate);
     if (addingKey || candidate.watchlistStatus || !candidate.signalDate) return;
 
@@ -520,7 +506,7 @@ export function Discovery({ gateway }: DiscoveryProps) {
     setFeedback(null);
     setActionError(null);
     try {
-      const result = await gateway.addMomentumCandidateToWatchlist({
+      const result = await gateway.addDiscoveryCandidateToWatchlist({
         strategyId: candidate.strategyId,
         strategyVersion: candidate.strategyVersion,
         signalDate: candidate.signalDate,
@@ -542,7 +528,7 @@ export function Discovery({ gateway }: DiscoveryProps) {
           <Eyebrow>Strategy Discovery</Eyebrow>
           <PageTitle>Discovery</PageTitle>
           <PageSubtitle>
-            Refresh provider signals, review the active strategy ranking, then manually add selected
+            Refresh provider signals, review latest screener candidates, then manually add selected
             ideas to Watchlist.
           </PageSubtitle>
         </div>
@@ -550,40 +536,55 @@ export function Discovery({ gateway }: DiscoveryProps) {
           {state.data && <UpdatedAt>Updated {displayTimestamp(state.data.generatedAt)}</UpdatedAt>}
           <Button
             onClick={() => void refreshSignals()}
-            disabled={state.loading || refreshingSignals}
+            disabled={state.loading || refreshingSignals || !selectedStrategyId}
+            title={
+              selectedStrategyId
+                ? 'Refresh the selected strategy signals'
+                : 'Select one strategy to refresh its signals'
+            }
           >
             <span aria-hidden="true">↻</span>
             {refreshingSignals ? 'Refreshing signals' : 'Refresh Signals'}
           </Button>
           <Button
-            onClick={() => void refreshRanking()}
-            disabled={state.loading || refreshingRanking}
+            variant="retry"
+            onClick={() => void refreshAllSignals()}
+            disabled={state.loading || refreshingSignals}
           >
             <span aria-hidden="true">↻</span>
-            {refreshingRanking ? 'Refreshing ranking' : 'Refresh Ranking'}
+            {refreshingSignals ? 'Refreshing all' : 'Refresh All'}
           </Button>
         </PageActions>
       </PageHeader>
 
       <DataPanel aria-label="Discovery strategies" className="mb-5">
         <div className="flex flex-wrap items-center gap-3 px-5 py-4">
-          <span className="text-[10px] font-extrabold tracking-[0.14em] text-[#64758d] uppercase">
-            Active strategy
-          </span>
-          <button
-            type="button"
-            aria-pressed="true"
-            className="rounded-full border border-[#4ee1a0] bg-[rgba(78,225,160,0.14)] px-4 py-2 text-xs font-extrabold tracking-[0.08em] text-[#dfffee] uppercase"
+          <label
+            htmlFor="discovery-strategy"
+            className="text-[10px] font-extrabold tracking-[0.14em] text-[#64758d] uppercase"
           >
-            Momentum Breakout
-          </button>
-          <span className="rounded-full border border-[#24384d] bg-[rgba(10,20,33,0.5)] px-4 py-2 text-xs font-extrabold tracking-[0.08em] text-[#64758d] uppercase">
-            Quality Dip · later
-          </span>
+            Strategy
+          </label>
+          <select
+            id="discovery-strategy"
+            value={selectedStrategy}
+            onChange={(event) => setSelectedStrategy(event.target.value)}
+            className="min-w-[260px] rounded-[10px] border border-[#244059] bg-[#071421] px-3 py-2 text-sm text-[#d6e5f4] outline-none focus:border-[#4ee1a0] focus:ring-2 focus:ring-[rgba(78,225,160,0.15)]"
+          >
+            <option value="ALL">All active strategies</option>
+            {(state.data?.strategies ?? []).map((strategy) => (
+              <option
+                key={`${strategy.strategyId}::${strategy.strategyVersion}`}
+                value={`${strategy.strategyId}::${strategy.strategyVersion}`}
+              >
+                {strategy.strategyName} · {strategy.strategyVersion}
+              </option>
+            ))}
+          </select>
         </div>
       </DataPanel>
 
-      {state.loading && !state.data && <LoadingState>Loading ranked candidates…</LoadingState>}
+      {state.loading && !state.data && <LoadingState>Loading Discovery candidates…</LoadingState>}
 
       {state.error && (
         <ErrorState title="Discovery unavailable" error={state.error} onRetry={() => void load()} />
@@ -597,13 +598,13 @@ export function Discovery({ gateway }: DiscoveryProps) {
       )}
 
       {state.data && state.data.items.length === 0 && !state.error && (
-        <EmptyState icon="⌕" title="No Momentum candidates">
-          Refresh Signals, then Refresh Ranking to populate Discovery from backend data.
+        <EmptyState icon="⌕" title="No Discovery candidates">
+          Refresh Signals to populate Discovery from the latest configured screeners.
         </EmptyState>
       )}
 
       {selectedCandidate && (
-        <MomentumCandidateDetail
+        <DiscoveryCandidateDetail
           candidate={selectedCandidate}
           adding={addingKey === candidateKey(selectedCandidate)}
           feedback={feedback}
@@ -614,9 +615,9 @@ export function Discovery({ gateway }: DiscoveryProps) {
       )}
 
       {state.data && state.data.items.length > 0 && (
-        <DataPanel aria-label="Momentum Breakout candidates">
+        <DataPanel aria-label="Discovery candidates">
           <CockpitStatusFilters
-            totalCount={state.data.items.length}
+            totalCount={strategyFilteredItems.length}
             visibleCount={table.filteredItems.length}
             availableStatuses={table.availableStatuses}
             activeStatuses={table.activeStatuses}
@@ -625,23 +626,23 @@ export function Discovery({ gateway }: DiscoveryProps) {
             defaultLabel="Human selection"
           />
           <TableScroll>
-            <Table className="min-w-[1220px] border-collapse tabular-nums">
+            <Table className="min-w-[1100px] border-collapse tabular-nums">
               <TableHeader>
                 <TableRow>
-                  <TableHead scope="col" className="p-0">
-                    <CockpitSortHeader
-                      label="Rank"
-                      active={table.sortKey === 'rank'}
-                      direction={table.sortDirection}
-                      onClick={() => table.setSort('rank')}
-                    />
-                  </TableHead>
                   <TableHead scope="col" className="p-0">
                     <CockpitSortHeader
                       label="Ticker"
                       active={table.sortKey === 'ticker'}
                       direction={table.sortDirection}
                       onClick={() => table.setSort('ticker')}
+                    />
+                  </TableHead>
+                  <TableHead scope="col" className="p-0">
+                    <CockpitSortHeader
+                      label="Strategy"
+                      active={table.sortKey === 'strategy'}
+                      direction={table.sortDirection}
+                      onClick={() => table.setSort('strategy')}
                     />
                   </TableHead>
                   <TableHead scope="col" className="p-0">
@@ -678,21 +679,12 @@ export function Discovery({ gateway }: DiscoveryProps) {
                       align="right"
                     />
                   </TableHead>
-                  <TableHead scope="col" className={`${numericCellClassName} p-0`}>
-                    <CockpitSortHeader
-                      label="Score"
-                      active={table.sortKey === 'momentumScore'}
-                      direction={table.sortDirection}
-                      onClick={() => table.setSort('momentumScore')}
-                      align="right"
-                    />
-                  </TableHead>
                   <TableHead scope="col" className="p-0">
                     <CockpitSortHeader
                       label="Status"
-                      active={table.sortKey === 'reviewStatus'}
+                      active={table.sortKey === 'watchlistStatus'}
                       direction={table.sortDirection}
-                      onClick={() => table.setSort('reviewStatus')}
+                      onClick={() => table.setSort('watchlistStatus')}
                     />
                   </TableHead>
                   <TableHead scope="col">
@@ -705,7 +697,6 @@ export function Discovery({ gateway }: DiscoveryProps) {
                   <DiscoveryRow
                     key={candidateKey(candidate)}
                     candidate={candidate}
-                    rank={rankByKey.get(candidateKey(candidate)) ?? 0}
                     adding={addingKey === candidateKey(candidate)}
                     onOpen={() => setSelectedKey(candidateKey(candidate))}
                     onAdd={() => void addCandidate(candidate)}
@@ -722,13 +713,13 @@ export function Discovery({ gateway }: DiscoveryProps) {
         table.filteredItems.length === 0 &&
         !state.error && (
           <EmptyState icon="⌕" title="No candidates match the selected filters">
-            Adjust the status chips above or reset them to bring back active Discovery candidates.
+            Adjust the status chips above or reset them to bring back Discovery candidates.
           </EmptyState>
         )}
     </PageShell>
   );
 }
 
-function getDiscoveryStatus(candidate: MomentumRankingItemDto): string {
-  return candidate.reviewStatus;
+function getDiscoveryStatus(candidate: DiscoveryCandidateDto): string {
+  return candidate.watchlistStatus ?? 'NOT WATCHED';
 }

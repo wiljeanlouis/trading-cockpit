@@ -1,6 +1,5 @@
 import type { OpenPositionFromTradePlan } from '@trading-cockpit/core/application/position/open-position-from-trade-plan';
 import { selectedTradePlanRowToCommand } from './trade-plan-selection-mapper';
-import { themePositions } from '../theme/theme';
 
 const TRADE_PLANS_SHEET_NAME = 'Trade Plans';
 
@@ -38,6 +37,5 @@ export function executeSelectedTradePlanRow(openPosition: OpenPositionFromTradeP
     return;
   }
 
-  themePositions(spreadsheet);
   spreadsheet.toast(`${result.position.ticker} exécuté — position créée.`, 'Trading Cockpit', 5);
 }

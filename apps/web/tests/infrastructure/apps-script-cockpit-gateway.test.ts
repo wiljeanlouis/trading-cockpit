@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { DashboardDto, DashboardSummaryDto } from '@trading-cockpit/contracts';
+import type { DashboardDto, DashboardSummaryDto, DiscoveryDto } from '@trading-cockpit/contracts';
 import { AppsScriptCockpitGateway } from '../../src/infrastructure/apps-script/apps-script-cockpit-gateway';
 
 const summary: DashboardSummaryDto = {
@@ -39,7 +39,7 @@ const dashboard: DashboardDto = {
     averageR: 1.3,
     totalR: 18.2
   },
-  topMomentum: [],
+  topDiscoveryCandidates: [],
   watchlistPreview: [],
   openPositionsPreview: [],
   actions: {
@@ -118,40 +118,59 @@ describe('AppsScriptCockpitGateway', () => {
     expect(runner.getWatchlist).toHaveBeenCalledOnce();
   });
 
-  it('loads Momentum Ranking through the Apps Script callback bridge', async () => {
-    const ranking = { generatedAt: summary.generatedAt, items: [] };
-    let success: ((value: typeof ranking) => void) | undefined;
+  it('loads Discovery through the Apps Script callback bridge', async () => {
+    const discovery: DiscoveryDto = { generatedAt: summary.generatedAt, strategies: [], items: [] };
+    let success: ((value: DiscoveryDto) => void) | undefined;
     const runner = {
       withSuccessHandler: vi.fn((handler) => {
         success = handler;
         return runner;
       }),
       withFailureHandler: vi.fn(() => runner),
-      getMomentumRanking: vi.fn(() => success?.(ranking))
+      getDiscovery: vi.fn(() => success?.(discovery))
     };
     vi.stubGlobal('google', { script: { run: runner } });
 
-    await expect(new AppsScriptCockpitGateway().getMomentumRanking()).resolves.toEqual(ranking);
-    expect(runner.getMomentumRanking).toHaveBeenCalledOnce();
+    await expect(new AppsScriptCockpitGateway().getDiscovery()).resolves.toEqual(discovery);
+    expect(runner.getDiscovery).toHaveBeenCalledOnce();
   });
 
-  it('refreshes Momentum Ranking through the Apps Script callback bridge', async () => {
-    let success: ((value: void) => void) | undefined;
+  it('refreshes selected strategy signals through the Apps Script callback bridge', async () => {
+    const result = { scope: 'STRATEGY' as const, archived: 2, refreshed: [] };
+    let success: ((value: typeof result) => void) | undefined;
     const runner = {
       withSuccessHandler: vi.fn((handler) => {
         success = handler;
         return runner;
       }),
       withFailureHandler: vi.fn(() => runner),
-      refreshMomentumRanking: vi.fn(() => success?.())
+      refreshSignals: vi.fn(() => success?.(result))
+    };
+    vi.stubGlobal('google', { script: { run: runner } });
+    const command = { strategyId: 'MOMENTUM_BREAKOUT' };
+
+    await expect(new AppsScriptCockpitGateway().refreshSignals(command)).resolves.toEqual(result);
+    expect(runner.refreshSignals).toHaveBeenCalledWith(command);
+  });
+
+  it('refreshes all signals through the Apps Script callback bridge', async () => {
+    const result = { scope: 'ALL' as const, archived: 4, refreshed: [] };
+    let success: ((value: typeof result) => void) | undefined;
+    const runner = {
+      withSuccessHandler: vi.fn((handler) => {
+        success = handler;
+        return runner;
+      }),
+      withFailureHandler: vi.fn(() => runner),
+      refreshAllSignals: vi.fn(() => success?.(result))
     };
     vi.stubGlobal('google', { script: { run: runner } });
 
-    await expect(new AppsScriptCockpitGateway().refreshMomentumRanking()).resolves.toBeUndefined();
-    expect(runner.refreshMomentumRanking).toHaveBeenCalledOnce();
+    await expect(new AppsScriptCockpitGateway().refreshAllSignals()).resolves.toEqual(result);
+    expect(runner.refreshAllSignals).toHaveBeenCalledOnce();
   });
 
-  it('adds a Momentum candidate to Watchlist through the Apps Script callback bridge', async () => {
+  it('adds a Discovery candidate to Watchlist through the Apps Script callback bridge', async () => {
     const result = {
       kind: 'added' as const,
       watchlistId: 'WL-1',
@@ -165,7 +184,7 @@ describe('AppsScriptCockpitGateway', () => {
         return runner;
       }),
       withFailureHandler: vi.fn(() => runner),
-      addMomentumCandidateToWatchlist: vi.fn(() => success?.(result))
+      addDiscoveryCandidateToWatchlist: vi.fn(() => success?.(result))
     };
     vi.stubGlobal('google', { script: { run: runner } });
     const command = {
@@ -176,9 +195,9 @@ describe('AppsScriptCockpitGateway', () => {
     };
 
     await expect(
-      new AppsScriptCockpitGateway().addMomentumCandidateToWatchlist(command)
+      new AppsScriptCockpitGateway().addDiscoveryCandidateToWatchlist(command)
     ).resolves.toEqual(result);
-    expect(runner.addMomentumCandidateToWatchlist).toHaveBeenCalledWith(command);
+    expect(runner.addDiscoveryCandidateToWatchlist).toHaveBeenCalledWith(command);
   });
 
   it('loads trading accounts through the Apps Script callback bridge', async () => {

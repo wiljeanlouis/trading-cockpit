@@ -378,7 +378,7 @@ describe('Cloud Run Google Sheets API mutation repositories', () => {
 
     expect(client.updateValues).toHaveBeenCalledWith({
       spreadsheetId: 'spreadsheet-id',
-      range: "'Finviz - Momentum'!A1:Z",
+      range: "'Finviz Signals'!A1:Z",
       values: [
         [
           'Strategy ID',

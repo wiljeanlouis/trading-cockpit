@@ -12,12 +12,39 @@ export interface RefreshMarketSignalsDependencies {
   observe?: (event: string, fields: Record<string, unknown>) => void;
 }
 
+export interface RefreshMarketSignalsRequest {
+  strategyId?: string | null;
+}
+
+export interface RefreshedMarketSignalsFeed {
+  strategyId: string;
+  strategyVersion: string;
+  signalCount: number;
+  archived: number;
+}
+
+export interface RefreshMarketSignalsResult {
+  archived: number;
+  refreshed: RefreshedMarketSignalsFeed[];
+}
+
 export function createRefreshMarketSignals(
   dependencies: RefreshMarketSignalsDependencies
-): () => number {
-  return () => {
+): (request?: RefreshMarketSignalsRequest) => RefreshMarketSignalsResult {
+  return (request = {}) => {
+    const requestedStrategyId = normalizeStrategyId(request.strategyId);
     let totalNewSignals = 0;
-    for (const feed of dependencies.source.listFeeds()) {
+    const refreshed: RefreshedMarketSignalsFeed[] = [];
+    const feeds = dependencies.source
+      .listFeeds()
+      .filter(
+        (feed) =>
+          !requestedStrategyId || normalizeStrategyId(feed.strategyId) === requestedStrategyId
+      );
+    if (requestedStrategyId && feeds.length === 0) {
+      throw new Error(`Aucun feed actif configuré pour ${requestedStrategyId}.`);
+    }
+    for (const feed of feeds) {
       validateMarketSignalFeed(feed);
       const strategy = dependencies.strategyCatalog.getById(feed.strategyId);
       dependencies.observe?.('STRATEGY_LOADED', {
@@ -44,7 +71,19 @@ export function createRefreshMarketSignals(
       const archived = dependencies.archiveSignals(batch);
       dependencies.observe?.('HISTORY_ARCHIVED', { count: archived });
       totalNewSignals += archived;
+      refreshed.push({
+        strategyId: feed.strategyId,
+        strategyVersion: feed.strategyVersion,
+        signalCount: batch.signals.length,
+        archived
+      });
     }
-    return totalNewSignals;
+    return { archived: totalNewSignals, refreshed };
   };
+}
+
+function normalizeStrategyId(value: unknown): string {
+  return String(value ?? '')
+    .trim()
+    .toUpperCase();
 }

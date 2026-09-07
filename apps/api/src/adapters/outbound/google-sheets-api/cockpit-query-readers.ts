@@ -1,9 +1,9 @@
 import type { JournalEntry, JournalMetric } from '@trading-cockpit/core/domain/journal-entry';
+import type { SignalSnapshot } from '@trading-cockpit/core/domain/market-signal';
 import {
   createCapitalTransaction,
   type CapitalTransaction
 } from '@trading-cockpit/core/domain/capital-transaction';
-import type { MomentumRankingRecord } from '@trading-cockpit/core/ports/outbound/momentum-ranking-reader';
 import type { Position } from '@trading-cockpit/core/domain/position';
 import type { TradePlan } from '@trading-cockpit/core/domain/trade-plan';
 import type {
@@ -22,11 +22,8 @@ import {
   type TradingStrategyVersion
 } from '@trading-cockpit/core/domain/trading-strategy';
 import type { DashboardRepositorySnapshot } from '@trading-cockpit/core/ports/outbound/dashboard-repository';
+import type { DiscoverySignalReader } from '@trading-cockpit/core/ports/outbound/discovery-signal-reader';
 import type { JournalReader } from '@trading-cockpit/core/ports/outbound/journal-reader';
-import type {
-  MomentumRankingIdentity,
-  MomentumRankingReader
-} from '@trading-cockpit/core/ports/outbound/momentum-ranking-reader';
 import type { PositionReader } from '@trading-cockpit/core/ports/outbound/position-reader';
 import type { TradePlanReader } from '@trading-cockpit/core/ports/outbound/trade-plan-reader';
 import type { TradingAccountRepository } from '@trading-cockpit/core/ports/outbound/trading-account-repository';
@@ -227,41 +224,12 @@ export const SHEET_DEFINITIONS = {
     range: "'Strategy Versions'!A:F",
     requiredHeaders: STRATEGY_VERSION_HEADERS
   },
-  momentumRanking: {
-    key: 'momentumRanking',
-    sheetName: 'Momentum Ranking',
-    range: "'Momentum Ranking'!A:U",
-    requiredHeaders: [
-      'Rank',
-      'Strategy ID',
-      'Strategy',
-      'Strategy Version',
-      'Signal Date',
-      'Ticker',
-      'Company',
-      'Sector',
-      'Price',
-      '52W High',
-      '52W Score',
-      'Relative Volume',
-      'RelVol Score',
-      'Performance Month',
-      'Performance Score',
-      'RSI',
-      'RSI Score',
-      'SMA20',
-      'SMA20 Score',
-      'Momentum Score',
-      'Review Status'
-    ],
-    dateHeaders: ['Signal Date']
-  },
   signalsHistory: {
     key: 'signalsHistory',
     sheetName: 'Signals History',
     range: "'Signals History'!A:AA",
     requiredHeaders: SIGNALS_HISTORY_HEADERS,
-    dateHeaders: ['Detected At']
+    dateHeaders: ['Signal Date', 'Detected At', 'Earnings Date']
   }
 } as const satisfies Record<string, SheetTableDefinition>;
 
@@ -293,28 +261,23 @@ export class LoadedJournalReader implements JournalReader {
   }
 }
 
-export class LoadedMomentumRankingReader implements MomentumRankingReader {
-  constructor(private readonly records: readonly MomentumRankingRecord[]) {}
+export class LoadedDiscoverySignalReader implements DiscoverySignalReader {
+  constructor(
+    private readonly signals: readonly SignalSnapshot[],
+    private readonly strategies: readonly TradingStrategy[],
+    private readonly versions: readonly TradingStrategyVersion[]
+  ) {}
 
-  findAll(): MomentumRankingRecord[] {
-    return [...this.records];
+  findAllSignals(): SignalSnapshot[] {
+    return [...this.signals];
   }
 
-  findByIdentity(identity: MomentumRankingIdentity): MomentumRankingRecord | null {
-    const expectedStrategyId = textValue(identity.strategyId).toUpperCase();
-    const expectedStrategyVersion = textValue(identity.strategyVersion);
-    const expectedSignalDate = textValue(identity.signalDate);
-    const expectedTicker = textValue(identity.ticker).toUpperCase();
+  findAllStrategies(): TradingStrategy[] {
+    return [...this.strategies];
+  }
 
-    return (
-      this.records.find(
-        (record) =>
-          textValue(record.strategyId).toUpperCase() === expectedStrategyId &&
-          textValue(record.strategyVersion) === expectedStrategyVersion &&
-          textValue(record.signalDate) === expectedSignalDate &&
-          textValue(record.ticker).toUpperCase() === expectedTicker
-      ) ?? null
-    );
+  findAllStrategyVersions(): TradingStrategyVersion[] {
+    return [...this.versions];
   }
 }
 
@@ -434,14 +397,14 @@ export async function validateStrategies(sheets: RequestScopedSheets): Promise<t
   return true;
 }
 
-export async function readMomentumRankingRecords(
-  sheets: RequestScopedSheets
-): Promise<MomentumRankingRecord[]> {
-  const table = await readTable(sheets, SHEET_DEFINITIONS.momentumRanking);
+export async function readSignalSnapshots(sheets: RequestScopedSheets): Promise<SignalSnapshot[]> {
+  const table = await readTable(sheets, SHEET_DEFINITIONS.signalsHistory);
   return table.rows
-    .map((row) => momentumRankingRecordFromRow(table.headers, row))
+    .filter((row) => row.some((value) => textValue(value)))
+    .map((row) => signalSnapshotFromRow(table.headers, row))
     .filter(
-      (record) => record.strategyId && record.strategyVersion && record.signalDate && record.ticker
+      (snapshot) =>
+        snapshot.signalDate && snapshot.strategyId && snapshot.strategyVersion && snapshot.ticker
     );
 }
 
@@ -449,28 +412,30 @@ export async function readDashboardSnapshot(
   sheets: RequestScopedSheets
 ): Promise<DashboardRepositorySnapshot> {
   await sheets.batchLoad([
-    SHEET_DEFINITIONS.momentumRanking,
+    SHEET_DEFINITIONS.signalsHistory,
     SHEET_DEFINITIONS.watchlist,
     SHEET_DEFINITIONS.tradePlans,
     SHEET_DEFINITIONS.positions
   ]);
-  const momentum = await readTable(sheets, SHEET_DEFINITIONS.momentumRanking);
+  const signalsHistory = await readTable(sheets, SHEET_DEFINITIONS.signalsHistory);
   const watchlist = await readTable(sheets, SHEET_DEFINITIONS.watchlist);
   const tradePlans = await readTable(sheets, SHEET_DEFINITIONS.tradePlans);
   const positions = await readTable(sheets, SHEET_DEFINITIONS.positions);
+  const signalSnapshots = signalsHistory.rows
+    .filter((row) => row.some((value) => textValue(value)))
+    .map((row) => signalSnapshotFromRow(signalsHistory.headers, row))
+    .filter((signal) => signal.ticker);
   return {
-    momentumCandidates: momentum.rows
-      .map((row) => ({
-        rank: numberOrNull(valueByHeader(momentum.headers, row, 'Rank')),
-        ticker: textValue(valueByHeader(momentum.headers, row, 'Ticker')).toUpperCase(),
-        score: numberOrNull(valueByHeader(momentum.headers, row, 'Momentum Score')),
-        price: numberOrNull(valueByHeader(momentum.headers, row, 'Price')),
-        high52: numberOrNull(valueByHeader(momentum.headers, row, '52W High')),
-        relativeVolume: numberOrNull(valueByHeader(momentum.headers, row, 'Relative Volume')),
-        rsi: numberOrNull(valueByHeader(momentum.headers, row, 'RSI')),
-        reviewStatus: nullableText(valueByHeader(momentum.headers, row, 'Review Status'))
-      }))
-      .filter((candidate) => candidate.ticker),
+    discoveryCandidates: latestSignals(signalSnapshots).map((signal, index) => ({
+      rank: index + 1,
+      ticker: signal.ticker,
+      score: null,
+      price: numberOrNull(signal.attributes.Price),
+      high52: numberOrNull(signal.attributes['52-Week High']),
+      relativeVolume: numberOrNull(signal.attributes['Relative Volume']),
+      rsi: numberOrNull(signal.attributes['Relative Strength Index (14)']),
+      reviewStatus: null
+    })),
     watchlist: watchlist.rows
       .map((row) => ({
         ticker: textValue(valueByHeader(watchlist.headers, row, 'Ticker')).toUpperCase(),
@@ -641,29 +606,47 @@ function journalEntryFromRow(headers: string[], row: unknown[]): JournalEntry {
   };
 }
 
-function momentumRankingRecordFromRow(headers: string[], row: unknown[]): MomentumRankingRecord {
+function signalSnapshotFromRow(headers: string[], row: unknown[]): SignalSnapshot {
+  const baseHeaders = new Set([
+    'Signal Date',
+    'Detected At',
+    'Strategy ID',
+    'Strategy',
+    'Strategy Version',
+    'Ticker'
+  ]);
+  const attributes: Record<string, unknown> = {};
+  for (const header of headers) {
+    if (!header || baseHeaders.has(header)) continue;
+    attributes[header === 'Finviz Ticker' ? 'Ticker' : header] = valueByHeader(
+      headers,
+      row,
+      header
+    );
+  }
   return {
-    strategyId: textValue(valueByHeader(headers, row, 'Strategy ID')),
-    strategy: textValue(valueByHeader(headers, row, 'Strategy')),
-    strategyVersion: textValue(valueByHeader(headers, row, 'Strategy Version')),
     signalDate: normalizeSignalDate(valueByHeader(headers, row, 'Signal Date')),
+    detectedAt: dateValue(valueByHeader(headers, row, 'Detected At')),
+    strategyId: textValue(valueByHeader(headers, row, 'Strategy ID')).toUpperCase(),
+    strategyName: textValue(valueByHeader(headers, row, 'Strategy')),
+    strategyVersion: textValue(valueByHeader(headers, row, 'Strategy Version')),
     ticker: textValue(valueByHeader(headers, row, 'Ticker')).toUpperCase(),
-    company: valueByHeader(headers, row, 'Company') || '',
-    sector: valueByHeader(headers, row, 'Sector') || '',
-    price: numberOrNull(valueByHeader(headers, row, 'Price')),
-    high52: numberOrNull(valueByHeader(headers, row, '52W High')),
-    high52Score: numberOrNull(valueByHeader(headers, row, '52W Score')) ?? 0,
-    relativeVolume: numberOrNull(valueByHeader(headers, row, 'Relative Volume')),
-    relativeVolumeScore: numberOrNull(valueByHeader(headers, row, 'RelVol Score')) ?? 0,
-    performanceMonth: numberOrNull(valueByHeader(headers, row, 'Performance Month')),
-    performanceScore: numberOrNull(valueByHeader(headers, row, 'Performance Score')) ?? 0,
-    rsi: numberOrNull(valueByHeader(headers, row, 'RSI')),
-    rsiScore: numberOrNull(valueByHeader(headers, row, 'RSI Score')) ?? 0,
-    sma20: numberOrNull(valueByHeader(headers, row, 'SMA20')),
-    sma20Score: numberOrNull(valueByHeader(headers, row, 'SMA20 Score')) ?? 0,
-    total: numberOrNull(valueByHeader(headers, row, 'Momentum Score')) ?? 0,
-    reviewStatus: textValue(valueByHeader(headers, row, 'Review Status')) || 'REVIEW'
+    attributes
   };
+}
+
+function latestSignals(signals: readonly SignalSnapshot[]): SignalSnapshot[] {
+  const latestDateByStrategy = new Map<string, string>();
+  for (const signal of signals) {
+    const key = `${signal.strategyId}|${signal.strategyVersion}`;
+    const latest = latestDateByStrategy.get(key);
+    if (!latest || signal.signalDate > latest) latestDateByStrategy.set(key, signal.signalDate);
+  }
+  return signals.filter(
+    (signal) =>
+      signal.signalDate ===
+      latestDateByStrategy.get(`${signal.strategyId}|${signal.strategyVersion}`)
+  );
 }
 
 function metricValue(value: unknown): JournalMetric {

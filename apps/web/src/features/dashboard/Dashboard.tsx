@@ -317,12 +317,12 @@ export function Dashboard({ gateway }: DashboardProps) {
           </DetailPanel>
 
           <section className="grid grid-cols-3 gap-4 max-[1100px]:grid-cols-1">
-            <DetailPanel title="Top Momentum">
+            <DetailPanel title="Top Discovery">
               <CompactRows
-                rows={dashboard.topMomentum}
-                empty="No ranked candidates."
+                rows={dashboard.topDiscoveryCandidates}
+                empty="No Discovery candidates."
                 render={(row) => {
-                  const candidate = row as DashboardDto['topMomentum'][number];
+                  const candidate = row as DashboardDto['topDiscoveryCandidates'][number];
                   return (
                     <div
                       className="grid grid-cols-[52px_1fr_auto] items-center gap-4 px-5 py-4 text-sm"
@@ -331,7 +331,7 @@ export function Dashboard({ gateway }: DashboardProps) {
                       <span className="text-[#7f8fa6]">#{candidate.rank ?? '—'}</span>
                       <strong>{candidate.ticker}</strong>
                       <span className="font-bold text-[#4ee1a0]">
-                        {displayNumber(candidate.score, 0)}
+                        {displayNumber(candidate.price)}
                       </span>
                     </div>
                   );

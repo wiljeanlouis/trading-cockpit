@@ -1,7 +1,6 @@
 import { JOURNAL_HEADERS } from './journal-mapper';
 import { readSheetHeaders, requireColumn, requireSheetHeaders } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
-import { themeJournal } from '../../../inbound/google-sheets/theme/theme';
 import { isSheetEffectivelyEmpty } from '../data-sheet';
 
 const SHEET_NAME = 'Journal';
@@ -19,7 +18,6 @@ export function getOrCreateJournalSheet(): GoogleAppsScript.Spreadsheet.Sheet {
   sheet.setFrozenRows(1);
   refreshJournalValidations(sheet);
   sheet.autoResizeColumns(1, JOURNAL_HEADERS.length);
-  themeJournal(spreadsheet);
   return sheet;
 }
 

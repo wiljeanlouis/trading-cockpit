@@ -355,16 +355,6 @@ export async function updateStrategyVersionForCloudRun({
   );
 }
 
-export async function setupMomentumRankingForCloudRun({
-  mutationContext
-}: MutationDependencies): Promise<{ ok: true }> {
-  await ensureSheets(mutationContext, ['Momentum Ranking']);
-  mutationContext.writer.update("'Momentum Ranking'!A1:U", [
-    [...SHEET_DEFINITIONS.momentumRanking.requiredHeaders]
-  ]);
-  return { ok: true };
-}
-
 export async function setupStrategiesForCloudRun({
   mutationContext
 }: MutationDependencies): Promise<{ ok: true }> {

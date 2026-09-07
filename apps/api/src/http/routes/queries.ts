@@ -7,7 +7,7 @@ import {
   getDashboardForCloudRun,
   getDashboardSummaryForCloudRun
 } from '../../composition/dashboard';
-import { getMomentumRankingForCloudRun } from '../../composition/discovery';
+import { getDiscoveryForCloudRun } from '../../composition/discovery';
 import { getTradePlansForCloudRun } from '../../composition/trade-plans';
 import { getWatchlistForCloudRun } from '../../composition/watchlist';
 import { getOpenPositionsForCloudRun } from '../../composition/positions';
@@ -74,10 +74,10 @@ const routeByPath: Record<string, QueryRouteHandler> = {
       ...dependencies,
       query: getDashboardSummaryForCloudRun
     }),
-  '/api/discovery/momentum-ranking': (dependencies) =>
+  '/api/discovery/candidates': (dependencies) =>
     handleTimedQuery({
       ...dependencies,
-      query: getMomentumRankingForCloudRun,
+      query: getDiscoveryForCloudRun,
       itemCount: (dto) => dto.items.length
     }),
   '/api/trade-plans': (dependencies) =>

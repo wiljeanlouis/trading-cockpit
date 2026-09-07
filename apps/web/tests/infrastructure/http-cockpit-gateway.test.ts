@@ -25,17 +25,22 @@ describe('HttpCockpitGateway', () => {
     ['getDashboard', 'GET', '/api/dashboard', undefined],
     ['getDashboardSummary', 'GET', '/api/dashboard/summary', undefined],
     ['getWatchlist', 'GET', '/api/watchlist', undefined],
-    ['getMomentumRanking', 'GET', '/api/discovery/momentum-ranking', undefined],
+    ['getDiscovery', 'GET', '/api/discovery/candidates', undefined],
     ['getAnalytics', 'GET', '/api/analytics', undefined],
     ['getAdminOverview', 'GET', '/api/admin/overview', undefined],
     ['getTradingAccounts', 'GET', '/api/admin/trading-accounts', undefined],
     ['validateStrategies', 'GET', '/api/admin/strategies/validation', undefined],
-    ['refreshFinviz', 'POST', '/api/discovery/finviz/refresh-signals', undefined],
-    ['refreshMomentumRanking', 'POST', '/api/discovery/momentum-ranking/refresh', undefined],
     [
-      'addMomentumCandidateToWatchlist',
+      'refreshSignals',
       'POST',
-      '/api/discovery/momentum-ranking/watchlist',
+      '/api/discovery/signals/refresh',
+      { strategyId: 'MOMENTUM_BREAKOUT' }
+    ],
+    ['refreshAllSignals', 'POST', '/api/discovery/signals/refresh-all', undefined],
+    [
+      'addDiscoveryCandidateToWatchlist',
+      'POST',
+      '/api/discovery/candidates/watchlist',
       {
         strategyId: 'MOMENTUM_BREAKOUT',
         strategyVersion: 'V1',
@@ -43,7 +48,6 @@ describe('HttpCockpitGateway', () => {
         ticker: 'BOX'
       }
     ],
-    ['setupMomentumRanking', 'POST', '/api/admin/momentum-ranking/setup', undefined],
     ['setupStrategies', 'POST', '/api/admin/strategies/setup', undefined],
     [
       'createStrategy',
@@ -142,7 +146,7 @@ describe('HttpCockpitGateway', () => {
     async (operation, method, path, argument) => {
       const fetchImpl = vi.fn(async () =>
         jsonResponse(
-          operation === 'refreshFinviz'
+          operation === 'refreshSignals' || operation === 'refreshAllSignals'
             ? { archived: 12 }
             : operation === 'checkFinvizAuth'
               ? { configured: true }

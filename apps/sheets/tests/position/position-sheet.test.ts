@@ -36,21 +36,18 @@ function sheetWithHeaders(headers: readonly string[]) {
 }
 
 describe('Position physical sheet contract', () => {
-  it('returns an existing sheet without reinitializing or re-theming it', () => {
+  it('returns an existing sheet without reinitializing it', () => {
     const existing = {
       getLastRow: () => 1,
       getLastColumn: () => 1,
       getRange: () => ({ getValues: () => [['existing']] })
     } as unknown as GoogleAppsScript.Spreadsheet.Sheet;
     const insertSheet = vi.fn();
-    const themePositions = vi.fn();
-    vi.stubGlobal('themePositions', themePositions);
     vi.stubGlobal('SpreadsheetApp', {
       getActiveSpreadsheet: () => ({ getSheetByName: () => existing, insertSheet })
     });
     expect(getOrCreatePositionsSheet()).toBe(existing);
     expect(insertSheet).not.toHaveBeenCalled();
-    expect(themePositions).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });
 

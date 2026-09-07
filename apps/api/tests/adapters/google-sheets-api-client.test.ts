@@ -23,7 +23,7 @@ describe('Google Sheets API client', () => {
       data: {
         valueRanges: [
           {
-            range: 'Momentum Ranking!A1:U1000',
+            range: 'Candidate Table!A1:U1000',
             values: [['Rank', 'Ticker']]
           },
           {
@@ -44,18 +44,18 @@ describe('Google Sheets API client', () => {
     const client = await createGoogleSheetsApiClient();
     const responses = await client.batchGetValues?.({
       spreadsheetId: 'spreadsheet-id',
-      ranges: ["'Momentum Ranking'!A:U", "'Watchlist'!A:V"],
+      ranges: ["'Candidate Table'!A:U", "'Watchlist'!A:V"],
       valueRenderOption: 'UNFORMATTED_VALUE',
       dateTimeRenderOption: 'SERIAL_NUMBER'
     });
 
-    expect(responses?.["'Momentum Ranking'!A:U"]).toEqual({
+    expect(responses?.["'Candidate Table'!A:U"]).toEqual({
       values: [['Rank', 'Ticker']]
     });
     expect(responses?.["'Watchlist'!A:V"]).toEqual({
       values: [['Watchlist ID', 'Ticker']]
     });
-    expect(responses?.['Momentum Ranking!A1:U1000']).toEqual({
+    expect(responses?.['Candidate Table!A1:U1000']).toEqual({
       values: [['Rank', 'Ticker']]
     });
     expect(responses?.['Watchlist!A1:V1000']).toEqual({

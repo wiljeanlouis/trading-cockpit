@@ -1,7 +1,7 @@
 import type {
   AnalyticsDto,
-  AddMomentumCandidateToWatchlistRequest,
-  AddMomentumCandidateToWatchlistResponse,
+  AddDiscoveryCandidateToWatchlistRequest,
+  AddDiscoveryCandidateToWatchlistResponse,
   AdminOverviewDto,
   CreateTradePlanRequest,
   CreateTradePlanResponse,
@@ -17,9 +17,11 @@ import type {
   RecordCapitalTransactionResponse,
   ExecuteTradePlanRequest,
   ExecuteTradePlanResponse,
-  MomentumRankingDto,
+  DiscoveryDto,
   OpenPositionsDto,
   JournalDto,
+  RefreshSignalsRequest,
+  RefreshSignalsResponse,
   TradePlansDto,
   TradingAccountsDto,
   TradingAccountMutationResponse,
@@ -68,41 +70,41 @@ export class AppsScriptCockpitGateway implements CockpitGateway {
     });
   }
 
-  getMomentumRanking(): Promise<MomentumRankingDto> {
+  getDiscovery(): Promise<DiscoveryDto> {
     return new Promise((resolve, reject) => {
       google.script.run
         .withSuccessHandler(resolve)
         .withFailureHandler((error) => reject(new Error(failureMessage(error))))
-        .getMomentumRanking();
+        .getDiscovery();
     });
   }
 
-  refreshFinviz(): Promise<number> {
+  refreshSignals(request: RefreshSignalsRequest): Promise<RefreshSignalsResponse> {
     return new Promise((resolve, reject) => {
       google.script.run
         .withSuccessHandler(resolve)
         .withFailureHandler((error) => reject(new Error(failureMessage(error))))
-        .refreshFinviz();
+        .refreshSignals(request);
     });
   }
 
-  refreshMomentumRanking(): Promise<void> {
+  refreshAllSignals(): Promise<RefreshSignalsResponse> {
     return new Promise((resolve, reject) => {
       google.script.run
         .withSuccessHandler(resolve)
         .withFailureHandler((error) => reject(new Error(failureMessage(error))))
-        .refreshMomentumRanking();
+        .refreshAllSignals();
     });
   }
 
-  addMomentumCandidateToWatchlist(
-    request: AddMomentumCandidateToWatchlistRequest
-  ): Promise<AddMomentumCandidateToWatchlistResponse> {
+  addDiscoveryCandidateToWatchlist(
+    request: AddDiscoveryCandidateToWatchlistRequest
+  ): Promise<AddDiscoveryCandidateToWatchlistResponse> {
     return new Promise((resolve, reject) => {
       google.script.run
         .withSuccessHandler(resolve)
         .withFailureHandler((error) => reject(new Error(failureMessage(error))))
-        .addMomentumCandidateToWatchlist(request);
+        .addDiscoveryCandidateToWatchlist(request);
     });
   }
 
@@ -125,15 +127,6 @@ export class AppsScriptCockpitGateway implements CockpitGateway {
         .withSuccessHandler(resolve)
         .withFailureHandler((error) => reject(new Error(failureMessage(error))))
         .getTradingAccounts();
-    });
-  }
-
-  setupMomentumRanking(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      google.script.run
-        .withSuccessHandler(resolve)
-        .withFailureHandler((error) => reject(new Error(failureMessage(error))))
-        .setupMomentumRanking();
     });
   }
 

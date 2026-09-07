@@ -3,7 +3,6 @@ import {
   type SheetTradingStrategy
 } from '../../../outbound/google-sheets/trading-strategy/google-sheets-trading-strategy-reader';
 import type { TradingStrategyVersion } from '@trading-cockpit/core/domain/trading-strategy';
-import { themeSimpleSheet } from '../theme/theme';
 import { STRATEGY_HEADERS, STRATEGY_VERSION_HEADERS } from '@trading-cockpit/contracts';
 
 const STRATEGIES_SHEET_NAME = 'Strategies';
@@ -31,7 +30,6 @@ export function setupStrategiesInSheets(): void {
   sheet.getRange('C2:C').setDataValidation(typeRule);
   sheet.setFrozenRows(1);
   [190, 180, 150, 90, 350].forEach((width, index) => sheet.setColumnWidth(index + 1, width));
-  themeSimpleSheet(spreadsheet, STRATEGIES_SHEET_NAME);
 
   const versionsSheet =
     spreadsheet.getSheetByName(STRATEGY_VERSIONS_SHEET_NAME) ??
@@ -44,7 +42,6 @@ export function setupStrategiesInSheets(): void {
   [190, 90, 90, 190, 120, 640].forEach((width, index) =>
     versionsSheet.setColumnWidth(index + 1, width)
   );
-  themeSimpleSheet(spreadsheet, STRATEGY_VERSIONS_SHEET_NAME);
   spreadsheet.toast('Strategies configuré.', 'Trading Cockpit', 5);
 }
 

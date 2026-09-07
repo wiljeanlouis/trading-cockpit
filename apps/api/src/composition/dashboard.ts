@@ -21,7 +21,7 @@ export async function getDashboardForCloudRun(dependencies: {
   now: () => Date;
 }): Promise<DashboardDto> {
   await dependencies.sheets.batchLoad([
-    SHEET_DEFINITIONS.momentumRanking,
+    SHEET_DEFINITIONS.signalsHistory,
     SHEET_DEFINITIONS.watchlist,
     SHEET_DEFINITIONS.tradePlans,
     SHEET_DEFINITIONS.positions,

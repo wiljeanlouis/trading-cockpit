@@ -11,7 +11,6 @@ import {
   STRATEGY_HEADERS,
   STRATEGY_VERSION_HEADERS
 } from '@trading-cockpit/contracts';
-import { MOMENTUM_RANKING_HEADERS } from '../../src/adapters/outbound/google-sheets/momentum/momentum-ranking-schema';
 import { TRADE_PLAN_HEADERS } from '../../src/adapters/outbound/google-sheets/trade-plan/trade-plan-mapper';
 
 const REMOVED_MOMENTUM_SCORING_REFERENCE_SHEET = ['Momentum', 'Score', 'Config'].join(' ');
@@ -213,14 +212,12 @@ describe('Trading Cockpit workbook setup and validation', () => {
 
     expect(initialization.overallStatus).toBe('VALID');
     expect(validation.overallStatus).toBe('VALID');
-    expect(spreadsheet.getSheetByName('Momentum Ranking')?.values[0]).toEqual([
-      ...MOMENTUM_RANKING_HEADERS
-    ]);
+    expect(spreadsheet.getSheetByName('Momentum Ranking')).toBeNull();
     expect(spreadsheet.getSheetByName('Trade Plans')?.values[0]).toEqual([...TRADE_PLAN_HEADERS]);
     expect(spreadsheet.getSheetByName('Signals History')?.values[0]).toEqual([
       ...SIGNALS_HISTORY_HEADERS
     ]);
-    expect(spreadsheet.getSheetByName('Finviz - Momentum')?.values[0]).toEqual([
+    expect(spreadsheet.getSheetByName('Finviz Signals')?.values[0]).toEqual([
       'Strategy ID',
       'Strategy',
       'Strategy Version',
@@ -237,7 +234,6 @@ describe('Trading Cockpit workbook setup and validation', () => {
     expect(SIGNALS_HISTORY_HEADERS).not.toContain('Sales');
     expect(SIGNALS_HISTORY_HEADERS.length).toBe(6 + FINVIZ_MOMENTUM_EXPORT_HEADERS.length);
     expect(spreadsheet.getSheetByName('Signals History')?.values[1]).toBeUndefined();
-    expect(spreadsheet.getSheetByName('Momentum Ranking')?.values[1]).toBeUndefined();
     expect(spreadsheet.getSheetByName('Dashboard')).toBeNull();
     expect(spreadsheet.getSheetByName('Analytics')).toBeNull();
     expect(spreadsheet.getSheetByName('Accounts')?.values).toEqual([
@@ -353,27 +349,6 @@ describe('Trading Cockpit workbook setup and validation', () => {
         '• Trade Plans: Trade Plans doit avoir ses en-têtes canoniques en ligne 1.'
       ),
       'OK'
-    );
-  });
-
-  it('treats the historical Momentum Ranking row-5 layout as invalid', () => {
-    const legacyMomentum = new FakeSheet('Momentum Ranking', [
-      ['MOMENTUM BREAKOUT RANKING V1'],
-      ['Signal Date: 2026-08-27'],
-      ['Score de priorisation seulement — pas un signal d’achat.'],
-      [],
-      [...MOMENTUM_RANKING_HEADERS]
-    ]);
-    const spreadsheet = new FakeSpreadsheet([legacyMomentum]);
-    installSpreadsheet(spreadsheet);
-
-    const report = validateTradingCockpitWorkbook();
-
-    expect(report.overallStatus).toBe('INVALID');
-    expect(report.items).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ sheetName: 'Momentum Ranking', status: 'SCHEMA_MISMATCH' })
-      ])
     );
   });
 

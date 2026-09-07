@@ -1,6 +1,5 @@
 import type { CreateTradePlanFromWatchlist } from '@trading-cockpit/core/application/trade-plan/create-trade-plan-from-watchlist';
 import { selectedWatchlistRowToCommand } from './watchlist-selection-mapper';
-import { themeTradePlans } from '../theme/theme';
 
 const WATCHLIST_SHEET_NAME = 'Watchlist';
 
@@ -46,7 +45,6 @@ export function createTradePlanFromSelectedWatchlistRow(
     return;
   }
 
-  themeTradePlans(spreadsheet);
   spreadsheet.toast(
     `Trade Plan créé pour ${result.tradePlan.ticker} — ${result.tradePlan.accountId}.`,
     'Trading Cockpit',
