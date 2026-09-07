@@ -44,6 +44,14 @@ export function createAddCandidateToWatchlist({
     if (!strategyRepository.existsById(candidate.strategyId)) {
       throw new Error(`Stratégie inconnue : ${candidate.strategyId}`);
     }
+    if (
+      strategyRepository.existsVersion &&
+      !strategyRepository.existsVersion(candidate.strategyId, candidate.strategyVersion)
+    ) {
+      throw new Error(
+        `Version de stratégie inconnue : ${candidate.strategyId} ${candidate.strategyVersion}`
+      );
+    }
 
     const identity = watchlistIdentityOf(candidate);
     const existing = watchlistRepository.findActiveByIdentity(identity);

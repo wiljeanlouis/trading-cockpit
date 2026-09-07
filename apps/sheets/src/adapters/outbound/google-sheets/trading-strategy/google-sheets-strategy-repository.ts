@@ -8,4 +8,8 @@ export class GoogleSheetsStrategyRepository implements StrategyRepository {
     this.reader.getById(strategyId);
     return true;
   }
+
+  existsVersion(strategyId: string, version: string): boolean {
+    return Boolean(this.reader.findVersion(strategyId, version));
+  }
 }

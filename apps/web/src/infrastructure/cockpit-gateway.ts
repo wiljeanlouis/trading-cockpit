@@ -8,6 +8,8 @@ import type {
   ClosePositionRequest,
   ClosePositionResponse,
   CreateFundedTradingAccountRequest,
+  CreateStrategyRequest,
+  CreateStrategyVersionRequest,
   CreateTradingAccountRequest,
   DashboardDto,
   DashboardSummaryDto,
@@ -21,6 +23,8 @@ import type {
   TradePlansDto,
   TradingAccountsDto,
   TradingAccountMutationResponse,
+  UpdateStrategyRequest,
+  UpdateStrategyVersionRequest,
   UpdateTradingAccountRequest,
   UpdateTradePlanPlanningRequest,
   UpdateTradePlanPlanningResponse,
@@ -52,6 +56,10 @@ export interface CockpitGateway {
   setupMomentumRanking(): Promise<void>;
   setupStrategies(): Promise<void>;
   validateStrategies(): Promise<boolean>;
+  createStrategy(request: CreateStrategyRequest): Promise<void>;
+  updateStrategy(request: UpdateStrategyRequest): Promise<void>;
+  createStrategyVersion(request: CreateStrategyVersionRequest): Promise<void>;
+  updateStrategyVersion(request: UpdateStrategyVersionRequest): Promise<void>;
   setupTradingAccounts(): Promise<void>;
   createTradingAccount(
     request: CreateTradingAccountRequest

@@ -178,6 +178,17 @@ Applications depend inward on shared packages. Shared packages must not depend o
 Strategies are Trading Cockpit business concepts. Finviz is only the current market-signal provider.
 Momentum Breakout is the currently implemented discovery strategy.
 
+Strategy identity and strategy version configuration are separated:
+
+- `Strategies` owns stable strategy identity: Strategy ID, Name, Type, Enabled, Description.
+- `Strategy Versions` owns versioned discovery/screener configuration: Strategy ID, Version,
+  Enabled, Screener Code, Screener, Finviz URL.
+
+`Strategy ID + Version` is the immutable historical configuration identity once it is persisted or
+referenced by Signals History, Momentum Ranking, Watchlist, Trade Plans, Positions, or Journal.
+Only one Strategy Version may be enabled for a given Strategy ID, and a version may only be enabled
+when its parent Strategy is enabled.
+
 ### Accounts
 
 Trading Accounts provide stable identity and risk policy. `ALL` is not a persisted account; it is a
@@ -243,7 +254,8 @@ Canonical workbook inventory:
 | Journal           |            DATA | row 1 headers / row 2+ records | Authoritative closed-trade history                                 |
 | Capital Ledger    |            DATA | row 1 headers / row 2+ records | Append-only external capital history                               |
 | Signals History   |            DATA | row 1 headers / row 2+ records | Complete historical Finviz snapshots plus Trading Cockpit metadata |
-| Strategies        |          CONFIG | row 1 headers / row 2+ records | Strategy reference/configuration                                   |
+| Strategies        |          CONFIG | row 1 headers / row 2+ records | Stable strategy identity                                           |
+| Strategy Versions |          CONFIG | row 1 headers / row 2+ records | Versioned screener/provider configuration                          |
 | Accounts          |          CONFIG | row 1 headers / row 2+ records | Trading account identity and risk policy                           |
 | Finviz - Momentum |       TECHNICAL | row 1 headers / row 2+ records | Current Finviz provider projection                                 |
 | Documentation     | OPTIONAL_REPORT | generated utility              | Sheets help surface                                                |

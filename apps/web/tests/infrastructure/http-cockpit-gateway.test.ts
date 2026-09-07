@@ -45,6 +45,53 @@ describe('HttpCockpitGateway', () => {
     ],
     ['setupMomentumRanking', 'POST', '/api/admin/momentum-ranking/setup', undefined],
     ['setupStrategies', 'POST', '/api/admin/strategies/setup', undefined],
+    [
+      'createStrategy',
+      'POST',
+      '/api/admin/strategies',
+      {
+        strategyId: 'QUALITY_DIP',
+        name: 'Quality Dip',
+        type: 'MEAN_REVERSION',
+        enabled: false,
+        description: 'Quality pullback setup'
+      }
+    ],
+    [
+      'updateStrategy',
+      'PATCH',
+      '/api/admin/strategies/QUALITY_DIP',
+      {
+        strategyId: 'QUALITY_DIP',
+        name: 'Quality Dip',
+        type: 'MEAN_REVERSION',
+        enabled: true,
+        description: 'Quality pullback setup'
+      }
+    ],
+    [
+      'createStrategyVersion',
+      'POST',
+      '/api/admin/strategy-versions',
+      {
+        strategyId: 'QUALITY_DIP',
+        version: 'V1',
+        enabled: false,
+        screenerCode: 'QUALITY_DIP_V1',
+        screener: 'FINVIZ',
+        finvizUrl: 'https://elite.finviz.com/export/screener?v=151'
+      }
+    ],
+    [
+      'updateStrategyVersion',
+      'PATCH',
+      '/api/admin/strategies/QUALITY_DIP/versions/V1',
+      {
+        strategyId: 'QUALITY_DIP',
+        version: 'V1',
+        enabled: true
+      }
+    ],
     ['setupTradingAccounts', 'POST', '/api/admin/trading-accounts/setup', undefined],
     [
       'createFundedTradingAccount',

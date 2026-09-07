@@ -16,8 +16,11 @@ import {
   LoadedMomentumRankingReader,
   LoadedWatchlistReader,
   readMomentumRankingRecords,
+  readStrategyRecords,
+  readStrategyVersionRecords,
   readWatchlistEntries,
-  SHEET_DEFINITIONS
+  SHEET_DEFINITIONS,
+  validateStrategies
 } from '../adapters/outbound/google-sheets-api/cockpit-query-readers';
 import type { RequestScopedSheets } from '../adapters/outbound/google-sheets-api/sheets-api-table';
 import { CloudRunFinvizMarketSignalSource } from '../adapters/outbound/finviz/finviz-market-signal-source';
@@ -25,24 +28,6 @@ import { NodeFinvizTransport } from '../adapters/outbound/finviz/node-finviz-tra
 import { AsyncFinvizTokenService } from '../adapters/outbound/finviz/finviz-token-service';
 import { SecretManagerFinvizTokenStorage } from '../adapters/outbound/finviz/secret-manager-finviz-token-storage';
 import type { MutationDependencies } from './common';
-
-const FINVIZ_BASE_URL = 'https://elite.finviz.com/export/screener';
-const MOMENTUM_FEED_ID = 'MOMENTUM_BREAKOUT_V1';
-const FINVIZ_FEEDS = [
-  {
-    id: MOMENTUM_FEED_ID,
-    strategyName: 'Momentum Breakout',
-    strategyVersion: 'V1',
-    strategyId: 'MOMENTUM_BREAKOUT',
-    query:
-      'v=151' +
-      '&f=cap_smallover,sh_avgvol_o500,sh_price_o10,sh_relvol_o1,' +
-      'ta_highlow52w_b0to5h,ta_perf_4wup,ta_rsi_50to70,' +
-      'ta_sma20_pa,ta_sma200_pa,ta_sma50_pa' +
-      '&ft=3' +
-      '&c=0,1,2,3,4,5,6,7,67,65,66,63,64,59,57,52,54,53,42,43,68'
-  }
-];
 
 export async function getMomentumRankingForCloudRun(dependencies: {
   sheets: RequestScopedSheets;
@@ -60,19 +45,37 @@ export async function getMomentumRankingForCloudRun(dependencies: {
 }
 
 export async function refreshFinvizForCloudRun({ mutationContext }: MutationDependencies) {
+  await mutationContext.sheets.batchLoad([
+    SHEET_DEFINITIONS.strategies,
+    SHEET_DEFINITIONS.strategyVersions
+  ]);
+  await validateStrategies(mutationContext.sheets);
+  const strategies = await readStrategyRecords(mutationContext.sheets);
+  const versions = await readStrategyVersionRecords(mutationContext.sheets);
+  const feeds = versions
+    .filter((version) => version.enabled && version.screener === 'FINVIZ')
+    .map((version) => {
+      const strategy = strategies.find((candidate) => candidate.id === version.strategyId);
+      if (!strategy) throw new Error(`Stratégie inconnue : ${version.strategyId}`);
+      return {
+        id: version.screenerCode,
+        strategyName: strategy.name,
+        strategyVersion: version.version,
+        strategyId: version.strategyId,
+        query: version.screenerUrl
+      };
+    });
   const tokenService = new AsyncFinvizTokenService(new SecretManagerFinvizTokenStorage());
   const source = new CloudRunFinvizMarketSignalSource(
-    FINVIZ_BASE_URL,
-    FINVIZ_FEEDS,
+    '',
+    feeds,
     tokenService,
     new NodeFinvizTransport()
   );
   await source.preload();
   await ensureSheets(mutationContext, ['Signals History', 'Finviz - Momentum']);
   const existingSignalKeys = await readExistingSignalKeys(mutationContext);
-  const strategyCatalog = new LoadedTradingStrategyCatalog(
-    await readStrategiesForCatalog(mutationContext)
-  );
+  const strategyCatalog = new LoadedTradingStrategyCatalog(strategies, versions);
   const archiveSignals = createArchiveMarketSignals({
     repository: new CloudRunSignalHistoryRepository(mutationContext, existingSignalKeys),
     now: mutationContext.now,
@@ -89,14 +92,12 @@ export async function refreshFinvizForCloudRun({ mutationContext }: MutationDepe
 }
 
 export async function refreshMomentumRankingForCloudRun({ mutationContext }: MutationDependencies) {
-  const strategies = await readStrategiesForCatalog(mutationContext);
   const signalRepository = await new CloudRunMomentumSignalRepository(mutationContext).load();
   const result = createRefreshMomentumRanking({
     signalRepository,
     strategyRepository: signalRepository,
     rankingProjection: new CloudRunMomentumRankingProjection(mutationContext)
   })();
-  void strategies;
   return { signalDate: result.signalDate, ranked: result.ranked.length };
 }
 
@@ -112,19 +113,6 @@ async function ensureSheets(context: MutationContext, sheetNames: string[]): Pro
     spreadsheetId,
     requests: missing.map((title) => ({ addSheet: { properties: { title } } }))
   });
-}
-
-async function readStrategiesForCatalog(context: MutationContext) {
-  const table = await context.sheets.getTable(SHEET_DEFINITIONS.strategies);
-  return table.table.rows
-    .filter((row) => row.some((value) => String(value ?? '').trim()))
-    .map((row) => ({
-      id: String(row[0] ?? '')
-        .trim()
-        .toUpperCase(),
-      version: String(row[2] ?? '').trim(),
-      enabled: row[4] === true || String(row[4]).toUpperCase() === 'TRUE'
-    }));
 }
 
 async function readExistingSignalKeys(context: MutationContext): Promise<Set<string>> {

@@ -43,7 +43,8 @@ function createDependencies(existing: WatchlistEntry | null = null) {
     existsById: () => {
       calls.push('strategy.exists');
       return true;
-    }
+    },
+    existsVersion: () => true
   };
   const runtime: RuntimePort = {
     now: () => {
@@ -144,6 +145,18 @@ describe('add candidate to Watchlist', () => {
 
     expect(() => addCandidate(command)).toThrow('Stratégie inconnue : MOMENTUM_BREAKOUT');
     expect(dependencies.calls).toEqual([]);
+    expect(dependencies.savedEntry()).toBeNull();
+  });
+
+  it('rejects an unknown historical Strategy Version before opening the Watchlist', () => {
+    const dependencies = createDependencies();
+    dependencies.strategyRepository.existsVersion = () => false;
+    const addCandidate = createAddCandidateToWatchlist(dependencies);
+
+    expect(() => addCandidate(command)).toThrow(
+      'Version de stratégie inconnue : MOMENTUM_BREAKOUT V1'
+    );
+    expect(dependencies.calls).toEqual(['strategy.exists']);
     expect(dependencies.savedEntry()).toBeNull();
   });
 

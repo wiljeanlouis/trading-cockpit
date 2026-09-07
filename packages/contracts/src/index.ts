@@ -25,14 +25,22 @@ export type {
   AdminOverviewDto,
   CapitalTransactionDto,
   CapitalTransactionType,
+  CreateStrategyRequest,
+  CreateStrategyVersionRequest,
   CreateFundedTradingAccountRequest,
   CreateTradingAccountRequest,
   RecordCapitalTransactionRequest,
   RecordCapitalTransactionResponse,
   AccountFinancialSummaryDto,
+  StrategyDto,
+  StrategyScreenerProvider,
+  StrategyVersionDto,
   TradingAccountMutationResponse,
+  UpdateStrategyRequest,
+  UpdateStrategyVersionRequest,
   UpdateTradingAccountRequest
 } from './admin';
+export { STRATEGY_HEADERS, STRATEGY_VERSION_HEADERS } from './admin';
 export type {
   AddMomentumCandidateToWatchlistRequest,
   AddMomentumCandidateToWatchlistResponse,

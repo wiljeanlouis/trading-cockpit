@@ -164,14 +164,14 @@ describe('Sheets API request-scoped table loader', () => {
             ['TP-1', 'BOX']
           ]
         },
-        'Strategies!A1:H1000': {
+        'Strategies!A1:E1000': {
           values: [
             ['Strategy ID', 'Enabled'],
             ['MOMENTUM_BREAKOUT', true]
           ]
         },
         "'Trade Plans'!A:AD": {},
-        "'Strategies'!A:H": {}
+        "'Strategies'!A:E": {}
       }))
     };
     const sheets = createRequestScopedSheets({ sheetsClient: client, spreadsheetId: 'sheet-id' });
@@ -184,7 +184,7 @@ describe('Sheets API request-scoped table loader', () => {
     const strategies = {
       key: 'strategies',
       sheetName: 'Strategies',
-      range: "'Strategies'!A:H",
+      range: "'Strategies'!A:E",
       requiredHeaders: ['Strategy ID', 'Enabled']
     };
 

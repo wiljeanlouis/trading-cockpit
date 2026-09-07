@@ -18,6 +18,10 @@ import type {
   TradingAccountRecord
 } from '@trading-cockpit/core/domain/trading-account';
 import type { TradingAccountRiskPolicy } from '@trading-cockpit/core/domain/trading-account-risk-policy';
+import type {
+  TradingStrategy,
+  TradingStrategyVersion
+} from '@trading-cockpit/core/domain/trading-strategy';
 import type { RuntimePort } from '@trading-cockpit/core/ports/outbound/runtime-port';
 import type { StrategyRepository } from '@trading-cockpit/core/ports/outbound/strategy-repository';
 import type { WatchlistRepository } from '@trading-cockpit/core/ports/outbound/watchlist-repository';
@@ -53,6 +57,8 @@ import type { SheetsValuesClient } from './google-sheets-api-client';
 import {
   readJournalEntries,
   readPositions,
+  readStrategyRecords,
+  readStrategyVersionRecords,
   readTradingAccounts,
   readTradePlans,
   readWatchlistEntries,
@@ -438,9 +444,20 @@ export class CloudRunCapitalTransactionRepository implements CapitalTransactionR
 }
 
 export class LoadedStrategyRepository implements StrategyRepository {
-  constructor(private readonly ids: readonly string[]) {}
+  constructor(
+    private readonly strategies: readonly TradingStrategy[],
+    private readonly versions: readonly TradingStrategyVersion[]
+  ) {}
   existsById(strategyId: string): boolean {
-    return this.ids.includes(textValue(strategyId).toUpperCase());
+    const expected = textValue(strategyId).toUpperCase();
+    return this.strategies.some((strategy) => strategy.id === expected);
+  }
+  existsVersion(strategyId: string, version: string): boolean {
+    const expectedId = textValue(strategyId).toUpperCase();
+    const expectedVersion = textValue(version);
+    return this.versions.some(
+      (candidate) => candidate.strategyId === expectedId && candidate.version === expectedVersion
+    );
   }
 }
 
@@ -635,21 +652,19 @@ export class CloudRunMomentumSignalRepository
   implements MomentumSignalRepository, MomentumStrategyRepository
 {
   private candidates: MomentumCandidate[] | null = null;
-  private strategies: Array<{
-    id: string;
-    name: string;
-    version: string;
-    enabled: boolean;
-  }> | null = null;
+  private strategies: TradingStrategy[] | null = null;
+  private versions: TradingStrategyVersion[] | null = null;
 
   constructor(private readonly context: MutationContext) {}
 
   async load(): Promise<this> {
     await this.context.sheets.batchLoad([
       SHEET_DEFINITIONS.signalsHistory,
-      SHEET_DEFINITIONS.strategies
+      SHEET_DEFINITIONS.strategies,
+      SHEET_DEFINITIONS.strategyVersions
     ]);
-    this.strategies = await readStrategiesForMomentum(this.context.sheets);
+    this.strategies = await readStrategyRecords(this.context.sheets);
+    this.versions = await readStrategyVersionRecords(this.context.sheets);
     this.candidates = await readMomentumCandidates(this.context.sheets);
     return this;
   }
@@ -667,7 +682,16 @@ export class CloudRunMomentumSignalRepository
     const id = textValue(strategyId).toUpperCase();
     const strategy = this.loadedStrategies().find((candidate) => candidate.id === id);
     if (!strategy) throw new Error(`Stratégie inconnue : ${id}`);
-    return strategy;
+    const version = this.loadedVersions().find(
+      (candidate) => candidate.strategyId === id && candidate.enabled
+    );
+    if (!version) throw new Error(`Aucune version active pour ${id}.`);
+    return {
+      id: strategy.id,
+      name: strategy.name,
+      version: version.version,
+      enabled: strategy.enabled
+    };
   }
 
   private loadedCandidates(): MomentumCandidate[] {
@@ -678,6 +702,11 @@ export class CloudRunMomentumSignalRepository
   private loadedStrategies() {
     if (!this.strategies) throw new Error('Momentum strategies must be loaded before use.');
     return this.strategies;
+  }
+
+  private loadedVersions() {
+    if (!this.versions) throw new Error('Momentum strategy versions must be loaded before use.');
+    return this.versions;
   }
 }
 
@@ -724,13 +753,18 @@ export class CloudRunMarketSignalProjection implements MarketSignalProjection {
 
 export class LoadedTradingStrategyCatalog implements TradingStrategyCatalog {
   constructor(
-    private readonly strategies: Array<{ id: string; version: string; enabled: boolean }>
+    private readonly strategies: readonly TradingStrategy[],
+    private readonly versions: readonly TradingStrategyVersion[]
   ) {}
   getById(strategyId: string) {
     const expected = textValue(strategyId).toUpperCase();
     const strategy = this.strategies.find((candidate) => candidate.id === expected);
     if (!strategy) throw new Error(`Stratégie inconnue : ${expected}`);
-    return strategy;
+    const version = this.versions.find(
+      (candidate) => candidate.strategyId === expected && candidate.enabled
+    );
+    if (!version) throw new Error(`Aucune version active pour ${expected}.`);
+    return { id: strategy.id, version: version.version, enabled: strategy.enabled };
   }
 }
 
@@ -764,20 +798,6 @@ async function readMomentumCandidates(sheets: RequestScopedSheets): Promise<Mome
     rsi: parseNumber(row[rsiIndex]),
     sma20: parsePercent(row[sma20Index])
   }));
-}
-
-async function readStrategiesForMomentum(sheets: RequestScopedSheets) {
-  const table = (await sheets.getTable(SHEET_DEFINITIONS.strategies)).table;
-  return table.rows
-    .filter((row) => row.some((value) => textValue(value)))
-    .map((row) => ({
-      id: textValue(valueByHeader(table.headers, row, 'Strategy ID')).toUpperCase(),
-      name: textValue(valueByHeader(table.headers, row, 'Name')),
-      version: textValue(valueByHeader(table.headers, row, 'Version')),
-      enabled:
-        valueByHeader(table.headers, row, 'Enabled') === true ||
-        textValue(valueByHeader(table.headers, row, 'Enabled')).toUpperCase() === 'TRUE'
-    }));
 }
 
 function requireColumnAfter(headers: string[], name: string, afterIndex: number): number {
@@ -817,10 +837,12 @@ export async function loadMutationRepositories(context: MutationContext) {
     SHEET_DEFINITIONS.positions,
     SHEET_DEFINITIONS.journal,
     SHEET_DEFINITIONS.accounts,
-    SHEET_DEFINITIONS.strategies
+    SHEET_DEFINITIONS.strategies,
+    SHEET_DEFINITIONS.strategyVersions
   ]);
   const accounts = await readTradingAccounts(context.sheets);
-  const strategies = await readStrategyIdsForMutations(context.sheets);
+  const strategies = await readStrategyRecords(context.sheets);
+  const strategyVersions = await readStrategyVersionsForMutations(context.sheets);
   const policies = await readRiskPolicies(context.sheets);
   return {
     watchlistRepository: await new CloudRunWatchlistRepository(context).load(),
@@ -830,7 +852,7 @@ export async function loadMutationRepositories(context: MutationContext) {
     capitalTransactionRepository: await new CloudRunCapitalTransactionRepository(context).load(),
     tradingAccountRepository: new LoadedTradingAccountRepository(accounts),
     tradingAccountRiskPolicyRepository: new LoadedTradingAccountRiskPolicyRepository(policies),
-    strategyRepository: new LoadedStrategyRepository(strategies)
+    strategyRepository: new LoadedStrategyRepository(strategies, strategyVersions)
   };
 }
 
@@ -844,11 +866,10 @@ async function readRiskPolicies(context: RequestScopedSheets): Promise<TradingAc
     }));
 }
 
-async function readStrategyIdsForMutations(context: RequestScopedSheets): Promise<string[]> {
-  const table = await context.getTable(SHEET_DEFINITIONS.strategies);
-  return table.table.rows
-    .map((row) => textValue(valueByHeader(table.table.headers, row, 'Strategy ID')).toUpperCase())
-    .filter(Boolean);
+async function readStrategyVersionsForMutations(
+  context: RequestScopedSheets
+): Promise<TradingStrategyVersion[]> {
+  return readStrategyVersionRecords(context);
 }
 
 function watchlistEntryToRow(entry: WatchlistEntry, rowNumber: number): unknown[] {

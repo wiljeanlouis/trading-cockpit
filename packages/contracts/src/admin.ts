@@ -64,9 +64,72 @@ export interface AdminAccountDto extends TradingAccountMutationResponse {
   capitalTransactions: CapitalTransactionDto[];
 }
 
+export type StrategyScreenerProvider = 'FINVIZ';
+
+export const STRATEGY_HEADERS = ['Strategy ID', 'Name', 'Type', 'Enabled', 'Description'] as const;
+
+export const STRATEGY_VERSION_HEADERS = [
+  'Strategy ID',
+  'Version',
+  'Enabled',
+  'Screener Code',
+  'Screener',
+  'Finviz URL'
+] as const;
+
+export interface StrategyVersionDto {
+  strategyId: string;
+  version: string;
+  enabled: boolean;
+  screenerCode: string;
+  screener: StrategyScreenerProvider;
+  finvizUrl: string;
+}
+
+export interface StrategyDto {
+  strategyId: string;
+  name: string;
+  type: string;
+  enabled: boolean;
+  description: string;
+  versions: StrategyVersionDto[];
+}
+
+export interface CreateStrategyRequest {
+  strategyId: string;
+  name: string;
+  type: string;
+  enabled: boolean;
+  description: string;
+}
+
+export interface UpdateStrategyRequest {
+  strategyId: string;
+  name: string;
+  type: string;
+  enabled: boolean;
+  description: string;
+}
+
+export interface CreateStrategyVersionRequest {
+  strategyId: string;
+  version: string;
+  enabled: boolean;
+  screenerCode: string;
+  screener: StrategyScreenerProvider;
+  finvizUrl: string;
+}
+
+export interface UpdateStrategyVersionRequest {
+  strategyId: string;
+  version: string;
+  enabled: boolean;
+}
+
 export interface AdminOverviewDto {
   finviz: {
     configured: boolean;
   };
   accounts: AdminAccountDto[];
+  strategies: StrategyDto[];
 }

@@ -49,6 +49,7 @@ function context(
     existing?: TradePlan | null;
     accountExists?: boolean;
     riskExists?: boolean;
+    versionExists?: boolean;
   } = {}
 ) {
   let saved: TradePlan | null = null;
@@ -76,7 +77,10 @@ function context(
       updatePlanning: () => undefined,
       updateStatus: () => undefined
     },
-    strategyRepository: { existsById: () => true },
+    strategyRepository: {
+      existsById: () => true,
+      existsVersion: () => options.versionExists !== false
+    },
     tradingAccountRepository: {
       findById: (id) =>
         options.accountExists === false ? null : { id, name: id, baseCurrency: 'CAD' },
@@ -206,6 +210,14 @@ describe('create account-aware Trade Plan from Watchlist', () => {
         accountId: 'A1'
       })
     ).toThrow('Risk % absent pour le compte A1.');
+  });
+
+  it('rejects an unknown historical Strategy Version before creating the plan', () => {
+    const c = context({ versionExists: false });
+    expect(() =>
+      createCreateTradePlanFromWatchlist(c.dependencies)({ watchlistId: 'WL-1', accountId: 'A1' })
+    ).toThrow('Version de stratégie inconnue : STRATEGY V1');
+    expect(c.saved()).toBeNull();
   });
 
   it('returns an account-scoped duplicate without creating another plan', () => {

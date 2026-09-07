@@ -8,6 +8,8 @@ import type {
   ClosePositionRequest,
   ClosePositionResponse,
   CreateFundedTradingAccountRequest,
+  CreateStrategyRequest,
+  CreateStrategyVersionRequest,
   CreateTradingAccountRequest,
   DashboardDto,
   DashboardSummaryDto,
@@ -30,7 +32,9 @@ import type {
   WatchlistDto,
   UpdateTradePlanPlanningRequest,
   UpdateTradePlanPlanningResponse,
-  UpdateTradingAccountRequest
+  UpdateTradingAccountRequest,
+  UpdateStrategyRequest,
+  UpdateStrategyVersionRequest
 } from '@trading-cockpit/contracts';
 import type { CockpitGateway } from './cockpit-gateway';
 
@@ -596,7 +600,27 @@ export class MockCockpitGateway implements CockpitGateway {
         ...account,
         financialSummary: { ...account.financialSummary },
         capitalTransactions: account.capitalTransactions.map((transaction) => ({ ...transaction }))
-      }))
+      })),
+      strategies: [
+        {
+          strategyId: 'MOMENTUM_BREAKOUT',
+          name: 'Momentum Breakout',
+          type: 'MOMENTUM',
+          enabled: true,
+          description: 'Momentum breakout near 52-week high',
+          versions: [
+            {
+              strategyId: 'MOMENTUM_BREAKOUT',
+              version: 'V1',
+              enabled: true,
+              screenerCode: 'MOMENTUM_BREAKOUT_V1',
+              screener: 'FINVIZ',
+              finvizUrl:
+                'https://elite.finviz.com/export/screener?v=151&f=cap_smallover,sh_avgvol_o500,sh_price_o10,sh_relvol_o1,ta_highlow52w_b0to5h,ta_perf_4wup,ta_rsi_50to70,ta_sma20_pa,ta_sma200_pa,ta_sma50_pa&ft=3&c=0,1,2,3,4,5,6,7,67,65,66,63,64,59,57,52,54,53,42,43,68'
+            }
+          ]
+        }
+      ]
     };
   }
 
@@ -675,6 +699,22 @@ export class MockCockpitGateway implements CockpitGateway {
   async validateStrategies(): Promise<boolean> {
     await new Promise((resolve) => setTimeout(resolve, 150));
     return true;
+  }
+
+  async createStrategy(_request: CreateStrategyRequest): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  }
+
+  async updateStrategy(_request: UpdateStrategyRequest): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  }
+
+  async createStrategyVersion(_request: CreateStrategyVersionRequest): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+  }
+
+  async updateStrategyVersion(_request: UpdateStrategyVersionRequest): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 150));
   }
 
   async setupTradingAccounts(): Promise<void> {

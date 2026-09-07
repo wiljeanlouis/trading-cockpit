@@ -7,6 +7,8 @@ import {
 } from '../../adapters/outbound/google-sheets-api/cockpit-mutation-repositories';
 import {
   checkFinvizAuthMutationForCloudRun,
+  createStrategyForCloudRun,
+  createStrategyVersionForCloudRun,
   createFundedTradingAccountForCloudRun,
   createTradingAccountForCloudRun,
   deleteFinvizTokenForCloudRun,
@@ -15,6 +17,8 @@ import {
   setupMomentumRankingForCloudRun,
   setupStrategiesForCloudRun,
   setupTradingAccountsForCloudRun,
+  updateStrategyForCloudRun,
+  updateStrategyVersionForCloudRun,
   updateTradingAccountForCloudRun
 } from '../../composition/admin';
 import {
@@ -165,6 +169,25 @@ function matchMutationRoute(method: string, pathname: string): RouteMatch | null
     };
   }
 
+  const strategy = pathname.match(/^\/api\/admin\/strategies\/([^/]+)$/);
+  if (normalizedMethod === 'PATCH' && strategy) {
+    return {
+      handler: updateStrategyForCloudRun,
+      pathParams: { strategyId: decodeURIComponent(strategy[1]) }
+    };
+  }
+
+  const strategyVersion = pathname.match(/^\/api\/admin\/strategies\/([^/]+)\/versions\/([^/]+)$/);
+  if (normalizedMethod === 'PATCH' && strategyVersion) {
+    return {
+      handler: updateStrategyVersionForCloudRun,
+      pathParams: {
+        strategyId: decodeURIComponent(strategyVersion[1]),
+        version: decodeURIComponent(strategyVersion[2])
+      }
+    };
+  }
+
   return null;
 }
 
@@ -173,6 +196,8 @@ const exactRoutes: Record<string, MutationHandler> = {
   'POST /api/discovery/momentum-ranking/refresh': refreshMomentumRankingForCloudRun,
   'POST /api/discovery/momentum-ranking/watchlist': addMomentumCandidateToWatchlistForCloudRun,
   'POST /api/trade-plans': createTradePlanForCloudRun,
+  'POST /api/admin/strategies': createStrategyForCloudRun,
+  'POST /api/admin/strategy-versions': createStrategyVersionForCloudRun,
   'POST /api/admin/trading-accounts': createTradingAccountForCloudRun,
   'POST /api/admin/trading-accounts/funded': createFundedTradingAccountForCloudRun,
   'POST /api/admin/capital-transactions': recordCapitalTransactionForCloudRun,

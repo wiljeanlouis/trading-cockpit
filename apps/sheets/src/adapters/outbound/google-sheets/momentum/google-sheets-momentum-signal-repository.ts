@@ -47,10 +47,12 @@ export class GoogleSheetsMomentumStrategyRepository implements MomentumStrategyR
 
   getById(strategyId: string): MomentumStrategySnapshot {
     const value = this.reader.getById(strategyId);
+    const version = this.reader.findActiveVersion(strategyId);
+    if (!version) throw new Error(`Aucune version active pour ${value.id}.`);
     return {
       id: value.id,
       name: value.name,
-      version: value.version,
+      version: version.version,
       enabled: value.enabled
     };
   }

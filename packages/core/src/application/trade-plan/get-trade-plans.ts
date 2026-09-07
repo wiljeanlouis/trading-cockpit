@@ -10,6 +10,7 @@ import {
 export interface GetTradePlansDependencies {
   reader: TradePlanReader;
   strategyIds: () => readonly string[];
+  strategyVersions?: () => readonly { strategyId: string; version: string }[];
   now: () => Date;
 }
 
@@ -32,6 +33,7 @@ function serializedDate(value: TradePlanSnapshotValue): string | null {
 function executionEligibility(
   plan: ReturnType<TradePlanReader['findAll']>[number],
   configuredStrategyIds: ReadonlySet<string>,
+  configuredStrategyVersions: ReadonlySet<string> | null,
   strategyCatalogError: Error | null
 ): TradePlanItemDto['executionEligibility'] {
   try {
@@ -39,6 +41,16 @@ function executionEligibility(
     const source = normalizePositionSource(plan);
     if (!configuredStrategyIds.has(source.strategyId.trim().toUpperCase())) {
       throw new Error(`Stratégie inconnue : ${source.strategyId}`);
+    }
+    if (
+      configuredStrategyVersions &&
+      !configuredStrategyVersions.has(
+        `${source.strategyId.trim().toUpperCase()}|${source.strategyVersion.trim()}`
+      )
+    ) {
+      throw new Error(
+        `Version de stratégie inconnue : ${source.strategyId} ${source.strategyVersion}`
+      );
     }
     requireExecutableTradePlanStatus(source);
     requirePositionExecutionData(source);
@@ -51,6 +63,7 @@ function executionEligibility(
 function toItem(
   plan: ReturnType<TradePlanReader['findAll']>[number],
   configuredStrategyIds: ReadonlySet<string>,
+  configuredStrategyVersions: ReadonlySet<string> | null,
   strategyCatalogError: Error | null
 ): TradePlanItemDto {
   return {
@@ -86,19 +99,26 @@ function toItem(
     positionValue: nullableNumber(plan.positionValue),
     status: plan.status,
     notes: nullableText(plan.notes),
-    executionEligibility: executionEligibility(plan, configuredStrategyIds, strategyCatalogError)
+    executionEligibility: executionEligibility(
+      plan,
+      configuredStrategyIds,
+      configuredStrategyVersions,
+      strategyCatalogError
+    )
   };
 }
 
 export function createGetTradePlans({
   reader,
   strategyIds,
+  strategyVersions,
   now
 }: GetTradePlansDependencies): () => TradePlansDto {
   return () => {
     const plans = reader.findAll();
     let strategyCatalogError: Error | null = null;
     let configuredStrategyIds = new Set<string>();
+    let configuredStrategyVersions: Set<string> | null = null;
 
     if (plans.length > 0) {
       try {
@@ -109,6 +129,16 @@ export function createGetTradePlans({
               .toUpperCase()
           )
         );
+        if (strategyVersions) {
+          configuredStrategyVersions = new Set(
+            strategyVersions().map(
+              (version) =>
+                `${String(version.strategyId || '')
+                  .trim()
+                  .toUpperCase()}|${String(version.version || '').trim()}`
+            )
+          );
+        }
       } catch (error) {
         strategyCatalogError = error instanceof Error ? error : new Error(String(error));
       }
@@ -116,7 +146,9 @@ export function createGetTradePlans({
 
     return {
       generatedAt: now().toISOString(),
-      items: plans.map((plan) => toItem(plan, configuredStrategyIds, strategyCatalogError))
+      items: plans.map((plan) =>
+        toItem(plan, configuredStrategyIds, configuredStrategyVersions, strategyCatalogError)
+      )
     };
   };
 }

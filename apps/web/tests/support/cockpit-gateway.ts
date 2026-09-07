@@ -44,7 +44,8 @@ const EMPTY_ANALYTICS: AnalyticsDto = {
 
 const EMPTY_ADMIN_OVERVIEW: AdminOverviewDto = {
   finviz: { configured: false },
-  accounts: []
+  accounts: [],
+  strategies: []
 };
 
 const EMPTY_DASHBOARD: DashboardDto = {
@@ -131,6 +132,10 @@ export function createGatewayStub(overrides: Partial<CockpitGateway> = {}): Cock
     setupMomentumRanking: vi.fn(async () => {}),
     setupStrategies: vi.fn(async () => {}),
     validateStrategies: vi.fn(async () => true),
+    createStrategy: vi.fn(async () => {}),
+    updateStrategy: vi.fn(async () => {}),
+    createStrategyVersion: vi.fn(async () => {}),
+    updateStrategyVersion: vi.fn(async () => {}),
     setupTradingAccounts: vi.fn(async () => {}),
     createTradingAccount: vi.fn(
       async (request: CreateTradingAccountRequest): Promise<TradingAccountMutationResponse> => ({

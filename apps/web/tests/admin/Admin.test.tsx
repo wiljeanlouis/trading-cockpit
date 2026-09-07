@@ -6,6 +6,25 @@ import type { AdminOverviewDto } from '@trading-cockpit/contracts';
 
 const overview: AdminOverviewDto = {
   finviz: { configured: true },
+  strategies: [
+    {
+      strategyId: 'MOMENTUM_BREAKOUT',
+      name: 'Momentum Breakout',
+      type: 'MOMENTUM',
+      enabled: true,
+      description: 'Momentum breakout near 52-week high',
+      versions: [
+        {
+          strategyId: 'MOMENTUM_BREAKOUT',
+          version: 'V1',
+          enabled: true,
+          screenerCode: 'MOMENTUM_BREAKOUT_V1',
+          screener: 'FINVIZ',
+          finvizUrl: 'https://elite.finviz.com/export/screener?v=151'
+        }
+      ]
+    }
+  ],
   accounts: [
     {
       id: 'A1',
@@ -54,7 +73,11 @@ describe('Admin', () => {
     expect(screen.queryByText('Capital Ledger')).not.toBeInTheDocument();
     expect(screen.queryByText('Setup Trading Accounts')).not.toBeInTheDocument();
     expect(screen.queryByText('No global Cockpit settings')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Manage' })).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('region', { name: 'Trading accounts' })).getByRole('button', {
+        name: 'Manage'
+      })
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Delete token' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Delete Account' })).not.toBeInTheDocument();
   });
@@ -119,7 +142,8 @@ describe('Admin', () => {
       />
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Manage' }));
+    const accountsRegion = await screen.findByRole('region', { name: 'Trading accounts' });
+    fireEvent.click(within(accountsRegion).getByRole('button', { name: 'Manage' }));
     const dialog = screen.getByRole('dialog', { name: 'A1' });
     expect(within(dialog).getByText('Financial summary')).toBeInTheDocument();
     expect(within(dialog).getByText('Capital activity')).toBeInTheDocument();

@@ -4,7 +4,11 @@ import type {
   AdminOverviewDto,
   CapitalTransactionType,
   CreateFundedTradingAccountRequest,
-  RecordCapitalTransactionRequest
+  CreateStrategyRequest,
+  CreateStrategyVersionRequest,
+  RecordCapitalTransactionRequest,
+  StrategyDto,
+  StrategyVersionDto
 } from '@trading-cockpit/contracts';
 import type { CockpitGateway } from '../../infrastructure/cockpit-gateway';
 import { Badge } from '@/components/ui/badge';
@@ -74,6 +78,23 @@ interface CapitalFormState {
   note: string;
 }
 
+interface StrategyFormState {
+  strategyId: string;
+  name: string;
+  type: string;
+  enabled: boolean;
+  description: string;
+}
+
+interface StrategyVersionFormState {
+  strategyId: string;
+  version: string;
+  enabled: boolean;
+  screenerCode: string;
+  screener: 'FINVIZ';
+  finvizUrl: string;
+}
+
 const EMPTY_CREATE_ACCOUNT_FORM: CreateAccountFormState = {
   accountId: '',
   name: '',
@@ -86,6 +107,23 @@ const EMPTY_CAPITAL_FORM: CapitalFormState = {
   type: 'DEPOSIT',
   amount: '',
   note: ''
+};
+
+const EMPTY_STRATEGY_FORM: StrategyFormState = {
+  strategyId: '',
+  name: '',
+  type: 'MOMENTUM',
+  enabled: true,
+  description: ''
+};
+
+const EMPTY_STRATEGY_VERSION_FORM: StrategyVersionFormState = {
+  strategyId: '',
+  version: '',
+  enabled: true,
+  screenerCode: '',
+  screener: 'FINVIZ',
+  finvizUrl: ''
 };
 
 function formatBooleanBadgeTone(configured: boolean | null): 'positive' | 'muted' | 'watching' {
@@ -155,6 +193,14 @@ export function Admin({ gateway }: AdminProps) {
     riskPercent: ''
   });
   const [capitalForm, setCapitalForm] = useState<CapitalFormState>(EMPTY_CAPITAL_FORM);
+  const [createStrategyOpen, setCreateStrategyOpen] = useState(false);
+  const [createStrategyForm, setCreateStrategyForm] =
+    useState<StrategyFormState>(EMPTY_STRATEGY_FORM);
+  const [managedStrategyId, setManagedStrategyId] = useState<string | null>(null);
+  const [strategyForm, setStrategyForm] = useState<StrategyFormState>(EMPTY_STRATEGY_FORM);
+  const [versionForm, setVersionForm] = useState<StrategyVersionFormState>(
+    EMPTY_STRATEGY_VERSION_FORM
+  );
 
   const load = useCallback(async () => {
     setState((current) => ({ ...current, loading: true, error: null }));
@@ -175,9 +221,14 @@ export function Admin({ gateway }: AdminProps) {
   }, [load]);
 
   const accounts = state.overview?.accounts ?? [];
+  const strategies = state.overview?.strategies ?? [];
   const managedAccount = useMemo(
     () => accounts.find((account) => account.id === managedAccountId) ?? null,
     [accounts, managedAccountId]
+  );
+  const managedStrategy = useMemo(
+    () => strategies.find((strategy) => strategy.strategyId === managedStrategyId) ?? null,
+    [strategies, managedStrategyId]
   );
 
   async function runAction(
@@ -231,6 +282,29 @@ export function Admin({ gateway }: AdminProps) {
       riskPercent: riskPercentInputValue(account)
     });
     setCapitalForm(EMPTY_CAPITAL_FORM);
+  }
+
+  function openCreateStrategy() {
+    setMessage(null);
+    setCreateStrategyForm(EMPTY_STRATEGY_FORM);
+    setCreateStrategyOpen(true);
+  }
+
+  function openManageStrategy(strategy: StrategyDto) {
+    setMessage(null);
+    setManagedStrategyId(strategy.strategyId);
+    setStrategyForm({
+      strategyId: strategy.strategyId,
+      name: strategy.name,
+      type: strategy.type,
+      enabled: strategy.enabled,
+      description: strategy.description
+    });
+    setVersionForm({
+      ...EMPTY_STRATEGY_VERSION_FORM,
+      strategyId: strategy.strategyId,
+      screenerCode: `${strategy.strategyId}_V${strategy.versions.length + 1}`
+    });
   }
 
   async function handleCreateAccountSubmit(event: FormEvent<HTMLFormElement>) {
@@ -306,6 +380,60 @@ export function Admin({ gateway }: AdminProps) {
       `${capitalForm.type === 'DEPOSIT' ? 'Deposit' : 'Withdrawal'} recorded.`
     );
     if (recorded) setCapitalForm(EMPTY_CAPITAL_FORM);
+  }
+
+  async function handleCreateStrategySubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const request: CreateStrategyRequest = { ...createStrategyForm };
+    const created = await runAction(
+      'create-strategy',
+      () => gateway.createStrategy(request),
+      'Strategy created.'
+    );
+    if (created) setCreateStrategyOpen(false);
+  }
+
+  async function handleStrategySubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!managedStrategy) return;
+    await runAction(
+      `update-strategy-${managedStrategy.strategyId}`,
+      () => gateway.updateStrategy({ ...strategyForm, strategyId: managedStrategy.strategyId }),
+      'Strategy updated.'
+    );
+  }
+
+  async function handleCreateVersionSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!managedStrategy) return;
+    const request: CreateStrategyVersionRequest = {
+      ...versionForm,
+      strategyId: managedStrategy.strategyId
+    };
+    const created = await runAction(
+      `create-version-${managedStrategy.strategyId}`,
+      () => gateway.createStrategyVersion(request),
+      'Strategy version created.'
+    );
+    if (created) {
+      setVersionForm({
+        ...EMPTY_STRATEGY_VERSION_FORM,
+        strategyId: managedStrategy.strategyId
+      });
+    }
+  }
+
+  async function toggleStrategyVersion(version: StrategyVersionDto) {
+    await runAction(
+      `toggle-version-${version.strategyId}-${version.version}`,
+      () =>
+        gateway.updateStrategyVersion({
+          strategyId: version.strategyId,
+          version: version.version,
+          enabled: !version.enabled
+        }),
+      `Strategy version ${!version.enabled ? 'enabled' : 'disabled'}.`
+    );
   }
 
   return (
@@ -394,6 +522,67 @@ export function Admin({ gateway }: AdminProps) {
             </div>
           </DataPanel>
 
+          <DataPanel aria-label="Strategies">
+            <TableSummary>
+              <span>{strategies.length} strategy configuration(s)</span>
+              <Button onClick={openCreateStrategy} disabled={busyAction !== null}>
+                + Add Strategy
+              </Button>
+            </TableSummary>
+            <div className="grid gap-5 p-5">
+              {strategies.length === 0 ? (
+                <EmptyState icon="◇" title="No strategies">
+                  Create a Strategy and an enabled Strategy Version before refreshing Discovery.
+                </EmptyState>
+              ) : (
+                <TableScroll>
+                  <Table className="min-w-[980px] border-collapse tabular-nums">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Strategy</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Active Version</TableHead>
+                        <TableHead>Screener</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {strategies.map((strategy) => {
+                        const activeVersion = strategy.versions.find((version) => version.enabled);
+                        return (
+                          <TableRow key={strategy.strategyId}>
+                            <TableCell>
+                              <strong>{strategy.name}</strong>
+                              <div className="text-xs text-[#64758d]">{strategy.strategyId}</div>
+                            </TableCell>
+                            <TableCell>{strategy.type}</TableCell>
+                            <TableCell>
+                              <Badge tone={strategy.enabled ? 'positive' : 'muted'}>
+                                {strategy.enabled ? 'ENABLED' : 'DISABLED'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{activeVersion?.version ?? '—'}</TableCell>
+                            <TableCell>{activeVersion?.screener ?? '—'}</TableCell>
+                            <TableCell>
+                              <Button
+                                className="px-3 py-2 text-xs"
+                                onClick={() => openManageStrategy(strategy)}
+                                disabled={busyAction !== null}
+                              >
+                                Manage
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableScroll>
+              )}
+            </div>
+          </DataPanel>
+
           <DataPanel aria-label="Trading accounts">
             <TableSummary>
               <span>{accounts.length} trading account(s)</span>
@@ -452,6 +641,249 @@ export function Admin({ gateway }: AdminProps) {
             </div>
           )}
         </div>
+      )}
+
+      {createStrategyOpen && (
+        <DetailBackdrop
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="create-strategy-title"
+          onClick={() => {
+            if (!busyAction) setCreateStrategyOpen(false);
+          }}
+        >
+          <DetailPanel className="max-w-[840px]" onClick={(event) => event.stopPropagation()}>
+            <DetailHeader>
+              <div>
+                <h2 id="create-strategy-title">Add Strategy</h2>
+                <p>Create stable strategy identity. Versions hold screener configuration.</p>
+              </div>
+              <Button
+                type="button"
+                variant="retry"
+                onClick={() => setCreateStrategyOpen(false)}
+                disabled={busyAction !== null}
+              >
+                Close
+              </Button>
+            </DetailHeader>
+            <form
+              className="grid gap-4"
+              onSubmit={(event) => void handleCreateStrategySubmit(event)}
+            >
+              <div className="grid gap-4 min-[760px]:grid-cols-2">
+                <AccountInput
+                  label="Strategy ID"
+                  value={createStrategyForm.strategyId}
+                  onChange={(strategyId) =>
+                    setCreateStrategyForm((current) => ({ ...current, strategyId }))
+                  }
+                  placeholder="MOMENTUM_BREAKOUT"
+                />
+                <AccountInput
+                  label="Name"
+                  value={createStrategyForm.name}
+                  onChange={(name) => setCreateStrategyForm((current) => ({ ...current, name }))}
+                  placeholder="Momentum Breakout"
+                />
+                <AccountInput
+                  label="Type"
+                  value={createStrategyForm.type}
+                  onChange={(type) => setCreateStrategyForm((current) => ({ ...current, type }))}
+                  placeholder="MOMENTUM"
+                />
+                <BooleanField
+                  label="Enabled"
+                  checked={createStrategyForm.enabled}
+                  onChange={(enabled) =>
+                    setCreateStrategyForm((current) => ({ ...current, enabled }))
+                  }
+                />
+              </div>
+              <TextAreaField
+                label="Description"
+                value={createStrategyForm.description}
+                onChange={(description) =>
+                  setCreateStrategyForm((current) => ({ ...current, description }))
+                }
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" disabled={busyAction !== null}>
+                  Create Strategy
+                </Button>
+                <Button
+                  type="button"
+                  variant="retry"
+                  onClick={() => setCreateStrategyOpen(false)}
+                  disabled={busyAction !== null}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </DetailPanel>
+        </DetailBackdrop>
+      )}
+
+      {managedStrategy && (
+        <DetailBackdrop
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="manage-strategy-title"
+          onClick={() => {
+            if (!busyAction) setManagedStrategyId(null);
+          }}
+        >
+          <DetailPanel onClick={(event) => event.stopPropagation()}>
+            <DetailHeader>
+              <div>
+                <h2 id="manage-strategy-title">{managedStrategy.name}</h2>
+                <p>{managedStrategy.strategyId}</p>
+              </div>
+              <Button
+                type="button"
+                variant="retry"
+                onClick={() => setManagedStrategyId(null)}
+                disabled={busyAction !== null}
+              >
+                Close
+              </Button>
+            </DetailHeader>
+            <DetailGrid className="grid-cols-1 min-[1100px]:grid-cols-1">
+              <FactSection>
+                <header>
+                  <span>STR</span>
+                  <div>
+                    <h3>Strategy identity</h3>
+                    <p>Strategy ID is immutable once persisted in historical records.</p>
+                  </div>
+                </header>
+                <form
+                  className="grid gap-4 p-4"
+                  onSubmit={(event) => void handleStrategySubmit(event)}
+                >
+                  <ReadOnlyField label="Strategy ID" value={managedStrategy.strategyId} />
+                  <div className="grid gap-4 min-[760px]:grid-cols-2">
+                    <AccountInput
+                      label="Name"
+                      value={strategyForm.name}
+                      onChange={(name) => setStrategyForm((current) => ({ ...current, name }))}
+                    />
+                    <AccountInput
+                      label="Type"
+                      value={strategyForm.type}
+                      onChange={(type) => setStrategyForm((current) => ({ ...current, type }))}
+                    />
+                    <BooleanField
+                      label="Enabled"
+                      checked={strategyForm.enabled}
+                      onChange={(enabled) =>
+                        setStrategyForm((current) => ({ ...current, enabled }))
+                      }
+                    />
+                  </div>
+                  <TextAreaField
+                    label="Description"
+                    value={strategyForm.description}
+                    onChange={(description) =>
+                      setStrategyForm((current) => ({ ...current, description }))
+                    }
+                  />
+                  <Button type="submit" disabled={busyAction !== null}>
+                    Save Strategy
+                  </Button>
+                </form>
+              </FactSection>
+
+              <FactSection tone="price">
+                <header>
+                  <span>VER</span>
+                  <div>
+                    <h3>Strategy versions</h3>
+                    <p>Only one version can be active for a Strategy ID in V2.9.</p>
+                  </div>
+                </header>
+                <div className="grid gap-4 p-4">
+                  <form
+                    className="grid gap-4 rounded-2xl border border-[#285043] bg-[rgba(8,38,32,0.52)] p-4"
+                    onSubmit={(event) => void handleCreateVersionSubmit(event)}
+                  >
+                    <div className="grid gap-4 min-[760px]:grid-cols-2">
+                      <AccountInput
+                        label="Version"
+                        value={versionForm.version}
+                        onChange={(version) =>
+                          setVersionForm((current) => ({ ...current, version }))
+                        }
+                        placeholder="V2"
+                      />
+                      <AccountInput
+                        label="Screener Code"
+                        value={versionForm.screenerCode}
+                        onChange={(screenerCode) =>
+                          setVersionForm((current) => ({ ...current, screenerCode }))
+                        }
+                        placeholder="MOMENTUM_BREAKOUT_V2"
+                      />
+                      <ReadOnlyField label="Screener" value="FINVIZ" />
+                      <BooleanField
+                        label="Enabled"
+                        checked={versionForm.enabled}
+                        onChange={(enabled) =>
+                          setVersionForm((current) => ({ ...current, enabled }))
+                        }
+                      />
+                    </div>
+                    <TextAreaField
+                      label="Finviz URL"
+                      value={versionForm.finvizUrl}
+                      onChange={(finvizUrl) =>
+                        setVersionForm((current) => ({ ...current, finvizUrl }))
+                      }
+                    />
+                    <Button type="submit" disabled={busyAction !== null}>
+                      Add Strategy Version
+                    </Button>
+                  </form>
+                  <div className="border-t border-[#1d3348] pt-4">
+                    {managedStrategy.versions.length === 0 ? (
+                      <p className="m-0 text-sm text-[#8ba0b7]">No versions configured.</p>
+                    ) : (
+                      <div className="grid gap-3">
+                        {managedStrategy.versions.map((version) => (
+                          <div
+                            key={`${version.strategyId}-${version.version}`}
+                            className="rounded-2xl border border-[#1d3348] bg-[rgba(10,20,33,0.72)] p-4"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <strong>{version.version}</strong>
+                                <div className="text-xs text-[#64758d]">
+                                  {version.screenerCode} · {version.screener}
+                                </div>
+                              </div>
+                              <Button
+                                type="button"
+                                className="px-3 py-2 text-xs"
+                                onClick={() => void toggleStrategyVersion(version)}
+                                disabled={busyAction !== null}
+                              >
+                                {version.enabled ? 'Disable' : 'Enable'}
+                              </Button>
+                            </div>
+                            <p className="mt-3 break-all text-xs text-[#8ba0b7]">
+                              {version.finvizUrl}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </FactSection>
+            </DetailGrid>
+          </DetailPanel>
+        </DetailBackdrop>
       )}
 
       {createAccountOpen && (
@@ -811,6 +1243,51 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
         {value || '—'}
       </div>
     </div>
+  );
+}
+
+function BooleanField({
+  label,
+  checked,
+  onChange
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <label className="grid gap-2">
+      <span className={formLabelClassName}>{label}</span>
+      <span className="flex min-h-10 items-center gap-3 rounded-[10px] border border-[#22384d] bg-[#071422] px-3 py-2 text-sm text-[#e5edf7]">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(event) => onChange(event.target.checked)}
+        />
+        {checked ? 'Enabled' : 'Disabled'}
+      </span>
+    </label>
+  );
+}
+
+function TextAreaField({
+  label,
+  value,
+  onChange
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="grid gap-2">
+      <span className={formLabelClassName}>{label}</span>
+      <textarea
+        className={`${inputClassName} min-h-24 resize-y`}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
   );
 }
 

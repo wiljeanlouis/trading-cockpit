@@ -7,7 +7,9 @@ import {
 } from '../../src/adapters/inbound/google-sheets/ui/trading-cockpit-workbook';
 import {
   FINVIZ_MOMENTUM_EXPORT_HEADERS,
-  SIGNALS_HISTORY_HEADERS
+  SIGNALS_HISTORY_HEADERS,
+  STRATEGY_HEADERS,
+  STRATEGY_VERSION_HEADERS
 } from '@trading-cockpit/contracts';
 import { MOMENTUM_RANKING_HEADERS } from '../../src/adapters/outbound/google-sheets/momentum/momentum-ranking-schema';
 import { TRADE_PLAN_HEADERS } from '../../src/adapters/outbound/google-sheets/trade-plan/trade-plan-mapper';
@@ -77,6 +79,12 @@ class FakeRange {
     return this;
   }
   insertCheckboxes(): FakeRange {
+    this.sheet.checkboxRanges.push({
+      row: this.row,
+      column: this.column,
+      rows: this.rows,
+      columns: this.columns
+    });
     return this;
   }
 }
@@ -84,6 +92,12 @@ class FakeRange {
 class FakeSheet {
   values: unknown[][];
   writeCount = 0;
+  readonly checkboxRanges: Array<{
+    row: number | string;
+    column: number;
+    rows: number;
+    columns: number;
+  }> = [];
 
   constructor(
     readonly name: string,
@@ -155,8 +169,13 @@ class FakeSpreadsheet {
 }
 
 function installSpreadsheet(spreadsheet: FakeSpreadsheet): void {
+  const ui = {
+    alert: vi.fn(),
+    ButtonSet: { OK: 'OK' }
+  };
   vi.stubGlobal('SpreadsheetApp', {
     getActiveSpreadsheet: () => spreadsheet,
+    getUi: () => ui,
     newDataValidation: () => {
       const builder = {
         requireValueInList: vi.fn(() => builder),
@@ -224,7 +243,13 @@ describe('Trading Cockpit workbook setup and validation', () => {
     expect(spreadsheet.getSheetByName('Accounts')?.values).toEqual([
       ['Account ID', 'Name', 'Base Currency', 'Risk % Per Trade']
     ]);
+    expect(spreadsheet.getSheetByName('Strategies')?.values).toEqual([[...STRATEGY_HEADERS]]);
+    expect(spreadsheet.getSheetByName('Strategy Versions')?.values).toEqual([
+      [...STRATEGY_VERSION_HEADERS]
+    ]);
     expect(spreadsheet.getSheetByName(REMOVED_MOMENTUM_SCORING_REFERENCE_SHEET)).toBeNull();
+    expect(spreadsheet.getSheetByName('Strategies')?.checkboxRanges).toEqual([]);
+    expect(spreadsheet.getSheetByName('Strategy Versions')?.checkboxRanges).toEqual([]);
     expect(initialization.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ sheetName: 'Accounts', status: 'MANUAL_CONFIGURATION' }),
@@ -314,6 +339,20 @@ describe('Trading Cockpit workbook setup and validation', () => {
         expect.objectContaining({ sheetName: 'Signals History', status: 'SCHEMA_MISMATCH' }),
         expect.objectContaining({ sheetName: 'Trade Plans', status: 'SCHEMA_MISMATCH' })
       ])
+    );
+    expect(SpreadsheetApp.getUi().alert).toHaveBeenCalledWith(
+      'Trading Cockpit workbook INVALID',
+      expect.stringContaining(
+        '• Signals History: Signals History doit avoir ses en-têtes canoniques en ligne 1.'
+      ),
+      'OK'
+    );
+    expect(SpreadsheetApp.getUi().alert).toHaveBeenCalledWith(
+      'Trading Cockpit workbook INVALID',
+      expect.stringContaining(
+        '• Trade Plans: Trade Plans doit avoir ses en-têtes canoniques en ligne 1.'
+      ),
+      'OK'
     );
   });
 

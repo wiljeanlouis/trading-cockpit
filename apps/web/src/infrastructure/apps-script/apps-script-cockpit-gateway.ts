@@ -8,6 +8,8 @@ import type {
   ClosePositionRequest,
   ClosePositionResponse,
   CreateFundedTradingAccountRequest,
+  CreateStrategyRequest,
+  CreateStrategyVersionRequest,
   CreateTradingAccountRequest,
   DashboardDto,
   DashboardSummaryDto,
@@ -21,6 +23,8 @@ import type {
   TradePlansDto,
   TradingAccountsDto,
   TradingAccountMutationResponse,
+  UpdateStrategyRequest,
+  UpdateStrategyVersionRequest,
   UpdateTradePlanPlanningRequest,
   UpdateTradingAccountRequest,
   UpdateTradePlanPlanningResponse,
@@ -149,6 +153,22 @@ export class AppsScriptCockpitGateway implements CockpitGateway {
         .withFailureHandler((error) => reject(new Error(failureMessage(error))))
         .validateStrategies();
     });
+  }
+
+  createStrategy(_request: CreateStrategyRequest): Promise<void> {
+    return Promise.reject(new Error('Strategy management is available through the Cloud Run API.'));
+  }
+
+  updateStrategy(_request: UpdateStrategyRequest): Promise<void> {
+    return Promise.reject(new Error('Strategy management is available through the Cloud Run API.'));
+  }
+
+  createStrategyVersion(_request: CreateStrategyVersionRequest): Promise<void> {
+    return Promise.reject(new Error('Strategy management is available through the Cloud Run API.'));
+  }
+
+  updateStrategyVersion(_request: UpdateStrategyVersionRequest): Promise<void> {
+    return Promise.reject(new Error('Strategy management is available through the Cloud Run API.'));
   }
 
   setupTradingAccounts(): Promise<void> {

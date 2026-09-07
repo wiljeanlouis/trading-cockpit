@@ -6,6 +6,8 @@ import type {
   ClosePositionRequest,
   ClosePositionResponse,
   CreateFundedTradingAccountRequest,
+  CreateStrategyRequest,
+  CreateStrategyVersionRequest,
   CreateTradingAccountRequest,
   CreateTradePlanRequest,
   CreateTradePlanResponse,
@@ -21,6 +23,8 @@ import type {
   TradePlansDto,
   TradingAccountsDto,
   TradingAccountMutationResponse,
+  UpdateStrategyRequest,
+  UpdateStrategyVersionRequest,
   UpdateTradingAccountRequest,
   UpdateTradePlanPlanningRequest,
   UpdateTradePlanPlanningResponse,
@@ -113,6 +117,25 @@ export class HttpCockpitGateway implements CockpitGateway {
 
   validateStrategies(): Promise<boolean> {
     return this.get('/api/admin/strategies/validation');
+  }
+
+  async createStrategy(request: CreateStrategyRequest): Promise<void> {
+    await this.post('/api/admin/strategies', request);
+  }
+
+  async updateStrategy(request: UpdateStrategyRequest): Promise<void> {
+    await this.patch(`/api/admin/strategies/${encodeURIComponent(request.strategyId)}`, request);
+  }
+
+  async createStrategyVersion(request: CreateStrategyVersionRequest): Promise<void> {
+    await this.post('/api/admin/strategy-versions', request);
+  }
+
+  async updateStrategyVersion(request: UpdateStrategyVersionRequest): Promise<void> {
+    await this.patch(
+      `/api/admin/strategies/${encodeURIComponent(request.strategyId)}/versions/${encodeURIComponent(request.version)}`,
+      request
+    );
   }
 
   async setupTradingAccounts(): Promise<void> {

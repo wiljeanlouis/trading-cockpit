@@ -15,6 +15,12 @@ import {
   requireUniqueTradingAccountIds
 } from '@trading-cockpit/core/domain/trading-account';
 import type { WatchlistEntry } from '@trading-cockpit/core/domain/watchlist';
+import {
+  normalizeTradingStrategy,
+  normalizeTradingStrategyVersion,
+  type TradingStrategy,
+  type TradingStrategyVersion
+} from '@trading-cockpit/core/domain/trading-strategy';
 import type { DashboardRepositorySnapshot } from '@trading-cockpit/core/ports/outbound/dashboard-repository';
 import type { JournalReader } from '@trading-cockpit/core/ports/outbound/journal-reader';
 import type {
@@ -25,7 +31,11 @@ import type { PositionReader } from '@trading-cockpit/core/ports/outbound/positi
 import type { TradePlanReader } from '@trading-cockpit/core/ports/outbound/trade-plan-reader';
 import type { TradingAccountRepository } from '@trading-cockpit/core/ports/outbound/trading-account-repository';
 import type { WatchlistReader } from '@trading-cockpit/core/ports/outbound/watchlist-reader';
-import { SIGNALS_HISTORY_HEADERS } from '@trading-cockpit/contracts';
+import {
+  SIGNALS_HISTORY_HEADERS,
+  STRATEGY_HEADERS,
+  STRATEGY_VERSION_HEADERS
+} from '@trading-cockpit/contracts';
 import {
   nullableText,
   numberOrNull,
@@ -208,17 +218,14 @@ export const SHEET_DEFINITIONS = {
   strategies: {
     key: 'strategies',
     sheetName: 'Strategies',
-    range: "'Strategies'!A:H",
-    requiredHeaders: [
-      'Strategy ID',
-      'Name',
-      'Version',
-      'Type',
-      'Enabled',
-      'Risk %',
-      'Max Positions',
-      'Description'
-    ]
+    range: "'Strategies'!A:E",
+    requiredHeaders: STRATEGY_HEADERS
+  },
+  strategyVersions: {
+    key: 'strategyVersions',
+    sheetName: 'Strategy Versions',
+    range: "'Strategy Versions'!A:F",
+    requiredHeaders: STRATEGY_VERSION_HEADERS
   },
   momentumRanking: {
     key: 'momentumRanking',
@@ -393,22 +400,36 @@ export async function readCapitalTransactions(
 }
 
 export async function readStrategyIds(sheets: RequestScopedSheets): Promise<string[]> {
-  const strategies = await readStrategies(sheets);
+  const strategies = await readStrategyRecords(sheets);
   return strategies.map((strategy) => strategy.id);
 }
 
 export async function validateStrategies(sheets: RequestScopedSheets): Promise<true> {
-  const enabled = (await readStrategies(sheets)).filter((strategy) => strategy.enabled);
+  await sheets.batchLoad([SHEET_DEFINITIONS.strategies, SHEET_DEFINITIONS.strategyVersions]);
+  const strategies = await readStrategyRecords(sheets);
+  const versions = await readStrategyVersionRecords(sheets);
+  const enabled = strategies.filter((strategy) => strategy.enabled);
   if (enabled.length === 0) throw new Error('Au moins une stratégie doit être active.');
   const ids = new Set<string>();
-  for (const strategy of enabled) {
+  for (const strategy of strategies) {
     if (!strategy.id) throw new Error('Strategy ID obligatoire.');
     if (ids.has(strategy.id)) throw new Error(`Strategy ID dupliqué : ${strategy.id}`);
     ids.add(strategy.id);
-    if (strategy.riskPercent <= 0 || strategy.riskPercent > 0.05) {
-      throw new Error(`Risk % invalide pour ${strategy.id}`);
+  }
+  const versionKeys = new Set<string>();
+  const activeVersionByStrategy = new Set<string>();
+  for (const version of versions) {
+    if (!ids.has(version.strategyId)) throw new Error(`Strategy inconnue : ${version.strategyId}`);
+    const key = `${version.strategyId}|${version.version}`;
+    if (versionKeys.has(key)) throw new Error(`Strategy Version dupliquée : ${key}`);
+    versionKeys.add(key);
+    if (!version.enabled) continue;
+    const parent = strategies.find((strategy) => strategy.id === version.strategyId);
+    if (!parent?.enabled) throw new Error(`Strategy parent désactivée : ${version.strategyId}`);
+    if (activeVersionByStrategy.has(version.strategyId)) {
+      throw new Error(`Plusieurs versions actives pour ${version.strategyId}`);
     }
-    if (strategy.maxPositions < 1) throw new Error(`Max Positions invalide pour ${strategy.id}`);
+    activeVersionByStrategy.add(version.strategyId);
   }
   return true;
 }
@@ -661,12 +682,49 @@ function dateValue(value: unknown): Date {
   return parsed;
 }
 
-async function readStrategies(sheets: RequestScopedSheets) {
+export async function readStrategyRecords(sheets: RequestScopedSheets): Promise<TradingStrategy[]> {
   const table = await readTable(sheets, SHEET_DEFINITIONS.strategies);
-  return table.rows.map((row) => ({
-    id: textValue(valueByHeader(table.headers, row, 'Strategy ID')),
-    enabled: valueByHeader(table.headers, row, 'Enabled') === true,
-    riskPercent: Number(valueByHeader(table.headers, row, 'Risk %')) || 0,
-    maxPositions: Number(valueByHeader(table.headers, row, 'Max Positions')) || 0
-  }));
+  return table.rows
+    .filter((row) => hasMeaningfulTableRow(row))
+    .map((row) =>
+      normalizeTradingStrategy({
+        id: textValue(valueByHeader(table.headers, row, 'Strategy ID')),
+        name: textValue(valueByHeader(table.headers, row, 'Name')),
+        type: textValue(valueByHeader(table.headers, row, 'Type')),
+        enabled: requiredBoolean(valueByHeader(table.headers, row, 'Enabled'), 'Enabled'),
+        description: textValue(valueByHeader(table.headers, row, 'Description'))
+      })
+    );
+}
+
+export async function readStrategyVersionRecords(
+  sheets: RequestScopedSheets
+): Promise<TradingStrategyVersion[]> {
+  const table = await readTable(sheets, SHEET_DEFINITIONS.strategyVersions);
+  return table.rows
+    .filter((row) => hasMeaningfulTableRow(row))
+    .map((row) =>
+      normalizeTradingStrategyVersion({
+        strategyId: textValue(valueByHeader(table.headers, row, 'Strategy ID')),
+        version: textValue(valueByHeader(table.headers, row, 'Version')),
+        enabled: requiredBoolean(valueByHeader(table.headers, row, 'Enabled'), 'Enabled'),
+        screenerCode: textValue(valueByHeader(table.headers, row, 'Screener Code')),
+        screener: textValue(valueByHeader(table.headers, row, 'Screener')),
+        screenerUrl: textValue(valueByHeader(table.headers, row, 'Finviz URL'))
+      })
+    );
+}
+
+function hasMeaningfulTableRow(row: readonly unknown[]): boolean {
+  return row.some(
+    (value) => value === true || (typeof value !== 'boolean' && String(value ?? '').trim() !== '')
+  );
+}
+
+function requiredBoolean(value: unknown, label: string): boolean {
+  if (value === true || value === false) return value;
+  const text = textValue(value).toUpperCase();
+  if (text === 'TRUE') return true;
+  if (text === 'FALSE') return false;
+  throw new Error(`${label} obligatoire.`);
 }

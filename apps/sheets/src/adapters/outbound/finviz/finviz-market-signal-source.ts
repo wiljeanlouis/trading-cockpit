@@ -93,9 +93,7 @@ export class FinvizMarketSignalSource implements MarketSignalSource {
     });
     let response: FinvizHttpResponse;
     try {
-      response = this.transport.fetch(
-        `${this.baseUrl}?${config!.query}&auth=${encodeURIComponent(token)}`
-      );
+      response = this.transport.fetch(this.urlFor(config!, token));
     } catch (error) {
       this.diagnostics?.error('HTTP_FETCH', error);
       throw error;
@@ -172,5 +170,13 @@ export class FinvizMarketSignalSource implements MarketSignalSource {
       attributes: batch.attributeNames.length
     });
     return batch;
+  }
+
+  private urlFor(config: FinvizFeedConfiguration, token: string): string {
+    const separator = config.query.includes('?') ? '&' : '?';
+    if (/^https?:\/\//i.test(config.query)) {
+      return `${config.query}${separator}auth=${encodeURIComponent(token)}`;
+    }
+    return `${this.baseUrl}?${config.query}&auth=${encodeURIComponent(token)}`;
   }
 }

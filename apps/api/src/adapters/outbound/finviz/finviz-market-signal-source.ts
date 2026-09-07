@@ -42,9 +42,7 @@ export class CloudRunFinvizMarketSignalSource implements MarketSignalSource {
   async preload(): Promise<void> {
     const token = await this.tokenService.getToken();
     for (const config of this.configurations) {
-      const response = await this.transport.fetch(
-        `${this.baseUrl}?${config.query}&auth=${encodeURIComponent(token)}`
-      );
+      const response = await this.transport.fetch(this.urlFor(config, token));
       if (response.status !== 200) {
         throw new Error(`Finviz API error pour ${config.strategyName}: HTTP ${response.status}`);
       }
@@ -75,5 +73,13 @@ export class CloudRunFinvizMarketSignalSource implements MarketSignalSource {
         }))
       });
     }
+  }
+
+  private urlFor(config: FinvizFeedConfiguration, token: string): string {
+    const separator = config.query.includes('?') ? '&' : '?';
+    if (/^https?:\/\//i.test(config.query)) {
+      return `${config.query}${separator}auth=${encodeURIComponent(token)}`;
+    }
+    return `${this.baseUrl}?${config.query}&auth=${encodeURIComponent(token)}`;
   }
 }

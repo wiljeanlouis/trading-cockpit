@@ -135,6 +135,20 @@ describe('get Trade Plans', () => {
     ]);
   });
 
+  it('marks execution ineligible when the historical Strategy Version is not configured', () => {
+    const result = createGetTradePlans({
+      reader: { findAll: () => [plan] },
+      strategyIds: () => ['BREAKOUT'],
+      strategyVersions: () => [{ strategyId: 'BREAKOUT', version: 'V2' }],
+      now: () => new Date('2026-08-28T16:00:00.000Z')
+    })();
+
+    expect(result.items[0].executionEligibility).toEqual({
+      eligible: false,
+      reason: 'Version de stratégie inconnue : BREAKOUT V1'
+    });
+  });
+
   it('preserves Strategy lookup failures as execution eligibility reasons', () => {
     const result = createGetTradePlans({
       reader: { findAll: () => [plan] },

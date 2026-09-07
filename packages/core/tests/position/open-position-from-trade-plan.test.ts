@@ -39,7 +39,11 @@ const tradePlan: TradePlan = {
   notes: ''
 };
 
-function context(plan: TradePlan | null = tradePlan, existing: Position | null = null) {
+function context(
+  plan: TradePlan | null = tradePlan,
+  existing: Position | null = null,
+  options: { versionExists?: boolean } = {}
+) {
   const calls: string[] = [];
   let saved: Position | null = null;
   const dependencies: OpenPositionFromTradePlanDependencies = {
@@ -66,7 +70,10 @@ function context(plan: TradePlan | null = tradePlan, existing: Position | null =
       updateTradePlanningInputs: () => undefined,
       updateStatus: () => calls.push('watchlist.update')
     },
-    strategyRepository: { existsById: () => true },
+    strategyRepository: {
+      existsById: () => true,
+      existsVersion: () => options.versionExists !== false
+    },
     runtime: { now: () => new Date('2026-08-27T14:00:00Z'), newId: () => 'P-1' }
   };
   return { dependencies, calls, saved: () => saved };
@@ -91,6 +98,14 @@ describe('open Position from account-owned Trade Plan', () => {
     const c = context({ ...tradePlan, accountId: '' });
     expect(() => createOpenPositionFromTradePlan(c.dependencies)({ tradePlanId: 'TP-1' })).toThrow(
       'Account ID absent sur le Trade Plan.'
+    );
+    expect(c.saved()).toBeNull();
+  });
+
+  it('rejects an unknown historical Strategy Version before creating a Position', () => {
+    const c = context(tradePlan, null, { versionExists: false });
+    expect(() => createOpenPositionFromTradePlan(c.dependencies)({ tradePlanId: 'TP-1' })).toThrow(
+      'Version de stratégie inconnue : STRATEGY V1'
     );
     expect(c.saved()).toBeNull();
   });

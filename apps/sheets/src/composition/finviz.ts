@@ -17,29 +17,35 @@ import { FinvizTokenService } from '../adapters/outbound/finviz/finviz-token-ser
 import { GoogleSheetsFinvizSignalProjection } from '../adapters/outbound/finviz/google-sheets-finviz-signal-projection';
 import { GoogleSheetsSignalHistoryRepository } from '../adapters/outbound/google-sheets/signal-history/google-sheets-signal-history-repository';
 import { GoogleSheetsTradingStrategyCatalog } from '../adapters/outbound/google-sheets/trading-strategy/google-sheets-trading-strategy-catalog';
+import { GoogleSheetsTradingStrategyReader } from '../adapters/outbound/google-sheets/trading-strategy/google-sheets-trading-strategy-reader';
 import { createArchiveMarketSignals } from '@trading-cockpit/core/application/market-signals/archive-market-signals';
 import { createRefreshMarketSignals } from '@trading-cockpit/core/application/market-signals/refresh-market-signals';
 
-const FINVIZ_BASE_URL = 'https://elite.finviz.com/export/screener';
-const MOMENTUM_FEED_ID = 'MOMENTUM_BREAKOUT_V1';
-const FINVIZ_FEEDS: FinvizFeedConfiguration[] = [
-  {
-    id: MOMENTUM_FEED_ID,
-    strategyName: 'Momentum Breakout',
-    strategyVersion: 'V1',
-    strategyId: 'MOMENTUM_BREAKOUT',
-    query:
-      'v=151' +
-      '&f=cap_smallover,sh_avgvol_o500,sh_price_o10,sh_relvol_o1,' +
-      'ta_highlow52w_b0to5h,ta_perf_4wup,ta_rsi_50to70,' +
-      'ta_sma20_pa,ta_sma200_pa,ta_sma50_pa' +
-      '&ft=3' +
-      '&c=0,1,2,3,4,5,6,7,67,65,66,63,64,59,57,52,54,53,42,43,68'
-  }
-];
-
 function tokenService(): FinvizTokenService {
   return new FinvizTokenService(new AppsScriptFinvizTokenStorage());
+}
+
+function finvizFeeds(): FinvizFeedConfiguration[] {
+  const reader = new GoogleSheetsTradingStrategyReader();
+  const strategies = reader.listEnabled();
+  const feeds = reader
+    .listVersions()
+    .filter((version) => version.enabled && version.screener === 'FINVIZ')
+    .map((version) => {
+      const strategy = strategies.find((candidate) => candidate.id === version.strategyId);
+      if (!strategy) throw new Error(`Stratégie inconnue : ${version.strategyId}`);
+      return {
+        id: version.screenerCode,
+        strategyName: strategy.name,
+        strategyVersion: version.version,
+        strategyId: version.strategyId,
+        query: version.screenerUrl
+      };
+    });
+  if (feeds.length === 0) {
+    throw new Error('Aucune stratégie Finviz active configurée.');
+  }
+  return feeds;
 }
 
 export function runRefreshFinviz(): number {
@@ -60,9 +66,10 @@ export function runRefreshFinviz(): number {
     } else if (event === 'VALID_EMPTY_RESULT') logger.warn(event, fields);
     else logger.info(event, fields);
   };
+  const feeds = finvizFeeds();
   const source = new FinvizMarketSignalSource(
-    FINVIZ_BASE_URL,
-    FINVIZ_FEEDS,
+    '',
+    feeds,
     tokenService(),
     new AppsScriptFinvizTransport(),
     diagnostics
@@ -78,7 +85,7 @@ export function runRefreshFinviz(): number {
       source,
       strategyCatalog: new GoogleSheetsTradingStrategyCatalog(),
       projection: new GoogleSheetsFinvizSignalProjection(
-        { [MOMENTUM_FEED_ID]: 'Finviz - Momentum' },
+        Object.fromEntries(feeds.map((feed) => [feed.id, 'Finviz - Momentum'])),
         diagnostics
       ),
       archiveSignals,

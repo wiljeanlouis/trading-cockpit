@@ -66,6 +66,7 @@ function mutableSheetsClientByRange(
         'Journal',
         'Accounts',
         'Strategies',
+        'Strategy Versions',
         'Capital Ledger',
         'Momentum Ranking'
       ]
@@ -1008,6 +1009,19 @@ describe('Cloud Run Trading Cockpit API', () => {
     expect(response.statusCode).toBe(200);
     expect(response.body).toMatchObject({
       finviz: { configured: false },
+      strategies: [
+        expect.objectContaining({
+          strategyId: 'MOMENTUM_BREAKOUT',
+          enabled: true,
+          versions: [
+            expect.objectContaining({
+              version: '1.0',
+              enabled: true,
+              screener: 'FINVIZ'
+            })
+          ]
+        })
+      ],
       accounts: [
         expect.objectContaining({
           id: 'A1',
@@ -1038,6 +1052,112 @@ describe('Cloud Run Trading Cockpit API', () => {
     });
   });
 
+  it('creates an inactive Strategy Version without mutating historical versions', async () => {
+    const client = mutableSheetsClientByRange(queryFixtureByRange());
+
+    const response = await handleCloudRunRequest({
+      method: 'POST',
+      url: '/api/admin/strategy-versions',
+      headers: authorizationHeaders(),
+      body: JSON.stringify({
+        strategyId: 'momentum_breakout',
+        version: 'V2',
+        enabled: false,
+        screenerCode: 'MOMENTUM_BREAKOUT_V2',
+        screener: 'FINVIZ',
+        finvizUrl: 'https://elite.finviz.com/export/screener?v=151&f=v2'
+      }),
+      spreadsheetId: 'spreadsheet-id',
+      auth: testAuthConfig(),
+      cors: testCorsConfig(),
+      sheetsClientFactory: async () => client,
+      tokenVerifier: authorizedTokenVerifier()
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(client.appendValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        range: SHEET_DEFINITIONS.strategyVersions.range,
+        values: [
+          [
+            'MOMENTUM_BREAKOUT',
+            'V2',
+            false,
+            'MOMENTUM_BREAKOUT_V2',
+            'FINVIZ',
+            'https://elite.finviz.com/export/screener?v=151&f=v2'
+          ]
+        ]
+      })
+    );
+  });
+
+  it('prevents enabling two Strategy Versions for the same Strategy ID', async () => {
+    const client = mutableSheetsClientByRange(queryFixtureByRange());
+
+    const response = await handleCloudRunRequest({
+      method: 'POST',
+      url: '/api/admin/strategy-versions',
+      headers: authorizationHeaders(),
+      body: JSON.stringify({
+        strategyId: 'MOMENTUM_BREAKOUT',
+        version: 'V2',
+        enabled: true,
+        screenerCode: 'MOMENTUM_BREAKOUT_V2',
+        screener: 'FINVIZ',
+        finvizUrl: 'https://elite.finviz.com/export/screener?v=151&f=v2'
+      }),
+      spreadsheetId: 'spreadsheet-id',
+      auth: testAuthConfig(),
+      cors: testCorsConfig(),
+      sheetsClientFactory: async () => client,
+      tokenVerifier: authorizedTokenVerifier()
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toEqual({
+      error: 'Plusieurs versions actives pour MOMENTUM_BREAKOUT'
+    });
+    expect(client.appendValues).not.toHaveBeenCalled();
+  });
+
+  it('disables a Strategy Version while preserving immutable screener configuration', async () => {
+    const client = mutableSheetsClientByRange(queryFixtureByRange());
+
+    const response = await handleCloudRunRequest({
+      method: 'PATCH',
+      url: '/api/admin/strategies/MOMENTUM_BREAKOUT/versions/1.0',
+      headers: authorizationHeaders(),
+      body: JSON.stringify({
+        strategyId: 'MOMENTUM_BREAKOUT',
+        version: '1.0',
+        enabled: false
+      }),
+      spreadsheetId: 'spreadsheet-id',
+      auth: testAuthConfig(),
+      cors: testCorsConfig(),
+      sheetsClientFactory: async () => client,
+      tokenVerifier: authorizedTokenVerifier()
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(client.updateValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        range: "'Strategy Versions'!A2:F2",
+        values: [
+          [
+            'MOMENTUM_BREAKOUT',
+            '1.0',
+            false,
+            'MOMENTUM_BREAKOUT_V1',
+            'FINVIZ',
+            'https://elite.finviz.com/export/screener?v=151'
+          ]
+        ]
+      })
+    );
+  });
+
   it('sets up Trading Accounts sheets with headers without exposing Sheets UI behavior', async () => {
     const client = mutableSheetsClientByRange(queryFixtureByRange());
 
@@ -1061,6 +1181,41 @@ describe('Cloud Run Trading Cockpit API', () => {
     );
   });
 
+  it('sets up Strategies sheets with headers only and no prepopulated strategy data', async () => {
+    const client = mutableSheetsClientByRange(queryFixtureByRange());
+
+    const response = await handleCloudRunRequest({
+      method: 'POST',
+      url: '/api/admin/strategies/setup',
+      headers: authorizationHeaders(),
+      spreadsheetId: 'spreadsheet-id',
+      auth: testAuthConfig(),
+      cors: testCorsConfig(),
+      sheetsClientFactory: async () => client,
+      tokenVerifier: authorizedTokenVerifier()
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(client.updateValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        range: "'Strategies'!A1:E1",
+        values: [[...SHEET_DEFINITIONS.strategies.requiredHeaders]]
+      })
+    );
+    expect(client.updateValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        range: "'Strategy Versions'!A1:F1",
+        values: [[...SHEET_DEFINITIONS.strategyVersions.requiredHeaders]]
+      })
+    );
+    expect(client.updateValues).not.toHaveBeenCalledWith(
+      expect.objectContaining({ range: "'Strategies'!A1:E2" })
+    );
+    expect(client.updateValues).not.toHaveBeenCalledWith(
+      expect.objectContaining({ range: "'Strategy Versions'!A1:F2" })
+    );
+  });
+
   it('sets up Momentum Ranking using the canonical data sheet headers', async () => {
     const client = mutableSheetsClientByRange(queryFixtureByRange());
 
@@ -1076,7 +1231,7 @@ describe('Cloud Run Trading Cockpit API', () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(client.updateValues.mock.calls.map(([request]) => request.range)).toEqual([
+    expect(vi.mocked(client.updateValues!).mock.calls.map(([request]) => request.range)).toEqual([
       "'Momentum Ranking'!A1:U"
     ]);
     expect(client.updateValues).toHaveBeenCalledWith(
@@ -1438,6 +1593,7 @@ function queryFixtureByRange(
   const journalHeaders = [...SHEET_DEFINITIONS.journal.requiredHeaders];
   const accountHeaders = [...SHEET_DEFINITIONS.accounts.requiredHeaders];
   const strategyHeaders = [...SHEET_DEFINITIONS.strategies.requiredHeaders];
+  const strategyVersionHeaders = [...SHEET_DEFINITIONS.strategyVersions.requiredHeaders];
   const momentumHeaders = [...SHEET_DEFINITIONS.momentumRanking.requiredHeaders];
   const capitalLedgerHeaders = [
     'Transaction ID',
@@ -1568,12 +1724,20 @@ function queryFixtureByRange(
       rowForHeaders(strategyHeaders, {
         'Strategy ID': 'MOMENTUM_BREAKOUT',
         Name: 'Momentum Breakout',
-        Version: '1.0',
         Type: 'MOMENTUM',
         Enabled: true,
-        'Risk %': 0.005,
-        'Max Positions': 5,
         Description: 'Momentum breakout near 52-week high'
+      })
+    ],
+    [SHEET_DEFINITIONS.strategyVersions.range]: [
+      strategyVersionHeaders,
+      rowForHeaders(strategyVersionHeaders, {
+        'Strategy ID': 'MOMENTUM_BREAKOUT',
+        Version: '1.0',
+        Enabled: true,
+        'Screener Code': 'MOMENTUM_BREAKOUT_V1',
+        Screener: 'FINVIZ',
+        'Finviz URL': 'https://elite.finviz.com/export/screener?v=151'
       })
     ],
     [SHEET_DEFINITIONS.momentumRanking.range]: [

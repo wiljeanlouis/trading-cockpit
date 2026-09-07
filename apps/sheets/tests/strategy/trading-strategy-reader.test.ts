@@ -2,52 +2,61 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   GoogleSheetsTradingStrategyReader,
   mapTradingStrategyRow,
+  mapTradingStrategyVersionRow,
   type SheetTradingStrategy
 } from '../../src/adapters/outbound/google-sheets/trading-strategy/google-sheets-trading-strategy-reader';
-import { validateEnabledStrategies } from '../../src/adapters/inbound/google-sheets/ui/setup-strategies';
+import {
+  validateEnabledStrategies,
+  validateStrategyVersions
+} from '../../src/adapters/inbound/google-sheets/ui/setup-strategies';
 
 afterEach(() => vi.unstubAllGlobals());
 
-const headers = [
+const headers = ['Strategy ID', 'Name', 'Type', 'Enabled', 'Description'];
+const versionHeaders = [
   'Strategy ID',
-  'Name',
   'Version',
-  'Type',
   'Enabled',
-  'Risk %',
-  'Max Positions',
-  'Description'
+  'Screener Code',
+  'Screener',
+  'Finviz URL'
 ];
 
 describe('trading strategy row characterization', () => {
-  it('preserves trimming, strict enabled, and numeric coercions', () => {
+  it('preserves strategy trimming and requires explicit enabled values', () => {
     expect(
-      mapTradingStrategyRow(headers, [
-        ' ID ',
-        ' Name ',
-        ' V1 ',
-        ' MOMENTUM ',
-        true,
-        '0.005',
-        '5',
-        ' Description '
-      ])
+      mapTradingStrategyRow(headers, [' ID ', ' Name ', ' MOMENTUM ', true, ' Description '])
     ).toEqual({
       id: 'ID',
       name: 'Name',
-      version: 'V1',
       type: 'MOMENTUM',
       enabled: true,
-      riskPercent: 0.005,
-      maxPositions: 5,
       description: 'Description'
     });
-    expect(mapTradingStrategyRow(headers, ['', '', '', '', 'TRUE', 'bad', '', '']).enabled).toBe(
-      false
+    expect(mapTradingStrategyRow(headers, ['', '', '', 'TRUE', '']).enabled).toBe(true);
+    expect(mapTradingStrategyRow(headers, ['', '', '', 'FALSE', '']).enabled).toBe(false);
+    expect(() => mapTradingStrategyRow(headers, ['', '', '', '', ''])).toThrow(
+      'Enabled obligatoire.'
     );
-    expect(mapTradingStrategyRow(headers, ['', '', '', '', false, 'bad', '', ''])).toMatchObject({
-      riskPercent: 0,
-      maxPositions: 0
+  });
+
+  it('maps versioned screener configuration separately', () => {
+    expect(
+      mapTradingStrategyVersionRow(versionHeaders, [
+        ' momentum_breakout ',
+        ' V1 ',
+        true,
+        ' MOMENTUM_BREAKOUT_V1 ',
+        ' FINVIZ ',
+        ' https://example.test/export '
+      ])
+    ).toEqual({
+      strategyId: 'MOMENTUM_BREAKOUT',
+      version: 'V1',
+      enabled: true,
+      screenerCode: 'MOMENTUM_BREAKOUT_V1',
+      screener: 'FINVIZ',
+      screenerUrl: 'https://example.test/export'
     });
   });
 
@@ -59,8 +68,8 @@ describe('trading strategy row characterization', () => {
 
   it('looks up IDs case-insensitively and returns the first matching row', () => {
     const rows = [
-      ['ABC', 'First', 'V1', 'MOMENTUM', true, 0.01, 1, ''],
-      ['abc', 'Second', 'V2', 'MOMENTUM', true, 0.01, 1, '']
+      ['ABC', 'First', 'MOMENTUM', true, ''],
+      ['abc', 'Second', 'MOMENTUM', true, '']
     ];
     const sheet = {
       getLastRow: () => 3,
@@ -77,8 +86,8 @@ describe('trading strategy row characterization', () => {
 
   it('reads Strategy headers and rows once when listing all strategies', () => {
     const rows = [
-      ['ABC', 'First', 'V1', 'MOMENTUM', true, 0.01, 1, ''],
-      ['DEF', 'Second', 'V1', 'MOMENTUM', false, 0.01, 1, '']
+      ['ABC', 'First', 'MOMENTUM', true, ''],
+      ['DEF', 'Second', 'MOMENTUM', false, '']
     ];
     const sheet = {
       getLastRow: () => 3,
@@ -99,6 +108,79 @@ describe('trading strategy row characterization', () => {
     expect(sheet.getRange).toHaveBeenCalledWith(1, 1, 3, headers.length);
   });
 
+  it('ignores trailing checkbox-only rows when listing strategies', () => {
+    const rows = [
+      ['ABC', 'First', 'MOMENTUM', true, ''],
+      ['', '', '', false, '']
+    ];
+    const sheet = {
+      getLastRow: () => 3,
+      getLastColumn: () => headers.length,
+      getRange: () => ({
+        getValues: () => [headers, ...rows]
+      })
+    };
+    vi.stubGlobal('SpreadsheetApp', {
+      getActiveSpreadsheet: () => ({ getSheetByName: () => sheet })
+    });
+
+    expect(new GoogleSheetsTradingStrategyReader().listAll().map((item) => item.id)).toEqual([
+      'ABC'
+    ]);
+  });
+
+  it('returns an empty strategy list for a canonical header-only sheet', () => {
+    const sheet = {
+      getLastRow: () => 1,
+      getLastColumn: () => headers.length,
+      getRange: () => ({
+        getValues: () => [headers]
+      })
+    };
+    vi.stubGlobal('SpreadsheetApp', {
+      getActiveSpreadsheet: () => ({ getSheetByName: () => sheet })
+    });
+
+    expect(new GoogleSheetsTradingStrategyReader().listAll()).toEqual([]);
+  });
+
+  it('ignores trailing checkbox-only rows when listing strategy versions', () => {
+    const rows = [
+      [
+        'MOMENTUM_BREAKOUT',
+        'V1',
+        true,
+        'MOMENTUM_BREAKOUT_V1',
+        'FINVIZ',
+        'https://example.test/export'
+      ],
+      ['', '', false, '', '', '']
+    ];
+    const sheet = {
+      getLastRow: () => 3,
+      getLastColumn: () => versionHeaders.length,
+      getRange: () => ({
+        getValues: () => [versionHeaders, ...rows]
+      })
+    };
+    vi.stubGlobal('SpreadsheetApp', {
+      getActiveSpreadsheet: () => ({
+        getSheetByName: (name: string) => (name === 'Strategy Versions' ? sheet : null)
+      })
+    });
+
+    expect(new GoogleSheetsTradingStrategyReader().listVersions()).toEqual([
+      {
+        strategyId: 'MOMENTUM_BREAKOUT',
+        version: 'V1',
+        enabled: true,
+        screenerCode: 'MOMENTUM_BREAKOUT_V1',
+        screener: 'FINVIZ',
+        screenerUrl: 'https://example.test/export'
+      }
+    ]);
+  });
+
   it('preserves the absent registry error', () => {
     vi.stubGlobal('SpreadsheetApp', {
       getActiveSpreadsheet: () => ({ getSheetByName: () => null })
@@ -113,44 +195,69 @@ function strategy(overrides: Partial<SheetTradingStrategy> = {}): SheetTradingSt
   return {
     id: 'MOMENTUM_BREAKOUT',
     name: 'Momentum Breakout',
-    version: 'V1',
     type: 'MOMENTUM',
     enabled: true,
-    riskPercent: 0.005,
-    maxPositions: 5,
     description: '',
     ...overrides
   };
 }
 
+function version(overrides = {}) {
+  return {
+    strategyId: 'MOMENTUM_BREAKOUT',
+    version: 'V1',
+    enabled: true,
+    screenerCode: 'MOMENTUM_BREAKOUT_V1',
+    screener: 'FINVIZ' as const,
+    screenerUrl: 'https://example.test/export',
+    ...overrides
+  };
+}
+
 describe('strategy validation characterization', () => {
-  it('requires at least one enabled strategy', () => {
-    expect(() => validateEnabledStrategies([])).toThrow('Au moins une stratégie doit être active.');
+  it('allows an empty canonical strategy table during workbook setup', () => {
+    expect(validateEnabledStrategies([])).toBe(true);
   });
 
-  it('preserves case-sensitive duplicate validation', () => {
-    expect(validateEnabledStrategies([strategy({ id: 'ABC' }), strategy({ id: 'abc' })])).toBe(
-      true
-    );
+  it('validates duplicate Strategy IDs after canonical normalization', () => {
     expect(() =>
-      validateEnabledStrategies([strategy({ id: 'ABC' }), strategy({ id: 'ABC' })])
+      validateEnabledStrategies([strategy({ id: 'ABC' }), strategy({ id: 'abc' })])
     ).toThrow('Strategy ID dupliqué : ABC');
   });
 
-  it('preserves ID, risk, and max-position boundaries', () => {
+  it('preserves ID validation without strategy-level financial policy', () => {
     expect(() => validateEnabledStrategies([strategy({ id: '' })])).toThrow(
       'Strategy ID obligatoire.'
     );
-    expect(() => validateEnabledStrategies([strategy({ riskPercent: 0 })])).toThrow(
-      'Risk % invalide pour MOMENTUM_BREAKOUT'
+    expect(validateEnabledStrategies([strategy()])).toBe(true);
+  });
+
+  it('validates one active version per strategy and parent enablement', () => {
+    expect(validateStrategyVersions([strategy()], [version()])).toBe(true);
+    expect(() =>
+      validateStrategyVersions([strategy()], [version(), version({ version: 'V2' })])
+    ).toThrow('Plusieurs versions actives pour MOMENTUM_BREAKOUT');
+    expect(() => validateStrategyVersions([strategy({ enabled: false })], [version()])).toThrow(
+      'Strategy parent désactivée : MOMENTUM_BREAKOUT'
     );
-    expect(validateEnabledStrategies([strategy({ riskPercent: 0.05 })])).toBe(true);
-    expect(() => validateEnabledStrategies([strategy({ riskPercent: 0.050001 })])).toThrow(
-      'Risk % invalide pour MOMENTUM_BREAKOUT'
-    );
-    expect(() => validateEnabledStrategies([strategy({ maxPositions: 0 })])).toThrow(
-      'Max Positions invalide pour MOMENTUM_BREAKOUT'
-    );
-    expect(validateEnabledStrategies([strategy({ maxPositions: 1.5 })])).toBe(true);
+    expect(validateStrategyVersions([strategy()], [version({ enabled: false })])).toBe(true);
+  });
+
+  it('keeps disabled historical versions readable but prevents duplicate identities', () => {
+    expect(
+      validateStrategyVersions(
+        [strategy()],
+        [version({ enabled: false }), version({ version: 'V2', enabled: true })]
+      )
+    ).toBe(true);
+    expect(() =>
+      validateStrategyVersions(
+        [strategy()],
+        [version({ enabled: false }), version({ enabled: false })]
+      )
+    ).toThrow('Strategy Version dupliquée : MOMENTUM_BREAKOUT|V1');
+    expect(() =>
+      validateStrategyVersions([strategy()], [version({ strategyId: 'UNKNOWN' })])
+    ).toThrow('Strategy inconnue : UNKNOWN');
   });
 });

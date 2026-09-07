@@ -1,21 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import { STRATEGY_HEADERS, STRATEGY_VERSION_HEADERS } from '@trading-cockpit/contracts';
 import { MOMENTUM_RANKING_SETUP_HEADERS } from '../../src/adapters/inbound/google-sheets/ui/setup-momentum-ranking';
-import {
-  STRATEGY_HEADERS,
-  STRATEGY_TYPE_VALUES
-} from '../../src/adapters/inbound/google-sheets/ui/setup-strategies';
+import { STRATEGY_TYPE_VALUES } from '../../src/adapters/inbound/google-sheets/ui/setup-strategies';
 
 describe('legacy setup data characterization', () => {
-  it('preserves the eight-column Strategies schema and type list', () => {
-    expect(STRATEGY_HEADERS).toEqual([
+  it('preserves the two-sheet Strategies configuration schema and type list', () => {
+    expect(STRATEGY_HEADERS).toEqual(['Strategy ID', 'Name', 'Type', 'Enabled', 'Description']);
+    expect(STRATEGY_VERSION_HEADERS).toEqual([
       'Strategy ID',
-      'Name',
       'Version',
-      'Type',
       'Enabled',
-      'Risk %',
-      'Max Positions',
-      'Description'
+      'Screener Code',
+      'Screener',
+      'Finviz URL'
     ]);
     expect(STRATEGY_TYPE_VALUES).toEqual([
       'MOMENTUM',

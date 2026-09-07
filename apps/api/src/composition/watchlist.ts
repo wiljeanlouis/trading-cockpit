@@ -10,7 +10,8 @@ import {
   LoadedMomentumRankingReader,
   LoadedWatchlistReader,
   readMomentumRankingRecords,
-  readStrategyIds,
+  readStrategyRecords,
+  readStrategyVersionRecords,
   readWatchlistEntries,
   SHEET_DEFINITIONS
 } from '../adapters/outbound/google-sheets-api/cockpit-query-readers';
@@ -42,12 +43,16 @@ export async function addMomentumCandidateToWatchlistForCloudRun({
   await mutationContext.sheets.batchLoad([
     SHEET_DEFINITIONS.momentumRanking,
     SHEET_DEFINITIONS.watchlist,
-    SHEET_DEFINITIONS.strategies
+    SHEET_DEFINITIONS.strategies,
+    SHEET_DEFINITIONS.strategyVersions
   ]);
   const watchlistRepository = await new CloudRunWatchlistRepository(mutationContext).load();
   const addCandidate = createAddCandidateToWatchlist({
     watchlistRepository,
-    strategyRepository: new LoadedStrategyRepository(await readStrategyIds(mutationContext.sheets)),
+    strategyRepository: new LoadedStrategyRepository(
+      await readStrategyRecords(mutationContext.sheets),
+      await readStrategyVersionRecords(mutationContext.sheets)
+    ),
     runtime: new NodeRuntime(mutationContext.now)
   });
   const addRankedCandidate = createAddRankedMomentumCandidateToWatchlist({

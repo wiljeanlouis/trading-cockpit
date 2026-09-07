@@ -11,13 +11,20 @@ import { createUpdateTradingAccount } from '@trading-cockpit/core/application/tr
 import type {
   AdminOverviewDto,
   CreateFundedTradingAccountRequest,
+  CreateStrategyRequest,
+  CreateStrategyVersionRequest,
   RecordCapitalTransactionResponse,
+  StrategyDto,
   TradingAccountMutationResponse,
-  TradingAccountsDto
+  TradingAccountsDto,
+  UpdateStrategyRequest,
+  UpdateStrategyVersionRequest
 } from '@trading-cockpit/contracts';
 import {
   readCapitalTransactions,
   readJournalEntries,
+  readStrategyRecords,
+  readStrategyVersionRecords,
   readTradingAccountRecords,
   SHEET_DEFINITIONS,
   validateStrategies as validateStrategiesFromSheets
@@ -29,6 +36,12 @@ import {
   loadMutationRepositories,
   type MutationContext
 } from '../adapters/outbound/google-sheets-api/cockpit-mutation-repositories';
+import {
+  normalizeTradingStrategy,
+  normalizeTradingStrategyVersion,
+  type TradingStrategy,
+  type TradingStrategyVersion
+} from '@trading-cockpit/core/domain/trading-strategy';
 import {
   textValue,
   type RequestScopedSheets
@@ -53,17 +66,22 @@ export async function getAdminOverviewForCloudRun(dependencies: {
   await dependencies.sheets.batchLoad([
     SHEET_DEFINITIONS.accounts,
     SHEET_DEFINITIONS.capitalLedger,
-    SHEET_DEFINITIONS.journal
+    SHEET_DEFINITIONS.journal,
+    SHEET_DEFINITIONS.strategies,
+    SHEET_DEFINITIONS.strategyVersions
   ]);
-  const [accounts, transactions, journalEntries, finviz] = await Promise.all([
+  const [accounts, transactions, journalEntries, strategies, versions, finviz] = await Promise.all([
     readTradingAccountRecords(dependencies.sheets),
     readCapitalTransactions(dependencies.sheets),
     readJournalEntries(dependencies.sheets),
+    readStrategyRecords(dependencies.sheets),
+    readStrategyVersionRecords(dependencies.sheets),
     checkFinvizAuthMutationForCloudRun()
   ]);
 
   return {
     finviz,
+    strategies: strategiesToDto(strategies, versions),
     accounts: accounts.map((account) => {
       const accountTransactions = transactions
         .filter((transaction) => transaction.accountId === account.id)
@@ -98,6 +116,29 @@ export async function getAdminOverviewForCloudRun(dependencies: {
       };
     })
   };
+}
+
+function strategiesToDto(
+  strategies: readonly TradingStrategy[],
+  versions: readonly TradingStrategyVersion[]
+): StrategyDto[] {
+  return strategies.map((strategy) => ({
+    strategyId: strategy.id,
+    name: strategy.name,
+    type: strategy.type,
+    enabled: strategy.enabled,
+    description: strategy.description,
+    versions: versions
+      .filter((version) => version.strategyId === strategy.id)
+      .map((version) => ({
+        strategyId: version.strategyId,
+        version: version.version,
+        enabled: version.enabled,
+        screenerCode: version.screenerCode,
+        screener: version.screener as StrategyDto['versions'][number]['screener'],
+        finvizUrl: version.screenerUrl
+      }))
+  }));
 }
 
 export async function validateStrategiesForCloudRun(dependencies: {
@@ -204,6 +245,116 @@ export async function recordCapitalTransactionForCloudRun({
   };
 }
 
+export async function createStrategyForCloudRun({
+  mutationContext,
+  body
+}: MutationDependencies): Promise<StrategyDto> {
+  const request = body as unknown as CreateStrategyRequest;
+  await ensureSheets(mutationContext, ['Strategies', 'Strategy Versions']);
+  const strategies = await readStrategyRecords(mutationContext.sheets);
+  const versions = await readStrategyVersionRecords(mutationContext.sheets);
+  const strategy = normalizeTradingStrategy({
+    id: requiredText(request.strategyId, 'strategyId'),
+    name: requiredText(request.name, 'name'),
+    type: requiredText(request.type, 'type'),
+    enabled: booleanValue(request.enabled),
+    description: String(request.description ?? '')
+  });
+  if (strategies.some((candidate) => candidate.id === strategy.id)) {
+    throw new ValidationError(`Strategy ID dupliqué : ${strategy.id}`);
+  }
+  mutationContext.writer.append(SHEET_DEFINITIONS.strategies.range, [strategyToRow(strategy)]);
+  return strategiesToDto([...strategies, strategy], versions).find(
+    (candidate) => candidate.strategyId === strategy.id
+  ) as StrategyDto;
+}
+
+export async function updateStrategyForCloudRun({
+  mutationContext,
+  body
+}: MutationDependencies): Promise<StrategyDto> {
+  const request = body as unknown as UpdateStrategyRequest;
+  const strategyId = requiredText(request.strategyId, 'strategyId').toUpperCase();
+  const strategies = await readStrategyRecords(mutationContext.sheets);
+  const versions = await readStrategyVersionRecords(mutationContext.sheets);
+  const index = strategies.findIndex((candidate) => candidate.id === strategyId);
+  if (index < 0) throw new ValidationError(`Stratégie inconnue : ${strategyId}`);
+  const strategy = normalizeTradingStrategy({
+    id: strategyId,
+    name: requiredText(request.name, 'name'),
+    type: requiredText(request.type, 'type'),
+    enabled: booleanValue(request.enabled),
+    description: String(request.description ?? '')
+  });
+  if (
+    !strategy.enabled &&
+    versions.some((version) => version.strategyId === strategy.id && version.enabled)
+  ) {
+    throw new ValidationError(`Désactive d’abord les versions actives de ${strategy.id}.`);
+  }
+  mutationContext.writer.update(`'Strategies'!A${index + 2}:E${index + 2}`, [
+    strategyToRow(strategy)
+  ]);
+  return strategiesToDto(
+    strategies.map((candidate) => (candidate.id === strategy.id ? strategy : candidate)),
+    versions
+  ).find((candidate) => candidate.strategyId === strategy.id) as StrategyDto;
+}
+
+export async function createStrategyVersionForCloudRun({
+  mutationContext,
+  body
+}: MutationDependencies): Promise<StrategyDto> {
+  const request = body as unknown as CreateStrategyVersionRequest;
+  await ensureSheets(mutationContext, ['Strategies', 'Strategy Versions']);
+  const strategies = await readStrategyRecords(mutationContext.sheets);
+  const versions = await readStrategyVersionRecords(mutationContext.sheets);
+  const version = normalizeTradingStrategyVersion({
+    strategyId: requiredText(request.strategyId, 'strategyId'),
+    version: requiredText(request.version, 'version'),
+    enabled: booleanValue(request.enabled),
+    screenerCode: requiredText(request.screenerCode, 'screenerCode'),
+    screener: requiredText(request.screener, 'screener'),
+    screenerUrl: requiredText(request.finvizUrl, 'finvizUrl')
+  });
+  validateVersionCanBeSaved(strategies, versions, version, 'create');
+  mutationContext.writer.append(SHEET_DEFINITIONS.strategyVersions.range, [
+    strategyVersionToRow(version)
+  ]);
+  return strategyDtoOrThrow(strategies, [...versions, version], version.strategyId);
+}
+
+export async function updateStrategyVersionForCloudRun({
+  mutationContext,
+  body
+}: MutationDependencies): Promise<StrategyDto> {
+  const request = body as unknown as UpdateStrategyVersionRequest;
+  const strategyId = requiredText(request.strategyId, 'strategyId').toUpperCase();
+  const versionId = requiredText(request.version, 'version');
+  const strategies = await readStrategyRecords(mutationContext.sheets);
+  const versions = await readStrategyVersionRecords(mutationContext.sheets);
+  const index = versions.findIndex(
+    (candidate) => candidate.strategyId === strategyId && candidate.version === versionId
+  );
+  if (index < 0)
+    throw new ValidationError(`Strategy Version inconnue : ${strategyId}|${versionId}`);
+  const existing = versions[index];
+  const version = normalizeTradingStrategyVersion({
+    ...existing,
+    enabled: booleanValue(request.enabled)
+  });
+  const remaining = versions.filter((_candidate, candidateIndex) => candidateIndex !== index);
+  validateVersionCanBeSaved(strategies, remaining, version, 'update');
+  mutationContext.writer.update(`'Strategy Versions'!A${index + 2}:F${index + 2}`, [
+    strategyVersionToRow(version)
+  ]);
+  return strategyDtoOrThrow(
+    strategies,
+    versions.map((candidate, candidateIndex) => (candidateIndex === index ? version : candidate)),
+    strategyId
+  );
+}
+
 export async function setupMomentumRankingForCloudRun({
   mutationContext
 }: MutationDependencies): Promise<{ ok: true }> {
@@ -217,26 +368,25 @@ export async function setupMomentumRankingForCloudRun({
 export async function setupStrategiesForCloudRun({
   mutationContext
 }: MutationDependencies): Promise<{ ok: true }> {
-  await ensureSheets(mutationContext, ['Strategies']);
+  await ensureSheets(mutationContext, ['Strategies', 'Strategy Versions']);
   if (await tableHasData(mutationContext, SHEET_DEFINITIONS.strategies)) {
-    mutationContext.writer.update("'Strategies'!A1:H1", [
+    mutationContext.writer.update("'Strategies'!A1:E1", [
       [...SHEET_DEFINITIONS.strategies.requiredHeaders]
     ]);
-    return { ok: true };
+  } else {
+    mutationContext.writer.update("'Strategies'!A1:E1", [
+      [...SHEET_DEFINITIONS.strategies.requiredHeaders]
+    ]);
   }
-  mutationContext.writer.update("'Strategies'!A1:H2", [
-    [...SHEET_DEFINITIONS.strategies.requiredHeaders],
-    [
-      'MOMENTUM_BREAKOUT',
-      'Momentum Breakout',
-      'V1',
-      'MOMENTUM',
-      true,
-      0.005,
-      5,
-      'Momentum breakout near 52-week high'
-    ]
-  ]);
+  if (await tableHasData(mutationContext, SHEET_DEFINITIONS.strategyVersions)) {
+    mutationContext.writer.update("'Strategy Versions'!A1:F1", [
+      [...SHEET_DEFINITIONS.strategyVersions.requiredHeaders]
+    ]);
+  } else {
+    mutationContext.writer.update("'Strategy Versions'!A1:F1", [
+      [...SHEET_DEFINITIONS.strategyVersions.requiredHeaders]
+    ]);
+  }
   return { ok: true };
 }
 
@@ -249,6 +399,69 @@ export async function setupTradingAccountsForCloudRun({
   ]);
   mutationContext.writer.update("'Capital Ledger'!A1:F1", [[...CAPITAL_LEDGER_HEADERS]]);
   return { ok: true };
+}
+
+function booleanValue(value: unknown): boolean {
+  return value === true || String(value).trim().toUpperCase() === 'TRUE';
+}
+
+function strategyToRow(strategy: TradingStrategy): unknown[] {
+  return [strategy.id, strategy.name, strategy.type, strategy.enabled, strategy.description];
+}
+
+function strategyVersionToRow(version: TradingStrategyVersion): unknown[] {
+  return [
+    version.strategyId,
+    version.version,
+    version.enabled,
+    version.screenerCode,
+    version.screener,
+    version.screenerUrl
+  ];
+}
+
+function strategyDtoOrThrow(
+  strategies: readonly TradingStrategy[],
+  versions: readonly TradingStrategyVersion[],
+  strategyId: string
+): StrategyDto {
+  const strategy = strategiesToDto(strategies, versions).find(
+    (candidate) => candidate.strategyId === strategyId
+  );
+  if (!strategy) throw new ValidationError(`Stratégie inconnue : ${strategyId}`);
+  return strategy;
+}
+
+function validateVersionCanBeSaved(
+  strategies: readonly TradingStrategy[],
+  existingVersions: readonly TradingStrategyVersion[],
+  version: TradingStrategyVersion,
+  mode: 'create' | 'update'
+): void {
+  const parent = strategies.find((strategy) => strategy.id === version.strategyId);
+  if (!parent) throw new ValidationError(`Stratégie inconnue : ${version.strategyId}`);
+  if (
+    mode === 'create' &&
+    existingVersions.some(
+      (candidate) =>
+        candidate.strategyId === version.strategyId && candidate.version === version.version
+    )
+  ) {
+    throw new ValidationError(
+      `Strategy Version dupliquée : ${version.strategyId}|${version.version}`
+    );
+  }
+  if (version.enabled && !parent.enabled) {
+    throw new ValidationError(`Strategy parent désactivée : ${version.strategyId}`);
+  }
+  if (
+    version.enabled &&
+    existingVersions.some(
+      (candidate) => candidate.strategyId === version.strategyId && candidate.enabled
+    )
+  ) {
+    throw new ValidationError(`Plusieurs versions actives pour ${version.strategyId}`);
+  }
 }
 
 async function tableHasData(

@@ -5,6 +5,8 @@ import {
   readDashboardSnapshot,
   readMomentumRankingRecords,
   readPositions,
+  readStrategyRecords,
+  readStrategyVersionRecords,
   readStrategyIds,
   readTradePlans,
   readTradingAccounts,
@@ -296,6 +298,59 @@ describe('Cloud Run Google Sheets API query readers', () => {
     ]);
   });
 
+  it('requires explicit Strategy boolean values without treating empty cells as false', async () => {
+    const headers = SHEET_DEFINITIONS.strategies.requiredHeaders;
+
+    await expect(
+      readStrategyRecords(
+        sheets({
+          [SHEET_DEFINITIONS.strategies.range]: [
+            [...headers],
+            rowFor(headers, {
+              'Strategy ID': 'MOMENTUM_BREAKOUT',
+              Name: 'Momentum Breakout',
+              Type: 'MOMENTUM',
+              Enabled: '',
+              Description: ''
+            })
+          ]
+        })
+      )
+    ).rejects.toThrow('Enabled obligatoire.');
+  });
+
+  it('ignores trailing checkbox-only Strategy Version rows', async () => {
+    const headers = SHEET_DEFINITIONS.strategyVersions.requiredHeaders;
+
+    await expect(
+      readStrategyVersionRecords(
+        sheets({
+          [SHEET_DEFINITIONS.strategyVersions.range]: [
+            [...headers],
+            rowFor(headers, {
+              'Strategy ID': 'MOMENTUM_BREAKOUT',
+              Version: 'V1',
+              Enabled: true,
+              'Screener Code': 'MOMENTUM_BREAKOUT_V1',
+              Screener: 'FINVIZ',
+              'Finviz URL': 'https://elite.finviz.com/export/screener?v=151'
+            }),
+            rowFor(headers, { Enabled: false })
+          ]
+        })
+      )
+    ).resolves.toEqual([
+      {
+        strategyId: 'MOMENTUM_BREAKOUT',
+        version: 'V1',
+        enabled: true,
+        screenerCode: 'MOMENTUM_BREAKOUT_V1',
+        screener: 'FINVIZ',
+        screenerUrl: 'https://elite.finviz.com/export/screener?v=151'
+      }
+    ]);
+  });
+
   it('finds Rank when Momentum Ranking is batch-loaded with Watchlist using Google-canonical ranges', async () => {
     const momentumHeaders = SHEET_DEFINITIONS.momentumRanking.requiredHeaders;
     const watchlistHeaders = SHEET_DEFINITIONS.watchlist.requiredHeaders;
@@ -352,6 +407,7 @@ describe('Cloud Run Google Sheets API query readers', () => {
   it('finds Trade Plan ID when Trade Plans are batch-loaded with Strategies using Google-canonical ranges', async () => {
     const tradePlanHeaders = SHEET_DEFINITIONS.tradePlans.requiredHeaders;
     const strategyHeaders = SHEET_DEFINITIONS.strategies.requiredHeaders;
+    const strategyVersionHeaders = SHEET_DEFINITIONS.strategyVersions.requiredHeaders;
     const client: SheetsValuesClient = {
       getValues: vi.fn(async () => ({ values: [] })),
       batchGetValues: vi.fn(async () => ({
@@ -370,22 +426,34 @@ describe('Cloud Run Google Sheets API query readers', () => {
             })
           ]
         },
-        'Strategies!A1:H1000': {
+        'Strategies!A1:E1000': {
           values: [
             [...strategyHeaders],
             rowFor(strategyHeaders, {
               'Strategy ID': 'MOMENTUM_BREAKOUT',
               Name: 'Momentum Breakout',
-              Version: 'V1',
               Type: 'MOMENTUM',
               Enabled: true,
-              'Risk %': 0.005,
-              'Max Positions': 5
+              Description: 'Momentum breakout near 52-week high'
+            })
+          ]
+        },
+        'Strategy Versions!A1:F1000': {
+          values: [
+            [...strategyVersionHeaders],
+            rowFor(strategyVersionHeaders, {
+              'Strategy ID': 'MOMENTUM_BREAKOUT',
+              Version: 'V1',
+              Enabled: true,
+              'Screener Code': 'MOMENTUM_BREAKOUT_V1',
+              Screener: 'FINVIZ',
+              'Finviz URL': 'https://elite.finviz.com/export/screener?v=151'
             })
           ]
         },
         [SHEET_DEFINITIONS.tradePlans.range]: {},
-        [SHEET_DEFINITIONS.strategies.range]: {}
+        [SHEET_DEFINITIONS.strategies.range]: {},
+        [SHEET_DEFINITIONS.strategyVersions.range]: {}
       }))
     };
     const requestSheets = createRequestScopedSheets({
@@ -393,7 +461,11 @@ describe('Cloud Run Google Sheets API query readers', () => {
       spreadsheetId: 'spreadsheet-id'
     });
 
-    await requestSheets.batchLoad([SHEET_DEFINITIONS.tradePlans, SHEET_DEFINITIONS.strategies]);
+    await requestSheets.batchLoad([
+      SHEET_DEFINITIONS.tradePlans,
+      SHEET_DEFINITIONS.strategies,
+      SHEET_DEFINITIONS.strategyVersions
+    ]);
 
     await expect(readTradePlans(requestSheets)).resolves.toEqual([
       expect.objectContaining({ id: 'TP-1', ticker: 'BOX', status: 'DRAFT' })

@@ -1,7 +1,9 @@
 import { CAPITAL_LEDGER_HEADERS } from '../../../outbound/google-sheets/capital-transaction/capital-transaction-mapper';
 import {
   FINVIZ_MOMENTUM_EXPORT_HEADERS,
-  SIGNALS_HISTORY_HEADERS
+  SIGNALS_HISTORY_HEADERS,
+  STRATEGY_HEADERS,
+  STRATEGY_VERSION_HEADERS
 } from '@trading-cockpit/contracts';
 import { JOURNAL_HEADERS } from '../../../outbound/google-sheets/journal/journal-mapper';
 import {
@@ -34,7 +36,7 @@ import {
   validateWatchlistHeaders
 } from '../../../outbound/google-sheets/watchlist/watchlist-sheet';
 import { createMomentumRankingInSheets } from './setup-momentum-ranking';
-import { setupStrategiesInSheets, STRATEGY_HEADERS } from './setup-strategies';
+import { setupStrategiesInSheets, validateStrategiesInSheets } from './setup-strategies';
 
 export type WorkbookSheetClassification =
   'DATA' | 'CONFIG' | 'TECHNICAL' | 'OPTIONAL_REPORT' | 'LEGACY_UNUSED';
@@ -162,6 +164,13 @@ function tableDefinitions(): TableSheetDefinition[] {
       initialize: setupStrategiesInSheets
     },
     {
+      sheetName: 'Strategy Versions',
+      classification: 'CONFIG',
+      headers: STRATEGY_VERSION_HEADERS,
+      initialize: setupStrategiesInSheets,
+      validateHeaders: () => validateStrategiesInSheets()
+    },
+    {
       sheetName: FINVIZ_MOMENTUM_SHEET_NAME,
       classification: 'TECHNICAL',
       headers: FINVIZ_MOMENTUM_HEADERS,
@@ -214,6 +223,7 @@ export function validateTradingCockpitWorkbook(): WorkbookSetupReport {
 
   const report = buildReport(items);
   spreadsheet.toast(report.message, 'Trading Cockpit', 8);
+  showValidationDetailsIfInvalid(report);
   return report;
 }
 
@@ -321,9 +331,8 @@ function initializeAccounts(): void {
 }
 
 function validateRequiredRows(sheetName: string, sheet: GoogleAppsScript.Spreadsheet.Sheet): void {
-  if (sheetName === 'Strategies' && sheet.getLastRow() < 2) {
-    throw new Error('Strategies doit contenir au moins la stratégie MOMENTUM_BREAKOUT.');
-  }
+  void sheetName;
+  void sheet;
 }
 
 function requireExactHeaders(
@@ -357,38 +366,6 @@ function isContentEmpty(sheet: GoogleAppsScript.Spreadsheet.Sheet): boolean {
     .every((value) => !String(value || '').trim());
 }
 
-function created(
-  sheetName: string,
-  classification: WorkbookSheetClassification
-): WorkbookSetupItem {
-  return {
-    sheetName,
-    classification,
-    status: 'CREATED',
-    message: `${sheetName} créé avec le schéma canonique.`
-  };
-}
-
-function initialized(
-  sheetName: string,
-  classification: WorkbookSheetClassification
-): WorkbookSetupItem {
-  return {
-    sheetName,
-    classification,
-    status: 'INITIALIZED',
-    message: `${sheetName} initialisé avec le schéma canonique.`
-  };
-}
-
-function failed(
-  sheetName: string,
-  classification: WorkbookSheetClassification,
-  message: string
-): WorkbookSetupItem {
-  return { sheetName, classification, status: 'FAILED', message };
-}
-
 function skippedOptional(sheetName: string): WorkbookSetupItem {
   return {
     sheetName,
@@ -418,4 +395,15 @@ function buildReport(items: WorkbookSetupItem[]): WorkbookSetupReport {
         ? 'Trading Cockpit workbook VALID.'
         : `Trading Cockpit workbook INVALID (${invalid.length} problème(s)).`
   };
+}
+
+function showValidationDetailsIfInvalid(report: WorkbookSetupReport): void {
+  if (report.overallStatus === 'VALID') return;
+
+  const invalidItems = report.items.filter((item) =>
+    ['SCHEMA_MISMATCH', 'FAILED'].includes(item.status)
+  );
+  const details = invalidItems.map((item) => `• ${item.sheetName}: ${item.message}`).join('\n');
+  const ui = SpreadsheetApp.getUi();
+  ui.alert('Trading Cockpit workbook INVALID', `${report.message}\n\n${details}`, ui.ButtonSet.OK);
 }
