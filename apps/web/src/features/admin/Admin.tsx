@@ -10,6 +10,7 @@ import type {
   StrategyDto,
   StrategyVersionDto
 } from '@trading-cockpit/contracts';
+import { toast } from 'sonner';
 import type { CockpitGateway } from '../../infrastructure/cockpit-gateway';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,9 +37,7 @@ import {
   FactSection,
   formLabelClassName,
   inputClassName,
-  noticeClassName,
-  selectClassName,
-  successNoticeClassName
+  selectClassName
 } from '@/components/ui/detail';
 import {
   Table,
@@ -180,8 +179,6 @@ export function Admin({ gateway }: AdminProps) {
     error: null,
     overview: null
   });
-  const [message, setMessage] = useState<string | null>(null);
-  const [messageTone, setMessageTone] = useState<'positive' | 'planned'>('positive');
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [finvizToken, setFinvizToken] = useState('');
   const [createAccountOpen, setCreateAccountOpen] = useState(false);
@@ -238,16 +235,13 @@ export function Admin({ gateway }: AdminProps) {
   ): Promise<boolean> {
     if (busyAction) return false;
     setBusyAction(action);
-    setMessage(null);
     try {
       await operation();
-      setMessage(successMessage);
-      setMessageTone('positive');
+      toast.success(successMessage);
       await load();
       return true;
     } catch (error) {
-      setMessage(failureText(error));
-      setMessageTone('planned');
+      toast.error(failureText(error));
       return false;
     } finally {
       setBusyAction(null);
@@ -256,8 +250,7 @@ export function Admin({ gateway }: AdminProps) {
 
   async function saveFinvizToken() {
     if (!finvizToken.trim()) {
-      setMessage('Le token Finviz ne peut pas être vide.');
-      setMessageTone('planned');
+      toast.warning('Le token Finviz ne peut pas être vide.');
       return;
     }
     const saved = await runAction(
@@ -269,13 +262,11 @@ export function Admin({ gateway }: AdminProps) {
   }
 
   function openCreateAccount() {
-    setMessage(null);
     setCreateAccountForm(EMPTY_CREATE_ACCOUNT_FORM);
     setCreateAccountOpen(true);
   }
 
   function openManageAccount(account: AdminAccountDto) {
-    setMessage(null);
     setManagedAccountId(account.id);
     setAccountSettingsForm({
       name: account.name,
@@ -285,13 +276,11 @@ export function Admin({ gateway }: AdminProps) {
   }
 
   function openCreateStrategy() {
-    setMessage(null);
     setCreateStrategyForm(EMPTY_STRATEGY_FORM);
     setCreateStrategyOpen(true);
   }
 
   function openManageStrategy(strategy: StrategyDto) {
-    setMessage(null);
     setManagedStrategyId(strategy.strategyId);
     setStrategyForm({
       strategyId: strategy.strategyId,
@@ -312,13 +301,11 @@ export function Admin({ gateway }: AdminProps) {
     const riskPercentPerTrade = parseRiskPercentInput(createAccountForm.riskPercent);
     const initialAmount = parsePositiveNumber(createAccountForm.initialAmount);
     if (!Number.isFinite(riskPercentPerTrade)) {
-      setMessage('Risk % Per Trade doit être un pourcentage supérieur à 0.');
-      setMessageTone('planned');
+      toast.warning('Risk % Per Trade doit être un pourcentage supérieur à 0.');
       return;
     }
     if (!Number.isFinite(initialAmount)) {
-      setMessage('Initial Amount doit être supérieur à 0.');
-      setMessageTone('planned');
+      toast.warning('Initial Amount doit être supérieur à 0.');
       return;
     }
 
@@ -342,8 +329,7 @@ export function Admin({ gateway }: AdminProps) {
     if (!managedAccount) return;
     const riskPercentPerTrade = parseRiskPercentInput(accountSettingsForm.riskPercent);
     if (!Number.isFinite(riskPercentPerTrade)) {
-      setMessage('Risk % Per Trade doit être un pourcentage supérieur à 0.');
-      setMessageTone('planned');
+      toast.warning('Risk % Per Trade doit être un pourcentage supérieur à 0.');
       return;
     }
     await runAction(
@@ -364,8 +350,7 @@ export function Admin({ gateway }: AdminProps) {
     if (!managedAccount) return;
     const amount = parsePositiveNumber(capitalForm.amount);
     if (!Number.isFinite(amount)) {
-      setMessage('Amount must be greater than 0.');
-      setMessageTone('planned');
+      toast.warning('Amount must be greater than 0.');
       return;
     }
     const request: RecordCapitalTransactionRequest = {
@@ -635,11 +620,6 @@ export function Admin({ gateway }: AdminProps) {
             </div>
           </DataPanel>
 
-          {message && (
-            <div className={messageTone === 'positive' ? successNoticeClassName : noticeClassName}>
-              {message}
-            </div>
-          )}
         </div>
       )}
 
