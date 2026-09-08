@@ -11,6 +11,7 @@ import {
   normalizeTradePlanSource,
   requireTradePlanInvalidationLevel,
   updateTradePlanPlanning,
+  evaluateExecutionEligibility,
   validateTradingRiskConfiguration
 } from '@trading-cockpit/core/domain/trade-plan';
 import type { WatchlistEntry } from '@trading-cockpit/core/domain/watchlist';
@@ -28,7 +29,7 @@ const watchlistEntry: WatchlistEntry = {
   signalPrice: 54.25,
   currentPrice: 56.5,
   status: 'WATCHING',
-  setupStatus: 'READY',
+  setupStatus: 'TRIGGERED',
   triggerLevel: 57,
   invalidationLevel: 52,
   earningsDate: '',
@@ -217,7 +218,30 @@ describe('Trade Plan domain', () => {
       maxRisk: 100,
       positionSize: 20,
       positionValue: 1140,
-      status: 'DRAFT'
+      status: 'READY'
+    });
+  });
+
+  it('keeps a complete plan in DRAFT until the setup is triggered', () => {
+    const current = createTradePlan(
+      normalizeTradePlanSource({ ...watchlistEntry, setupStatus: 'WAITING_FOR_TRIGGER' }),
+      { accountEquity: 10_000, riskPercent: 0.01 },
+      'A1',
+      'TP-1',
+      new Date()
+    );
+
+    const updated = updateTradePlanPlanning(current, {
+      entryPrice: 57,
+      stopPrice: 52,
+      targetPrice: 67,
+      positionSize: null
+    });
+
+    expect(updated.status).toBe('DRAFT');
+    expect(evaluateExecutionEligibility(updated)).toMatchObject({
+      eligible: false,
+      code: 'SETUP_NOT_TRIGGERED'
     });
   });
 
@@ -236,7 +260,44 @@ describe('Trade Plan domain', () => {
         targetPrice: null,
         positionSize: null
       })
-    ).toMatchObject({ targetPrice: '', rewardPerShare: null, riskReward: null, positionSize: 20 });
+    ).toMatchObject({
+      targetPrice: '',
+      rewardPerShare: null,
+      riskReward: null,
+      positionSize: 20,
+      status: 'READY'
+    });
+  });
+
+  it('keeps a zero-share plan non-executable with risk-budget details', () => {
+    const current = createTradePlan(
+      normalizeTradePlanSource(watchlistEntry),
+      { accountEquity: 100, riskPercent: 0.01 },
+      'A1',
+      'TP-1',
+      new Date()
+    );
+
+    const updated = updateTradePlanPlanning(current, {
+      entryPrice: 57,
+      stopPrice: 52,
+      targetPrice: 67,
+      positionSize: null
+    });
+
+    expect(updated.positionSize).toBe(0);
+    expect(updated.status).toBe('DRAFT');
+    expect(evaluateExecutionEligibility(updated)).toMatchObject({
+      eligible: false,
+      code: 'INSUFFICIENT_RISK_BUDGET',
+      details: {
+        maxAllowedRisk: 1,
+        minimumRiskRequiredForOneShare: 5,
+        configuredRiskPercent: 0.01,
+        requiredRiskPercentForOneShare: 0.05,
+        positionSize: 0
+      }
+    });
   });
 
   it('uses an explicit Position Size override and recalculates planned capital', () => {

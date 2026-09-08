@@ -67,7 +67,7 @@ const dashboard: DashboardDto = {
       changeSinceSignal: 0.04,
       triggerLevel: 35,
       distanceToTrigger: -0.01,
-      setupStatus: 'CONFIRMED',
+      setupStatus: 'TRIGGERED',
       status: 'READY'
     }
   ],
@@ -90,7 +90,7 @@ const dashboard: DashboardDto = {
         distance: -0.01,
         currentPrice: 34.98,
         triggerLevel: 35,
-        setupStatus: 'CONFIRMED'
+        setupStatus: 'TRIGGERED'
       }
     ],
     ready: [
@@ -98,7 +98,7 @@ const dashboard: DashboardDto = {
         ticker: 'BOX',
         currentPrice: 34.98,
         triggerLevel: 35,
-        setupStatus: 'CONFIRMED'
+        setupStatus: 'TRIGGERED'
       }
     ],
     openPositions: [

@@ -6,7 +6,7 @@ export type PositionCalculationValue = number | null;
 export type PositionRatioCalculationValue = PositionCalculationValue | 'DIVISION_BY_ZERO';
 
 export const INITIAL_POSITION_STATUS = 'OPEN' as const;
-export const EXECUTABLE_TRADE_PLAN_STATUSES = ['DRAFT', 'READY'] as const;
+export const EXECUTABLE_TRADE_PLAN_STATUSES = ['READY'] as const;
 export const POSITION_STATUSES = ['OPEN', 'CLOSED', 'STOPPED', 'TARGET HIT'] as const;
 export const CLOSED_POSITION_STATUS = 'CLOSED' as const;
 export const TERMINAL_POSITION_STATUSES = ['CLOSED', 'STOPPED', 'TARGET HIT'] as const;

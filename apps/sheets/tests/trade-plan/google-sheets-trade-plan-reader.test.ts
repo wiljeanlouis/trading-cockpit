@@ -21,7 +21,7 @@ const plan = {
   signalPrice: 33,
   ticker: 'BOX',
   referencePrice: 34,
-  setupStatus: 'CONFIRMED',
+  setupStatus: 'TRIGGERED',
   triggerLevel: 34.5,
   invalidationLevel: 32.8,
   eventRisk: 'CLEAR',

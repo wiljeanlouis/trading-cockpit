@@ -83,7 +83,12 @@ export class GoogleSheetsWatchlistRepository implements WatchlistRepository {
 
   updateTradePlanningInputs(
     id: string,
-    inputs: { triggerLevel: number | null; invalidationLevel: number; eventRisk: string }
+    inputs: {
+      setupStatus?: string;
+      triggerLevel: number | null;
+      invalidationLevel: number;
+      eventRisk: string;
+    }
   ): void {
     const sheet = this.getValidatedSheet();
     const lastRow = sheet.getLastRow();
@@ -98,6 +103,9 @@ export class GoogleSheetsWatchlistRepository implements WatchlistRepository {
     if (offset < 0) throw new Error(`Watchlist ID introuvable : ${normalizedId}`);
 
     const row = offset + 2;
+    if (inputs.setupStatus) {
+      sheet.getRange(row, requireColumn(headers, 'Setup Status') + 1).setValue(inputs.setupStatus);
+    }
     sheet
       .getRange(row, requireColumn(headers, 'Trigger Level') + 1)
       .setValue(inputs.triggerLevel ?? '');

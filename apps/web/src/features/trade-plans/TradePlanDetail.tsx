@@ -103,6 +103,7 @@ export function TradePlanDetail({ plan, gateway, onClose, onExecuted }: TradePla
 
   const canEditPlanning = ['DRAFT', 'READY'].includes(plan.status.trim().toUpperCase());
   const canExecute = plan.executionEligibility.eligible;
+  const admissionDetails = plan.executionEligibility.details;
 
   /**
    * Persists planning inputs through the backend and reloads the confirmed derived values.
@@ -459,7 +460,46 @@ export function TradePlanDetail({ plan, gateway, onClose, onExecuted }: TradePla
             {!canExecute && canEditPlanning && !result && (
               <div className={`${noticeClassName} flex flex-col items-start gap-4`} role="status">
                 <strong>Execution unavailable</strong>
-                <span>{plan.executionEligibility.reason ?? 'This Trade Plan is incomplete.'}</span>
+                <span>{plan.executionEligibility.message ?? 'This Trade Plan is incomplete.'}</span>
+                <small className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                  Admission: {plan.executionEligibility.code}
+                </small>
+                {admissionDetails && (
+                  <dl className="grid w-full gap-2 rounded-[16px] border border-border/70 bg-background/25 p-3 text-sm text-muted-foreground">
+                    {admissionDetails.maxAllowedRisk !== undefined && (
+                      <div className="flex justify-between gap-3">
+                        <dt>Max allowed risk</dt>
+                        <dd className="font-semibold text-foreground">
+                          {displayNumber(admissionDetails.maxAllowedRisk)}
+                        </dd>
+                      </div>
+                    )}
+                    {admissionDetails.minimumRiskRequiredForOneShare !== undefined && (
+                      <div className="flex justify-between gap-3">
+                        <dt>Risk required for 1 share</dt>
+                        <dd className="font-semibold text-foreground">
+                          {displayNumber(admissionDetails.minimumRiskRequiredForOneShare)}
+                        </dd>
+                      </div>
+                    )}
+                    {admissionDetails.configuredRiskPercent !== undefined && (
+                      <div className="flex justify-between gap-3">
+                        <dt>Configured risk policy</dt>
+                        <dd className="font-semibold text-foreground">
+                          {displayPercent(admissionDetails.configuredRiskPercent)}
+                        </dd>
+                      </div>
+                    )}
+                    {admissionDetails.requiredRiskPercentForOneShare !== undefined && (
+                      <div className="flex justify-between gap-3">
+                        <dt>Risk policy needed for 1 share</dt>
+                        <dd className="font-semibold text-foreground">
+                          {displayPercent(admissionDetails.requiredRiskPercentForOneShare)}
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+                )}
               </div>
             )}
 

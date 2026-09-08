@@ -1,9 +1,5 @@
-import {
-  createTradePlan,
-  normalizeTradePlanSource,
-  requireTradePlanInvalidationLevel,
-  type TradePlan
-} from '../../domain/trade-plan';
+import { createTradePlan, normalizeTradePlanSource, type TradePlan } from '../../domain/trade-plan';
+import { normalizeSetupStatus } from '../../domain/watchlist';
 import type { RuntimePort } from '../../ports/outbound/runtime-port';
 import type { StrategyRepository } from '../../ports/outbound/strategy-repository';
 import type { TradePlanRepository } from '../../ports/outbound/trade-plan-repository';
@@ -64,6 +60,37 @@ function requiredPositiveLevel(value: number | null, label: string): number {
   return normalized;
 }
 
+function setupStatusForPlanCreation(currentStatus: string, hasWebPlanningInputs: boolean): string {
+  const normalized = normalizeSetupStatus(currentStatus || 'WAITING_FOR_SETUP');
+
+  if (
+    hasWebPlanningInputs &&
+    (normalized === 'WAITING_FOR_SETUP' || normalized === 'WAITING_FOR_TRIGGER')
+  ) {
+    return 'WAITING_FOR_TRIGGER';
+  }
+
+  return normalized;
+}
+
+function requireTradePlanSetupLevels(source: {
+  ticker: string;
+  triggerLevel: unknown;
+  invalidationLevel: unknown;
+}): void {
+  if (source.triggerLevel === '' || source.triggerLevel === null) {
+    throw new Error(
+      `${source.ticker} n'a pas encore de Trigger Level. Définis-le avant de créer un Trade Plan.`
+    );
+  }
+  if (source.invalidationLevel === '' || source.invalidationLevel === null) {
+    throw new Error(
+      `${source.ticker} n'a pas encore d'Invalidation Level. ` +
+        `Définis-le avant de créer un Trade Plan.`
+    );
+  }
+}
+
 /**
  * Creates an account-aware Trade Plan from a Watchlist candidate using backend-owned account
  * equity/risk policy. React may provide planning inputs, but sizing and workflow state stay in
@@ -114,9 +141,14 @@ export function createCreateTradePlanFromWatchlist({
         : String(eventRisk ?? '')
             .trim()
             .toUpperCase();
+    const normalizedSetupStatus = setupStatusForPlanCreation(
+      watchlistEntry.setupStatus,
+      hasWebPlanningInputs
+    );
     const duplicateTicker = String(watchlistEntry.ticker || '').trim();
     const source = normalizeTradePlanSource({
       ...watchlistEntry,
+      setupStatus: normalizedSetupStatus,
       triggerLevel: normalizedTriggerLevel,
       invalidationLevel: normalizedInvalidationLevel,
       eventRisk: normalizedEventRisk
@@ -134,7 +166,7 @@ export function createCreateTradePlanFromWatchlist({
       );
     }
 
-    requireTradePlanInvalidationLevel(source);
+    requireTradePlanSetupLevels(source);
 
     const existing = tradePlanRepository.findActiveByWatchlistIdAndAccountId(
       source.watchlistId,
@@ -164,6 +196,7 @@ export function createCreateTradePlanFromWatchlist({
     tradePlanRepository.save(tradePlan);
     if (hasWebPlanningInputs) {
       watchlistRepository.updateTradePlanningInputs(source.watchlistId, {
+        setupStatus: normalizedSetupStatus,
         triggerLevel: typeof normalizedTriggerLevel === 'number' ? normalizedTriggerLevel : null,
         invalidationLevel: Number(normalizedInvalidationLevel),
         eventRisk: normalizedEventRisk

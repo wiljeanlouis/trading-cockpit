@@ -19,7 +19,7 @@ const data: WatchlistDto = {
       signalPrice: 33.4,
       currentPrice: 34.82,
       status: 'READY',
-      setupStatus: 'VALID',
+      setupStatus: 'WAITING_FOR_TRIGGER',
       triggerLevel: 34.5,
       invalidationLevel: 32.8,
       earningsDate: '2026-09-10T04:00:00.000Z',

@@ -21,7 +21,7 @@ const tradePlan: TradePlan = {
   signalPrice: 54.25,
   ticker: ' urnb ',
   referencePrice: 56.5,
-  setupStatus: 'READY',
+  setupStatus: 'TRIGGERED',
   triggerLevel: 57,
   invalidationLevel: 52,
   eventRisk: 'LOW',
@@ -122,7 +122,7 @@ describe('Position domain', () => {
     expect(() => normalizePositionSource({ ...tradePlan, [field]: value })).toThrow(message);
   });
 
-  it.each(['DRAFT', 'READY', ' draft ', 'ready'])('accepts executable status %s', (status) => {
+  it.each(['READY', 'ready'])('accepts executable status %s', (status) => {
     const source = normalizePositionSource({ ...tradePlan, status });
 
     expect(() => requireExecutableTradePlanStatus(source)).not.toThrow();
@@ -144,11 +144,17 @@ describe('Position domain', () => {
     );
   });
 
-  it.each(['', 'UNKNOWN', 'OPEN'])('rejects other Trade Plan status %s', (status) => {
+  it.each([
+    ['', ''],
+    ['DRAFT', 'DRAFT'],
+    [' draft ', 'DRAFT'],
+    ['UNKNOWN', 'UNKNOWN'],
+    ['OPEN', 'OPEN']
+  ] as const)('rejects other Trade Plan status %s', (status, normalizedStatus) => {
     const source = normalizePositionSource({ ...tradePlan, status });
 
     expect(() => requireExecutableTradePlanStatus(source)).toThrow(
-      `Le Trade Plan URNB ne peut pas être exécuté avec le statut ${status}.`
+      `Le Trade Plan URNB ne peut pas être exécuté avec le statut ${normalizedStatus}.`
     );
   });
 

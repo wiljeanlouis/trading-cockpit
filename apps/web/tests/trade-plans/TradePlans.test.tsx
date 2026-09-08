@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { TradePlansDto } from '@trading-cockpit/contracts';
+import type { TradePlanItemDto, TradePlansDto } from '@trading-cockpit/contracts';
 import { TradePlans } from '../../src/features/trade-plans/TradePlans';
 import { createGatewayStub } from '../support/cockpit-gateway';
 
@@ -18,7 +18,7 @@ const data: TradePlansDto = {
       signalDate: '2026-08-27T04:00:00.000Z',
       signalPrice: 33,
       referencePrice: 34,
-      setupStatus: 'CONFIRMED',
+      setupStatus: 'TRIGGERED',
       triggerLevel: 34.5,
       invalidationLevel: 32.8,
       eventRisk: 'CLEAR',
@@ -35,9 +35,15 @@ const data: TradePlansDto = {
       maxRisk: 100,
       positionSize: 45,
       positionValue: 1575,
-      status: 'DRAFT',
+      status: 'READY',
       notes: 'Wait for volume',
-      executionEligibility: { eligible: true, reason: null }
+      executionEligibility: {
+        eligible: true,
+        code: 'ELIGIBLE',
+        message: null,
+        reason: null,
+        details: null
+      }
     }
   ]
 };
@@ -54,7 +60,7 @@ describe('Trade Plans', () => {
     expect(cells[1]).toHaveTextContent('A1');
     expect(cells[4]).toHaveTextContent('35');
     expect(cells[7]).toHaveTextContent('100');
-    expect(cells[9]).toHaveTextContent('DRAFT');
+    expect(cells[9]).toHaveTextContent('READY');
     expect(load).toHaveBeenCalledOnce();
   });
 
@@ -173,28 +179,31 @@ describe('Trade Plans', () => {
   });
 
   it('renders invalid numeric values as incomplete and hides execution', async () => {
+    const invalidNumericPlan: TradePlanItemDto = {
+      ...data.items[0],
+      status: 'DRAFT',
+      entryPrice: Number.NaN,
+      targetPrice: Number.NaN,
+      riskPerShare: Number.NaN,
+      rewardPerShare: Number.NaN,
+      riskReward: Number.NaN,
+      positionSize: Number.NaN,
+      positionValue: Number.NaN,
+      executionEligibility: {
+        eligible: false,
+        code: 'PLAN_INCOMPLETE',
+        message: "BOX n'a pas d'Entry Price.",
+        reason: "BOX n'a pas d'Entry Price.",
+        details: null
+      }
+    };
+
     render(
       <TradePlans
         gateway={createGatewayStub({
           getTradePlans: vi.fn(async () => ({
             ...data,
-            items: [
-              {
-                ...data.items[0],
-                status: 'DRAFT',
-                entryPrice: Number.NaN,
-                targetPrice: Number.NaN,
-                riskPerShare: Number.NaN,
-                rewardPerShare: Number.NaN,
-                riskReward: Number.NaN,
-                positionSize: Number.NaN,
-                positionValue: Number.NaN,
-                executionEligibility: {
-                  eligible: false,
-                  reason: "BOX n'a pas d'Entry Price."
-                }
-              }
-            ]
+            items: [invalidNumericPlan]
           }))
         })}
       />
@@ -208,7 +217,7 @@ describe('Trade Plans', () => {
   });
 
   it('saves user-owned planning inputs and reloads backend calculations', async () => {
-    const incomplete = {
+    const incomplete: TradePlanItemDto = {
       ...data.items[0],
       status: 'DRAFT',
       entryPrice: null,
@@ -218,12 +227,18 @@ describe('Trade Plans', () => {
       riskReward: null,
       positionSize: null,
       positionValue: null,
-      executionEligibility: { eligible: false, reason: "BOX n'a pas d'Entry Price." }
+      executionEligibility: {
+        eligible: false,
+        code: 'PLAN_INCOMPLETE',
+        message: "BOX n'a pas d'Entry Price.",
+        reason: "BOX n'a pas d'Entry Price.",
+        details: null
+      }
     };
     const load = vi
       .fn()
       .mockResolvedValueOnce({ ...data, items: [incomplete] })
-      .mockResolvedValueOnce({ ...data, items: [{ ...data.items[0], status: 'DRAFT' }] });
+      .mockResolvedValueOnce({ ...data, items: [{ ...data.items[0], status: 'READY' }] });
     const cockpit = createGatewayStub({
       getTradePlans: load,
       updateTradePlanPlanning: vi.fn(async () => ({
@@ -271,21 +286,24 @@ describe('Trade Plans', () => {
   });
 
   it('does not expose execution, edit, or cancel actions for a terminal plan', async () => {
+    const cancelledPlan: TradePlanItemDto = {
+      ...data.items[0],
+      status: 'CANCELLED',
+      executionEligibility: {
+        eligible: false,
+        code: 'PLAN_NOT_EXECUTABLE',
+        message: "Impossible d'exécuter un Trade Plan CANCELLED.",
+        reason: "Impossible d'exécuter un Trade Plan CANCELLED.",
+        details: null
+      }
+    };
+
     render(
       <TradePlans
         gateway={createGatewayStub({
           getTradePlans: vi.fn(async () => ({
             ...data,
-            items: [
-              {
-                ...data.items[0],
-                status: 'CANCELLED',
-                executionEligibility: {
-                  eligible: false,
-                  reason: "Impossible d'exécuter un Trade Plan CANCELLED."
-                }
-              }
-            ]
+            items: [cancelledPlan]
           }))
         })}
       />

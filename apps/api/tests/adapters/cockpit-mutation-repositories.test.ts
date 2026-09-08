@@ -160,7 +160,7 @@ describe('Cloud Run Google Sheets API mutation repositories', () => {
 
     expect(client.updateValues).toHaveBeenCalledWith({
       spreadsheetId: 'spreadsheet-id',
-      range: "'Watchlist'!N2",
+      range: "'Watchlist'!M2",
       values: [['PLANNED']],
       valueInputOption: 'USER_ENTERED'
     });

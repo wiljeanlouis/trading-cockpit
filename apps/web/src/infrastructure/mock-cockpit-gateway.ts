@@ -65,7 +65,7 @@ const DEVELOPMENT_WATCHLIST: WatchlistDto = {
       signalPrice: 33.4,
       currentPrice: 34.82,
       status: 'READY',
-      setupStatus: 'VALID',
+      setupStatus: 'WAITING_FOR_TRIGGER',
       triggerLevel: 34.5,
       invalidationLevel: 32.8,
       earningsDate: '2026-09-10T04:00:00.000Z',
@@ -184,7 +184,7 @@ const DEVELOPMENT_TRADE_PLANS: TradePlanItemDto[] = [
     signalDate: '2026-08-27T04:00:00.000Z',
     signalPrice: 33.4,
     referencePrice: 34.82,
-    setupStatus: 'CONFIRMED',
+    setupStatus: 'TRIGGERED',
     triggerLevel: 34.5,
     invalidationLevel: 32.8,
     eventRisk: 'CLEAR',
@@ -203,7 +203,13 @@ const DEVELOPMENT_TRADE_PLANS: TradePlanItemDto[] = [
     positionValue: 1575,
     status: 'READY',
     notes: 'Development fixture',
-    executionEligibility: { eligible: true, reason: null }
+    executionEligibility: {
+      eligible: true,
+      code: 'ELIGIBLE',
+      message: null,
+      reason: null,
+      details: null
+    }
   },
   {
     id: 'DEMO-TP-URNB',
@@ -235,7 +241,13 @@ const DEVELOPMENT_TRADE_PLANS: TradePlanItemDto[] = [
     positionValue: null,
     status: 'DRAFT',
     notes: null,
-    executionEligibility: { eligible: false, reason: "URNB n'a pas d'Entry Price." }
+    executionEligibility: {
+      eligible: false,
+      code: 'PLAN_INCOMPLETE',
+      message: "URNB n'a pas d'Entry Price.",
+      reason: "URNB n'a pas d'Entry Price.",
+      details: null
+    }
   }
 ];
 
@@ -936,7 +948,14 @@ export class MockCockpitGateway implements CockpitGateway {
     plan.entryPrice = request.entryPrice;
     plan.stopPrice = request.stopPrice;
     plan.targetPrice = request.targetPrice;
-    plan.executionEligibility = { eligible: true, reason: null };
+    plan.status = 'READY';
+    plan.executionEligibility = {
+      eligible: true,
+      code: 'ELIGIBLE',
+      message: null,
+      reason: null,
+      details: null
+    };
     return { tradePlanId: plan.id, status: plan.status };
   }
 }

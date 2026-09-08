@@ -515,7 +515,7 @@ describe('Cloud Run Google Sheets API query readers', () => {
               'Trigger Level': 35,
               'Distance to Trigger': -0.01,
               Status: 'READY',
-              'Setup Status': 'CONFIRMED'
+              'Setup Status': 'TRIGGERED'
             })
           ]
         },

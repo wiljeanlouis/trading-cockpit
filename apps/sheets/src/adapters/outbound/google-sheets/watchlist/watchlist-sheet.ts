@@ -58,7 +58,7 @@ export function refreshWatchlistValidations(): void {
     ],
     [
       requireColumn(headers, 'Setup Status') + 1,
-      ['WAITING_FOR_TRIGGER', 'TRIGGERED', 'CONFIRMED', 'INVALIDATED', 'EXTENDED'],
+      ['WAITING_FOR_SETUP', 'WAITING_FOR_TRIGGER', 'TRIGGERED', 'INVALIDATED'],
       true
     ],
     [

@@ -75,7 +75,7 @@ describe('Watchlist domain', () => {
       signalPrice: 54.25,
       currentPrice: '',
       status: 'WATCHING',
-      setupStatus: '',
+      setupStatus: 'WAITING_FOR_SETUP',
       triggerLevel: '',
       invalidationLevel: '',
       earningsDate: '',

@@ -162,11 +162,10 @@ describe('Watchlist physical sheet contract', () => {
       'REJECTED'
     ]);
     expect(builders[1].list).toEqual([
+      'WAITING_FOR_SETUP',
       'WAITING_FOR_TRIGGER',
       'TRIGGERED',
-      'CONFIRMED',
-      'INVALIDATED',
-      'EXTENDED'
+      'INVALIDATED'
     ]);
     expect(builders[2].list).toEqual([
       'CLEAR',

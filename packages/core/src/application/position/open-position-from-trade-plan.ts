@@ -5,6 +5,7 @@ import {
   requirePositionExecutionData,
   type Position
 } from '../../domain/position';
+import { evaluateExecutionEligibility } from '../../domain/trade-plan';
 import type { PositionRepository } from '../../ports/outbound/position-repository';
 import type { RuntimePort } from '../../ports/outbound/runtime-port';
 import type { StrategyRepository } from '../../ports/outbound/strategy-repository';
@@ -77,6 +78,10 @@ export function createOpenPositionFromTradePlan({
     }
 
     requireExecutableTradePlanStatus(source);
+    const admission = evaluateExecutionEligibility(tradePlan);
+    if (!admission.eligible) {
+      throw new Error(admission.message ?? `Le Trade Plan ${source.ticker} n'est pas exécutable.`);
+    }
     requirePositionExecutionData(source);
 
     const existing = positionRepository.findOpenByTradePlanId(source.tradePlanId);

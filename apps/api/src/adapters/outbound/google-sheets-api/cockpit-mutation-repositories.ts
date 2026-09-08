@@ -182,10 +182,23 @@ export class CloudRunWatchlistRepository implements WatchlistRepository {
 
   updateTradePlanningInputs(
     id: string,
-    inputs: { triggerLevel: number | null; invalidationLevel: number; eventRisk: string }
+    inputs: {
+      setupStatus?: string;
+      triggerLevel: number | null;
+      invalidationLevel: number;
+      eventRisk: string;
+    }
   ): void {
     const rowNumber = this.requireRowNumberById(id);
-    this.context.writer.batchUpdate([
+    const updates = [
+      ...(inputs.setupStatus
+        ? [
+            {
+              range: cellRange(SHEET_DEFINITIONS.watchlist.sheetName, rowNumber, 14),
+              values: [[inputs.setupStatus]]
+            }
+          ]
+        : []),
       {
         range: cellRange(SHEET_DEFINITIONS.watchlist.sheetName, rowNumber, 15),
         values: [[inputs.triggerLevel ?? '']]
@@ -198,11 +211,13 @@ export class CloudRunWatchlistRepository implements WatchlistRepository {
         range: cellRange(SHEET_DEFINITIONS.watchlist.sheetName, rowNumber, 19),
         values: [[inputs.eventRisk]]
       }
-    ]);
+    ];
+    this.context.writer.batchUpdate(updates);
     this.entries = this.loaded().map((entry) =>
       entry.id === id
         ? {
             ...entry,
+            setupStatus: inputs.setupStatus ?? entry.setupStatus,
             triggerLevel: inputs.triggerLevel ?? '',
             invalidationLevel: inputs.invalidationLevel,
             eventRisk: inputs.eventRisk
@@ -213,7 +228,7 @@ export class CloudRunWatchlistRepository implements WatchlistRepository {
 
   updateStatus(id: string, status: string): void {
     const rowNumber = this.requireRowNumberById(id);
-    this.context.writer.update(cellRange(SHEET_DEFINITIONS.watchlist.sheetName, rowNumber, 14), [
+    this.context.writer.update(cellRange(SHEET_DEFINITIONS.watchlist.sheetName, rowNumber, 13), [
       [status]
     ]);
     this.entries = this.loaded().map((entry) => (entry.id === id ? { ...entry, status } : entry));

@@ -76,7 +76,7 @@ function snapshot(): DashboardRepositorySnapshot {
         changeSinceSignal: 0.03,
         triggerLevel: 35,
         distanceToTrigger: -0.01,
-        setupStatus: 'CONFIRMED',
+        setupStatus: 'TRIGGERED',
         status: 'READY'
       },
       {

@@ -67,7 +67,25 @@ export interface TradePlanItemDto {
   notes: string | null;
   executionEligibility: {
     eligible: boolean;
+    code:
+      | 'ELIGIBLE'
+      | 'PLAN_INCOMPLETE'
+      | 'SETUP_NOT_TRIGGERED'
+      | 'SETUP_INVALIDATED'
+      | 'INSUFFICIENT_RISK_BUDGET'
+      | 'INVALID_ENTRY_STOP_RELATION'
+      | 'ACCOUNT_UNAVAILABLE'
+      | 'PLAN_NOT_EXECUTABLE'
+      | 'UNKNOWN';
+    message: string | null;
     reason: string | null;
+    details: {
+      maxAllowedRisk?: number;
+      minimumRiskRequiredForOneShare?: number;
+      configuredRiskPercent?: number;
+      requiredRiskPercentForOneShare?: number;
+      positionSize?: number | null;
+    } | null;
   };
 }
 

@@ -126,7 +126,7 @@ describe('Cloud Run Trading Cockpit API', () => {
         Sector: 'Technology',
         'Current Price': 34.82,
         Status: 'READY',
-        'Setup Status': 'CONFIRMED'
+        'Setup Status': 'TRIGGERED'
       })
     ]);
     const result = await getWatchlistForCloudRun({
@@ -752,7 +752,7 @@ describe('Cloud Run Trading Cockpit API', () => {
       })
     );
     expect(client.updateValues).toHaveBeenCalledWith(
-      expect.objectContaining({ range: "'Watchlist'!N2", values: [['PLANNED']] })
+      expect.objectContaining({ range: "'Watchlist'!M2", values: [['PLANNED']] })
     );
   });
 
@@ -823,7 +823,7 @@ describe('Cloud Run Trading Cockpit API', () => {
       expect.objectContaining({ range: "'Trade Plans'!AA2", values: [['EXECUTED']] })
     );
     expect(client.updateValues).toHaveBeenCalledWith(
-      expect.objectContaining({ range: "'Watchlist'!N2", values: [['ENTERED']] })
+      expect.objectContaining({ range: "'Watchlist'!M2", values: [['ENTERED']] })
     );
   });
 
@@ -861,7 +861,7 @@ describe('Cloud Run Trading Cockpit API', () => {
       expect.objectContaining({ range: "'Journal'!A:AA" })
     );
     expect(client.updateValues).toHaveBeenCalledWith(
-      expect.objectContaining({ range: "'Watchlist'!N2", values: [['CLOSED']] })
+      expect.objectContaining({ range: "'Watchlist'!M2", values: [['CLOSED']] })
     );
   });
 
@@ -1616,7 +1616,7 @@ function queryFixtureByRange(
         'Trigger Level': 35,
         'Distance to Trigger': -0.01,
         Status: 'READY',
-        'Setup Status': 'CONFIRMED'
+        'Setup Status': 'TRIGGERED'
       })
     ],
     [SHEET_DEFINITIONS.tradePlans.range]: [
@@ -1634,10 +1634,15 @@ function queryFixtureByRange(
           'Entry Price': 34,
           'Stop Price': 30,
           'Target Price': 42,
+          'Risk / Share': 4,
+          'Reward / Share': 8,
+          'Risk : Reward': 2,
           'Account Equity': 20000,
           'Risk %': 0.005,
           'Max Risk $': 100,
           'Position Size': 25,
+          'Position Value': 850,
+          'Setup Status': 'TRIGGERED',
           Status: 'READY',
           'Account ID': 'A1'
         })

@@ -13,7 +13,7 @@ const plan: TradePlan = {
   signalPrice: 33,
   ticker: 'BOX',
   referencePrice: 34,
-  setupStatus: 'CONFIRMED',
+  setupStatus: 'TRIGGERED',
   triggerLevel: 34.5,
   invalidationLevel: 32.8,
   eventRisk: 'CLEAR',
@@ -56,7 +56,7 @@ describe('get Trade Plans', () => {
           signalDate: '2026-08-27T04:00:00.000Z',
           signalPrice: 33,
           referencePrice: 34,
-          setupStatus: 'CONFIRMED',
+          setupStatus: 'TRIGGERED',
           triggerLevel: 34.5,
           invalidationLevel: 32.8,
           eventRisk: 'CLEAR',
@@ -75,7 +75,13 @@ describe('get Trade Plans', () => {
           positionValue: 1575,
           status: 'READY',
           notes: 'Wait for volume',
-          executionEligibility: { eligible: true, reason: null }
+          executionEligibility: {
+            eligible: true,
+            code: 'ELIGIBLE',
+            message: null,
+            reason: null,
+            details: null
+          }
         }
       ]
     });
@@ -105,7 +111,13 @@ describe('get Trade Plans', () => {
       positionSize: null,
       accountEquity: null,
       riskPercent: null,
-      executionEligibility: { eligible: false, reason: "BOX n'a pas d'Entry Price." }
+      executionEligibility: {
+        eligible: false,
+        code: 'PLAN_INCOMPLETE',
+        message: "BOX n'a pas d'Entry Price.",
+        reason: "BOX n'a pas d'Entry Price.",
+        details: null
+      }
     });
   });
 
@@ -127,9 +139,9 @@ describe('get Trade Plans', () => {
     expect(strategyIds).toHaveBeenCalledTimes(1);
     expect(result.items).toHaveLength(3);
     expect(result.items.map((item) => item.executionEligibility)).toEqual([
-      { eligible: true, reason: null },
-      { eligible: true, reason: null },
-      { eligible: true, reason: null }
+      { eligible: true, code: 'ELIGIBLE', message: null, reason: null, details: null },
+      { eligible: true, code: 'ELIGIBLE', message: null, reason: null, details: null },
+      { eligible: true, code: 'ELIGIBLE', message: null, reason: null, details: null }
     ]);
   });
 
@@ -143,6 +155,9 @@ describe('get Trade Plans', () => {
 
     expect(result.items[0].executionEligibility).toEqual({
       eligible: false,
+      code: 'ACCOUNT_UNAVAILABLE',
+      message: 'Version de stratégie inconnue : TRIGGER V1',
+      details: null,
       reason: 'Version de stratégie inconnue : TRIGGER V1'
     });
   });
@@ -158,7 +173,23 @@ describe('get Trade Plans', () => {
 
     expect(result.items[0].executionEligibility).toEqual({
       eligible: false,
+      code: 'ACCOUNT_UNAVAILABLE',
+      message: 'Aucune stratégie configurée.',
+      details: null,
       reason: 'Aucune stratégie configurée.'
+    });
+  });
+
+  it('marks a complete non-triggered setup as not executable', () => {
+    const result = createGetTradePlans({
+      reader: { findAll: () => [{ ...plan, setupStatus: 'WAITING_FOR_TRIGGER', status: 'DRAFT' }] },
+      strategyIds: () => ['TRIGGER'],
+      now: () => new Date('2026-08-28T16:00:00.000Z')
+    })();
+
+    expect(result.items[0].executionEligibility).toMatchObject({
+      eligible: false,
+      code: 'SETUP_NOT_TRIGGERED'
     });
   });
 });

@@ -17,7 +17,7 @@ const tradePlan: TradePlan = {
   signalPrice: 100,
   ticker: 'BOX',
   referencePrice: 100,
-  setupStatus: 'READY',
+  setupStatus: 'TRIGGERED',
   triggerLevel: 100,
   invalidationLevel: 95,
   eventRisk: '',
@@ -91,6 +91,14 @@ describe('open Position from account-owned Trade Plan', () => {
     const c = context({ ...tradePlan, id: 'TP-2', accountId: 'A2' });
     const result = createOpenPositionFromTradePlan(c.dependencies)({ tradePlanId: 'TP-2' });
     expect(result.kind === 'opened' && result.position.accountId).toBe('A2');
+  });
+
+  it('does not execute a DRAFT Trade Plan even when planning data is complete', () => {
+    const c = context({ ...tradePlan, status: 'DRAFT' });
+    expect(() => createOpenPositionFromTradePlan(c.dependencies)({ tradePlanId: 'TP-1' })).toThrow(
+      'Le Trade Plan BOX ne peut pas être exécuté avec le statut DRAFT.'
+    );
+    expect(c.saved()).toBeNull();
   });
 
   it('blocks historical Trade Plans without Account ID', () => {

@@ -2,6 +2,13 @@ export type WatchlistSnapshotValue = string | number | boolean | Date | null;
 
 export const INITIAL_WATCHLIST_STATUS = 'WATCHING' as const;
 export const TERMINAL_WATCHLIST_STATUSES = ['CLOSED', 'REJECTED'] as const;
+export const SETUP_STATUSES = [
+  'WAITING_FOR_SETUP',
+  'WAITING_FOR_TRIGGER',
+  'TRIGGERED',
+  'INVALIDATED'
+] as const;
+export type SetupStatus = (typeof SETUP_STATUSES)[number];
 
 export interface WatchlistIdentity {
   strategyId: string;
@@ -131,6 +138,35 @@ export function isActiveWatchlistStatus(status: string): boolean {
   return !TERMINAL_WATCHLIST_STATUSES.some((terminalStatus) => terminalStatus === normalizedStatus);
 }
 
+export function normalizeSetupStatus(status: string): SetupStatus {
+  const normalizedStatus = String(status || '')
+    .trim()
+    .toUpperCase();
+
+  if (SETUP_STATUSES.some((setupStatus) => setupStatus === normalizedStatus)) {
+    return normalizedStatus as SetupStatus;
+  }
+
+  throw new Error(`Setup Status inconnu : ${status}`);
+}
+
+export function assertSetupStatusTransition(current: string, next: string): SetupStatus {
+  const from = normalizeSetupStatus(current || 'WAITING_FOR_SETUP');
+  const to = normalizeSetupStatus(next);
+  const allowed: Record<SetupStatus, readonly SetupStatus[]> = {
+    WAITING_FOR_SETUP: ['WAITING_FOR_TRIGGER', 'INVALIDATED'],
+    WAITING_FOR_TRIGGER: ['TRIGGERED', 'INVALIDATED'],
+    TRIGGERED: ['INVALIDATED'],
+    INVALIDATED: []
+  };
+
+  if (!allowed[from].includes(to)) {
+    throw new Error(`Transition Setup Status invalide : ${from} → ${to}`);
+  }
+
+  return to;
+}
+
 export function createWatchlistEntry(
   candidate: NormalizedWatchlistCandidate,
   id: string,
@@ -149,7 +185,7 @@ export function createWatchlistEntry(
     signalPrice: candidate.signalPrice,
     currentPrice: '',
     status: INITIAL_WATCHLIST_STATUS,
-    setupStatus: '',
+    setupStatus: 'WAITING_FOR_SETUP',
     triggerLevel: '',
     invalidationLevel: '',
     earningsDate: '',

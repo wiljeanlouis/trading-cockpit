@@ -1,11 +1,8 @@
 import type { TradePlanItemDto, TradePlansDto } from '@trading-cockpit/contracts';
 import type { TradePlanSnapshotValue } from '../../domain/trade-plan';
+import { evaluateExecutionEligibility } from '../../domain/trade-plan';
 import type { TradePlanReader } from '../../ports/outbound/trade-plan-reader';
-import {
-  normalizePositionSource,
-  requireExecutableTradePlanStatus,
-  requirePositionExecutionData
-} from '../../domain/position';
+import { normalizePositionSource } from '../../domain/position';
 
 export interface GetTradePlansDependencies {
   reader: TradePlanReader;
@@ -56,11 +53,17 @@ function executionEligibility(
         `Version de stratégie inconnue : ${source.strategyId} ${source.strategyVersion}`
       );
     }
-    requireExecutableTradePlanStatus(source);
-    requirePositionExecutionData(source);
-    return { eligible: true, reason: null };
+    const eligibility = evaluateExecutionEligibility(plan);
+    return { ...eligibility, reason: eligibility.message };
   } catch (error) {
-    return { eligible: false, reason: error instanceof Error ? error.message : String(error) };
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      eligible: false,
+      code: 'ACCOUNT_UNAVAILABLE',
+      message,
+      reason: message,
+      details: null
+    };
   }
 }
 

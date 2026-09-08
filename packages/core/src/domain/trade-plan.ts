@@ -1,6 +1,7 @@
 import {
   normalizeStrategyId,
   normalizeTicker,
+  normalizeSetupStatus,
   type WatchlistEntry,
   type WatchlistSnapshotValue
 } from './watchlist';
@@ -11,6 +12,29 @@ export type TradePlanCalculationValue = number | null;
 export const INITIAL_TRADE_PLAN_STATUS = 'DRAFT' as const;
 export const INITIAL_TRADE_PLAN_ENTRY_TYPE = 'TRIGGER' as const;
 export const ACTIVE_TRADE_PLAN_STATUSES = ['DRAFT', 'READY'] as const;
+export type ExecutionEligibilityCode =
+  | 'ELIGIBLE'
+  | 'PLAN_INCOMPLETE'
+  | 'SETUP_NOT_TRIGGERED'
+  | 'SETUP_INVALIDATED'
+  | 'INSUFFICIENT_RISK_BUDGET'
+  | 'INVALID_ENTRY_STOP_RELATION'
+  | 'ACCOUNT_UNAVAILABLE'
+  | 'PLAN_NOT_EXECUTABLE'
+  | 'UNKNOWN';
+
+export interface ExecutionEligibility {
+  eligible: boolean;
+  code: ExecutionEligibilityCode;
+  message: string | null;
+  details: {
+    maxAllowedRisk?: number;
+    minimumRiskRequiredForOneShare?: number;
+    configuredRiskPercent?: number;
+    requiredRiskPercentForOneShare?: number;
+    positionSize?: number | null;
+  } | null;
+}
 
 export interface TradingRiskConfiguration {
   accountEquity: number;
@@ -130,12 +154,156 @@ export function calculatePositionValue(
   return isFiniteNumber(quantity) && isFiniteNumber(entryPrice) ? quantity * entryPrice : null;
 }
 
+function snapshotNumber(value: TradePlanSnapshotValue): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
 export function isActiveTradePlanStatus(status: string): boolean {
   const normalizedStatus = String(status || '')
     .trim()
     .toUpperCase();
 
   return ACTIVE_TRADE_PLAN_STATUSES.some((activeStatus) => activeStatus === normalizedStatus);
+}
+
+export function evaluateExecutionEligibility(tradePlan: TradePlan): ExecutionEligibility {
+  const status = String(tradePlan.status || '')
+    .trim()
+    .toUpperCase();
+  if (status === 'EXECUTED') {
+    return {
+      eligible: false,
+      code: 'PLAN_NOT_EXECUTABLE',
+      message: `${tradePlan.ticker} est déjà marqué EXECUTED.`,
+      details: null
+    };
+  }
+  if (status === 'CANCELLED') {
+    return {
+      eligible: false,
+      code: 'PLAN_NOT_EXECUTABLE',
+      message: "Impossible d'exécuter un Trade Plan CANCELLED.",
+      details: null
+    };
+  }
+
+  let setupStatus: ReturnType<typeof normalizeSetupStatus>;
+  try {
+    setupStatus = normalizeSetupStatus(tradePlan.setupStatus || 'WAITING_FOR_SETUP');
+  } catch {
+    return {
+      eligible: false,
+      code: 'PLAN_INCOMPLETE',
+      message: `${tradePlan.ticker} n'a pas de Setup Status valide.`,
+      details: null
+    };
+  }
+  if (setupStatus === 'WAITING_FOR_SETUP' || setupStatus === 'WAITING_FOR_TRIGGER') {
+    return {
+      eligible: false,
+      code: 'SETUP_NOT_TRIGGERED',
+      message: `${tradePlan.ticker} attend encore un trigger confirmé.`,
+      details: null
+    };
+  }
+  if (setupStatus === 'INVALIDATED') {
+    return {
+      eligible: false,
+      code: 'SETUP_INVALIDATED',
+      message: `Le setup ${tradePlan.ticker} est invalidé.`,
+      details: null
+    };
+  }
+
+  const entryPrice = snapshotNumber(tradePlan.entryPrice);
+  if (entryPrice === null || entryPrice <= 0) {
+    return {
+      eligible: false,
+      code: 'PLAN_INCOMPLETE',
+      message: `${tradePlan.ticker} n'a pas d'Entry Price.`,
+      details: null
+    };
+  }
+
+  const stopPrice = snapshotNumber(tradePlan.stopPrice);
+  if (stopPrice === null || stopPrice <= 0) {
+    return {
+      eligible: false,
+      code: 'PLAN_INCOMPLETE',
+      message: `${tradePlan.ticker} n'a pas de Stop Price.`,
+      details: null
+    };
+  }
+  if (stopPrice >= entryPrice) {
+    return {
+      eligible: false,
+      code: 'INVALID_ENTRY_STOP_RELATION',
+      message: `${tradePlan.ticker} doit respecter Stop < Entry pour un trade LONG.`,
+      details: null
+    };
+  }
+  const targetPrice = snapshotNumber(tradePlan.targetPrice);
+  if (targetPrice !== null && targetPrice <= entryPrice) {
+    return {
+      eligible: false,
+      code: 'INVALID_ENTRY_STOP_RELATION',
+      message: `${tradePlan.ticker} doit respecter Entry < Target pour un trade LONG.`,
+      details: null
+    };
+  }
+
+  const riskPerShare = snapshotNumber(tradePlan.riskPerShare);
+  const positionSize = snapshotNumber(tradePlan.positionSize);
+  const maxRisk = snapshotNumber(tradePlan.maxRisk);
+  if (riskPerShare === null || riskPerShare <= 0 || positionSize === null) {
+    return {
+      eligible: false,
+      code: 'PLAN_INCOMPLETE',
+      message: `${tradePlan.ticker} n'a pas de sizing complet.`,
+      details: null
+    };
+  }
+  if (positionSize < 1) {
+    return {
+      eligible: false,
+      code: 'INSUFFICIENT_RISK_BUDGET',
+      message: `${tradePlan.ticker} ne peut pas acheter 1 action avec le risque configuré.`,
+      details: {
+        maxAllowedRisk: maxRisk ?? undefined,
+        minimumRiskRequiredForOneShare: riskPerShare,
+        configuredRiskPercent: tradePlan.riskPercent,
+        requiredRiskPercentForOneShare:
+          tradePlan.accountEquity > 0 ? riskPerShare / tradePlan.accountEquity : undefined,
+        positionSize
+      }
+    };
+  }
+  if (maxRisk !== null && positionSize * riskPerShare > maxRisk) {
+    return {
+      eligible: false,
+      code: 'INSUFFICIENT_RISK_BUDGET',
+      message: `${tradePlan.ticker} dépasse le risque maximum autorisé.`,
+      details: {
+        maxAllowedRisk: maxRisk,
+        minimumRiskRequiredForOneShare: riskPerShare,
+        configuredRiskPercent: tradePlan.riskPercent,
+        requiredRiskPercentForOneShare:
+          tradePlan.accountEquity > 0 ? riskPerShare / tradePlan.accountEquity : undefined,
+        positionSize
+      }
+    };
+  }
+
+  if (status !== 'READY') {
+    return {
+      eligible: false,
+      code: 'PLAN_NOT_EXECUTABLE',
+      message: `${tradePlan.ticker} doit être READY avant l'exécution.`,
+      details: null
+    };
+  }
+
+  return { eligible: true, code: 'ELIGIBLE', message: null, details: null };
 }
 
 /**
@@ -315,8 +483,7 @@ export function updateTradePlanPlanning(
   }
   const positionSize = inputs.positionSize ?? calculatePlannedQuantity(maxRisk, riskPerShare);
   const positionValue = calculatePositionValue(positionSize, inputs.entryPrice);
-
-  return {
+  const plannedTradePlan = {
     ...tradePlan,
     entryPrice: inputs.entryPrice,
     stopPrice: inputs.stopPrice,
@@ -326,6 +493,13 @@ export function updateTradePlanPlanning(
     riskReward,
     maxRisk,
     positionSize,
-    positionValue
+    positionValue,
+    status: 'READY'
+  };
+  const admission = evaluateExecutionEligibility(plannedTradePlan);
+
+  return {
+    ...plannedTradePlan,
+    status: admission.eligible ? 'READY' : 'DRAFT'
   };
 }

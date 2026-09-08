@@ -20,7 +20,7 @@ const watchlist: WatchlistEntry = {
   signalPrice: 100,
   currentPrice: 100,
   status: 'WATCHING',
-  setupStatus: 'READY',
+  setupStatus: 'TRIGGERED',
   triggerLevel: 100,
   invalidationLevel: 95,
   earningsDate: '',
@@ -49,17 +49,19 @@ function context(
     accountExists?: boolean;
     riskExists?: boolean;
     versionExists?: boolean;
+    watchlistEntry?: WatchlistEntry;
   } = {}
 ) {
   let saved: TradePlan | null = null;
   let updatedPlanningInputs: {
+    setupStatus?: string;
     triggerLevel: number | null;
     invalidationLevel: number;
     eventRisk: string;
   } | null = null;
   const dependencies: CreateTradePlanFromWatchlistDependencies = {
     watchlistRepository: {
-      findById: () => watchlist,
+      findById: () => options.watchlistEntry ?? watchlist,
       findActiveByIdentity: () => null,
       save: () => undefined,
       updateTradePlanningInputs: (_id, inputs) => {
@@ -130,7 +132,7 @@ describe('create account-aware Trade Plan from Watchlist', () => {
   });
 
   it('uses and persists planning inputs supplied by the web workflow', () => {
-    const c = context();
+    const c = context({ watchlistEntry: { ...watchlist, setupStatus: 'WAITING_FOR_SETUP' } });
     const result = createCreateTradePlanFromWatchlist(c.dependencies)({
       watchlistId: 'WL-1',
       accountId: 'A1',
@@ -141,16 +143,32 @@ describe('create account-aware Trade Plan from Watchlist', () => {
 
     expect(result.kind).toBe('created');
     expect(c.saved()).toMatchObject({
+      setupStatus: 'WAITING_FOR_TRIGGER',
       triggerLevel: 102,
       invalidationLevel: 94,
       stopPrice: 94,
       eventRisk: 'EARNINGS SOON'
     });
     expect(c.updatedPlanningInputs()).toEqual({
+      setupStatus: 'WAITING_FOR_TRIGGER',
       triggerLevel: 102,
       invalidationLevel: 94,
       eventRisk: 'EARNINGS SOON'
     });
+  });
+
+  it('requires a Trigger Level before creating a Trade Plan', () => {
+    const c = context();
+    expect(() =>
+      createCreateTradePlanFromWatchlist(c.dependencies)({
+        watchlistId: 'WL-1',
+        accountId: 'A1',
+        triggerLevel: null,
+        invalidationLevel: 94,
+        eventRisk: 'CLEAR'
+      })
+    ).toThrow("BOX n'a pas encore de Trigger Level.");
+    expect(c.saved()).toBeNull();
   });
 
   it('rejects invalid web planning levels before persistence', () => {
