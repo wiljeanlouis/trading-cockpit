@@ -9,6 +9,9 @@ const server = createCloudRunApp({
   staticAssetsPath: config.staticAssetsPath
 });
 
+/**
+ * Production entrypoint: Cloud Run provides PORT and expects the container to bind all interfaces.
+ */
 server.listen(config.port, '0.0.0.0', () => {
   console.log(`Trading Cockpit API listening on :${config.port}`);
 });

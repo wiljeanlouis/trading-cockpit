@@ -33,6 +33,11 @@ export interface SheetTableDefinition {
 const SHEETS_SERIAL_EPOCH_OFFSET = 25569;
 const MS_PER_DAY = 86_400_000;
 
+/**
+ * Creates a request-scoped table reader that removes duplicate Google Sheets reads within one
+ * HTTP request, preserves stable logical cache keys across batchGet range canonicalization, and
+ * normalizes API transport details such as serial dates before data reaches application readers.
+ */
 export function createRequestScopedSheets(dependencies: {
   sheetsClient: SheetsValuesClient;
   spreadsheetId: string;
@@ -184,6 +189,9 @@ function normalizeRow(
   });
 }
 
+/**
+ * Converts Google Sheets serial date numbers into Date objects for configured date columns.
+ */
 function normalizeSheetsApiDateValue(value: unknown): unknown {
   if (value === '' || value === null || value === undefined) return '';
   if (value instanceof Date) return value;
@@ -191,6 +199,12 @@ function normalizeSheetsApiDateValue(value: unknown): unknown {
   return new Date(Math.round((value - SHEETS_SERIAL_EPOCH_OFFSET) * MS_PER_DAY));
 }
 
+/**
+ * Finds the response corresponding to a requested logical table.
+ *
+ * This protects batch readers from Google Sheets API range canonicalization and prevents one
+ * table from accidentally receiving another table's headers.
+ */
 function responseForRange(
   responses: Record<string, SheetsValuesResponse>,
   requestedRange: string

@@ -16,6 +16,12 @@ export interface FinvizFeedConfiguration {
 
 const FINVIZ_REQUEST_INTERVAL_MS = 5_000;
 
+/**
+ * Cloud Run implementation of the provider-neutral MarketSignalSource port for Finviz.
+ *
+ * This adapter owns all vendor-specific concerns: credentials, URL construction, HTTP
+ * transport, CSV parsing and Finviz request pacing. Core only sees market-signal feeds.
+ */
 export class CloudRunFinvizMarketSignalSource implements MarketSignalSource {
   private fetched = new Map<string, MarketSignalBatch>();
 
@@ -28,6 +34,9 @@ export class CloudRunFinvizMarketSignalSource implements MarketSignalSource {
       new Promise((resolve) => setTimeout(resolve, ms))
   ) {}
 
+  /**
+   * Exposes feed identity without leaking Finviz query strings to application/core code.
+   */
   listFeeds(): MarketSignalFeed[] {
     return this.configurations.map((config) => ({
       id: config.id,
@@ -37,12 +46,21 @@ export class CloudRunFinvizMarketSignalSource implements MarketSignalSource {
     }));
   }
 
+  /**
+   * Returns a preloaded batch synchronously because the core market-signal port is synchronous.
+   */
   fetchSignals(feedId: string): MarketSignalBatch {
     const batch = this.fetched.get(feedId);
     if (!batch) throw new Error(`Finviz feed ${feedId} was not preloaded.`);
     return batch;
   }
 
+  /**
+   * Performs the actual asynchronous Finviz calls before the core use case runs.
+   *
+   * The first request is immediate; subsequent requests wait five seconds to respect the
+   * provider constraint without putting rate-limit behavior in React or Core.
+   */
   async preload(): Promise<void> {
     const token = await this.tokenService.getToken();
     for (const [index, config] of this.configurations.entries()) {
@@ -80,6 +98,9 @@ export class CloudRunFinvizMarketSignalSource implements MarketSignalSource {
     }
   }
 
+  /**
+   * Builds the final Finviz export URL from either a complete URL or a query-string config.
+   */
   private urlFor(config: FinvizFeedConfiguration, token: string): string {
     const separator = config.query.includes('?') ? '&' : '?';
     if (/^https?:\/\//i.test(config.query)) {

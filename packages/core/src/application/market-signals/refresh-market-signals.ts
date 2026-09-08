@@ -28,6 +28,13 @@ export interface RefreshMarketSignalsResult {
   refreshed: RefreshedMarketSignalsFeed[];
 }
 
+/**
+ * Orchestrates a provider-neutral market-signal refresh.
+ *
+ * The use case validates strategy/version consistency, writes the latest projection and
+ * archives new observations. Provider transport, credentials and rate limiting stay behind
+ * MarketSignalSource.
+ */
 export function createRefreshMarketSignals(
   dependencies: RefreshMarketSignalsDependencies
 ): (request?: RefreshMarketSignalsRequest) => RefreshMarketSignalsResult {

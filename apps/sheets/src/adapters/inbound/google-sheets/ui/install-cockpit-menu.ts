@@ -1,3 +1,7 @@
+/**
+ * Installs the supported Google Sheets UI callbacks. React is the primary UI, but these menu
+ * actions remain the Sheets/admin fallback and should not expose internal use cases directly.
+ */
 export function installCockpitMenu(): void {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('Trading Cockpit')

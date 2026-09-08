@@ -261,6 +261,10 @@ export class LoadedJournalReader implements JournalReader {
   }
 }
 
+/**
+ * Request-local Discovery reader assembled from already-loaded Sheets API tables. It lets core
+ * use cases read signals and strategy configuration without knowing the HTTP/Sheets transport.
+ */
 export class LoadedDiscoverySignalReader implements DiscoverySignalReader {
   constructor(
     private readonly signals: readonly SignalSnapshot[],
@@ -281,6 +285,10 @@ export class LoadedDiscoverySignalReader implements DiscoverySignalReader {
   }
 }
 
+/**
+ * Request-local account repository used by account-scoped queries after the Accounts table has
+ * been loaded once.
+ */
 export class LoadedTradingAccountRepository implements TradingAccountRepository {
   constructor(private readonly accounts: readonly TradingAccount[]) {}
   findAll(): TradingAccount[] {
@@ -326,6 +334,10 @@ export async function readTradingAccounts(sheets: RequestScopedSheets): Promise<
   }));
 }
 
+/**
+ * Reads canonical Account rows including Risk % Per Trade, then validates account identity
+ * uniqueness before financial queries consume them.
+ */
 export async function readTradingAccountRecords(
   sheets: RequestScopedSheets
 ): Promise<TradingAccountRecord[]> {
@@ -367,6 +379,10 @@ export async function readStrategyIds(sheets: RequestScopedSheets): Promise<stri
   return strategies.map((strategy) => strategy.id);
 }
 
+/**
+ * Validates the two-sheet Strategy model: stable parent strategies, immutable version identities
+ * and at most one active version per enabled Strategy ID.
+ */
 export async function validateStrategies(sheets: RequestScopedSheets): Promise<true> {
   await sheets.batchLoad([SHEET_DEFINITIONS.strategies, SHEET_DEFINITIONS.strategyVersions]);
   const strategies = await readStrategyRecords(sheets);
@@ -397,6 +413,10 @@ export async function validateStrategies(sheets: RequestScopedSheets): Promise<t
   return true;
 }
 
+/**
+ * Reads Signals History as the canonical provider archive. Provider attributes remain attached to
+ * snapshots, while downstream use cases choose the subset they need.
+ */
 export async function readSignalSnapshots(sheets: RequestScopedSheets): Promise<SignalSnapshot[]> {
   const table = await readTable(sheets, SHEET_DEFINITIONS.signalsHistory);
   return table.rows
@@ -408,6 +428,10 @@ export async function readSignalSnapshots(sheets: RequestScopedSheets): Promise<
     );
 }
 
+/**
+ * Loads the operational tables needed by Dashboard in one request-scoped batch so pipeline,
+ * previews and action cards reuse the same source data.
+ */
 export async function readDashboardSnapshot(
   sheets: RequestScopedSheets
 ): Promise<DashboardRepositorySnapshot> {

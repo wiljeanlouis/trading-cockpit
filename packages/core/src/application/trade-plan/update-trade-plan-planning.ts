@@ -11,6 +11,10 @@ export interface UpdateTradePlanPlanningCommand extends TradePlanPlanningInputs 
 
 export type UpdateTradePlanPlanning = (command: UpdateTradePlanPlanningCommand) => TradePlan;
 
+/**
+ * Updates only user-owned planning inputs for an existing Trade Plan, then lets the domain
+ * recompute derived values and execution readiness before persistence.
+ */
 export function createUpdateTradePlanPlanning(
   repository: TradePlanRepository
 ): UpdateTradePlanPlanning {

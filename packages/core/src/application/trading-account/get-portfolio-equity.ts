@@ -20,6 +20,10 @@ export interface PortfolioEquitySummary {
   accounts: AccountEquitySummary[];
 }
 
+/**
+ * Aggregates realized account equity for either one account or all accounts. Monetary aggregation
+ * is allowed only when all included accounts share the same base currency.
+ */
 export function calculatePortfolioEquitySummary({
   accounts,
   transactions,
@@ -69,6 +73,9 @@ function accountsForScope(accounts: readonly TradingAccount[], scope: PortfolioS
   return [account];
 }
 
+/**
+ * Defends against accidental FX aggregation by requiring one shared base currency.
+ */
 function sharedBaseCurrency(summaries: readonly AccountEquitySummary[]): string {
   const currencies = new Set(summaries.map((summary) => summary.baseCurrency).filter(Boolean));
   if (currencies.size === 0)

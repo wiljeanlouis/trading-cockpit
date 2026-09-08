@@ -27,6 +27,10 @@ function areStringArraysEqual(left: readonly string[], right: readonly string[])
   return left.every((value, index) => value === right[index]);
 }
 
+/**
+ * Centralizes the table behavior shared by Cockpit workspaces: status filtering, default visible
+ * statuses, stable sorting and sort toggling. Feature screens provide only their domain sorters.
+ */
 export function useCockpitTable<T, K extends string>({
   items,
   getStatus,
@@ -78,6 +82,9 @@ export function useCockpitTable<T, K extends string>({
     return sorted;
   }, [activeStatuses, getStatus, items, sortDirection, sorters, sortKey]);
 
+  /**
+   * Toggles one normalized status without coupling table controls to a specific workflow enum.
+   */
   function toggleStatus(status: string) {
     setActiveStatuses((current) =>
       current.includes(status) ? current.filter((value) => value !== status) : [...current, status]
@@ -88,6 +95,10 @@ export function useCockpitTable<T, K extends string>({
     setActiveStatuses([...defaultStatuses]);
   }
 
+  /**
+   * Applies Cockpit's table sorting convention: same column toggles direction, new columns use
+   * their configured default direction.
+   */
   function setSort(key: K) {
     if (sortKey === key) {
       setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));

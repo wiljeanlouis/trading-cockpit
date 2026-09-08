@@ -60,6 +60,10 @@ function statusTone(status: string): 'positive' | 'muted' | 'planned' | 'watchin
   return 'watching';
 }
 
+/**
+ * Shows the backend-confirmed Trade Plan snapshot beside deliberate planning/execution actions.
+ * React edits only user-owned inputs and never recalculates authoritative risk or sizing values.
+ */
 export function TradePlanDetail({ plan, gateway, onClose, onExecuted }: TradePlanDetailProps) {
   const modalRef = useRef<HTMLElement>(null);
   const [confirming, setConfirming] = useState(false);
@@ -100,6 +104,9 @@ export function TradePlanDetail({ plan, gateway, onClose, onExecuted }: TradePla
   const canEditPlanning = ['DRAFT', 'READY'].includes(plan.status.trim().toUpperCase());
   const canExecute = plan.executionEligibility.eligible;
 
+  /**
+   * Persists planning inputs through the backend and reloads the confirmed derived values.
+   */
   async function savePlanning() {
     if (savingPlanning || submitting) return;
     const parsedEntryPrice = Number(entryPrice);
@@ -161,6 +168,9 @@ export function TradePlanDetail({ plan, gateway, onClose, onExecuted }: TradePla
     }
   }
 
+  /**
+   * Executes only after explicit confirmation and backend eligibility validation.
+   */
   async function execute() {
     if (submitting || result) return;
     setSubmitting(true);

@@ -46,6 +46,10 @@ export type CreateTradePlanFromWatchlist = (
   command: CreateTradePlanFromWatchlistCommand
 ) => CreateTradePlanFromWatchlistResult;
 
+/**
+ * Accepts omitted planning levels while rejecting non-positive user-entered prices before the
+ * domain calculates risk/reward and readiness.
+ */
 function optionalPositiveLevel(value: number | null, label: string): number | null {
   if (value === null) return null;
   if (!Number.isFinite(value) || value <= 0) {
@@ -60,6 +64,11 @@ function requiredPositiveLevel(value: number | null, label: string): number {
   return normalized;
 }
 
+/**
+ * Creates an account-aware Trade Plan from a Watchlist candidate using backend-owned account
+ * equity/risk policy. React may provide planning inputs, but sizing and workflow state stay in
+ * the domain.
+ */
 export function createCreateTradePlanFromWatchlist({
   watchlistRepository,
   tradePlanRepository,

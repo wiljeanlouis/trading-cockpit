@@ -134,6 +134,10 @@ function JournalRow({ entry, onOpen }: { entry: JournalItemDto; onOpen: () => vo
   );
 }
 
+/**
+ * Displays backend-confirmed Journal history as read-only trading review data, with only
+ * client-side filtering/sorting over the loaded DTO.
+ */
 export function Journal({ gateway }: JournalProps) {
   const [state, setState] = useState<JournalState>({ data: null, loading: true, error: null });
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -263,6 +267,9 @@ export function Journal({ gateway }: JournalProps) {
   const hasFilters =
     Boolean(ticker) || account !== 'ALL' || strategy !== 'ALL' || outcome !== 'ALL';
 
+  /**
+   * Keeps Journal sorting local and presentation-only; historical trade values are not mutated.
+   */
   function setSort(key: JournalSortKey) {
     if (sortKey === key) {
       setSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));

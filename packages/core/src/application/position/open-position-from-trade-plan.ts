@@ -39,6 +39,10 @@ export type OpenPositionFromTradePlan = (
   command: OpenPositionFromTradePlanCommand
 ) => OpenPositionFromTradePlanResult;
 
+/**
+ * Executes an eligible Trade Plan into exactly one open Position, then advances the related Trade
+ * Plan and Watchlist statuses through the established workflow.
+ */
 export function createOpenPositionFromTradePlan({
   positionRepository,
   tradePlanRepository,
@@ -86,7 +90,6 @@ export function createOpenPositionFromTradePlan({
       };
     }
 
-    // Preserve the legacy order: timestamp before UUID.
     const openedAt = runtime.now();
     const id = runtime.newId();
     const position = createOpenPosition(source, id, openedAt);

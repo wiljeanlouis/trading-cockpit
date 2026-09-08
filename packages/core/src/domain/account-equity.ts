@@ -13,6 +13,10 @@ export interface AccountEquitySummary {
   markToMarketEquity: null;
 }
 
+/**
+ * Calculates realized trading P&L strictly from Journal records, which are the authoritative
+ * closed-trade history.
+ */
 export function calculateRealizedPnl(entries: JournalEntry[]): number {
   return entries.reduce((total, entry) => {
     if (entry.realizedPnl === '' || entry.realizedPnl === null) {
@@ -26,6 +30,10 @@ export function calculateRealizedPnl(entries: JournalEntry[]): number {
   }, 0);
 }
 
+/**
+ * Builds the realized-equity summary used by sizing, Dashboard and Analytics. Mark-to-market,
+ * buying power and cash accounting are intentionally outside this model.
+ */
 export function createAccountEquitySummary(
   capital: AccountCapitalSummary,
   entries: JournalEntry[]

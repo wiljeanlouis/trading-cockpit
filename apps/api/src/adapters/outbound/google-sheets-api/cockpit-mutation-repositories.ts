@@ -77,6 +77,10 @@ export interface MutationContext {
   now: () => Date;
 }
 
+/**
+ * Runtime adapter for Cloud Run mutations: core receives time/ID services without importing Node
+ * APIs directly.
+ */
 export class NodeRuntime implements RuntimePort {
   constructor(private readonly clock: () => Date) {}
   now(): Date {
@@ -87,6 +91,10 @@ export class NodeRuntime implements RuntimePort {
   }
 }
 
+/**
+ * Collects Google Sheets writes during a mutation and flushes them after the use case succeeds.
+ * This keeps controllers simple while making the non-transactional write boundary explicit.
+ */
 export class DeferredSheetsWriter {
   private readonly writes: Array<() => Promise<void>> = [];
 
@@ -140,6 +148,10 @@ export class DeferredSheetsWriter {
   }
 }
 
+/**
+ * Mutable Watchlist repository for Cloud Run commands, backed by request-loaded rows and deferred
+ * Sheets API writes.
+ */
 export class CloudRunWatchlistRepository implements WatchlistRepository {
   private entries: WatchlistEntry[] | null = null;
 
@@ -224,6 +236,10 @@ export class CloudRunWatchlistRepository implements WatchlistRepository {
   }
 }
 
+/**
+ * Mutable Trade Plan repository for planning/execution commands. It updates only the canonical
+ * row ranges owned by the workflow and mirrors changes in memory for later use-case steps.
+ */
 export class CloudRunTradePlanRepository implements TradePlanRepository {
   private plans: TradePlan[] | null = null;
 
@@ -293,6 +309,10 @@ export class CloudRunTradePlanRepository implements TradePlanRepository {
   }
 }
 
+/**
+ * Mutable Position repository for execution and close workflows, preserving Position ID as the
+ * aggregate identity while writing canonical row updates back to Sheets.
+ */
 export class CloudRunPositionRepository implements PositionRepository {
   private positions: Position[] | null = null;
 
@@ -349,6 +369,10 @@ export class CloudRunPositionRepository implements PositionRepository {
   }
 }
 
+/**
+ * Mutable Journal repository used during position close/reconciliation to detect existing Journal
+ * snapshots and append missing backend-confirmed trade history.
+ */
 export class CloudRunJournalRepository implements JournalRepository {
   private entries: JournalEntry[] | null = null;
 
@@ -387,6 +411,10 @@ export class CloudRunJournalRepository implements JournalRepository {
   }
 }
 
+/**
+ * Capital Ledger repository for account funding flows. Account equity calculations consume these
+ * records through core use cases rather than through React or HTTP controllers.
+ */
 export class CloudRunCapitalTransactionRepository implements CapitalTransactionRepository {
   private transactions: CapitalTransaction[] | null = null;
 
@@ -470,6 +498,10 @@ export class LoadedTradingAccountRepository implements TradingAccountRepository 
   }
 }
 
+/**
+ * Account administration repository that checks cross-sheet account references before updates
+ * while keeping physical deletes out of the supported workflow.
+ */
 export class CloudRunTradingAccountManagementRepository implements TradingAccountManagementRepository {
   private accounts: TradingAccount[] | null = null;
   private accountTable: SheetTable | null = null;
@@ -601,6 +633,10 @@ function tradingAccountToRow(account: TradingAccountRecord): unknown[] {
   return [account.id, account.name, account.baseCurrency, account.riskPercentPerTrade];
 }
 
+/**
+ * Cloud Run writer for Signals History, the canonical provider archive. It writes the complete
+ * configured provider snapshot schema and preserves existing deduplication keys.
+ */
 export class CloudRunSignalHistoryRepository implements SignalHistoryRepository {
   constructor(
     private readonly context: MutationContext,
@@ -626,6 +662,10 @@ export class CloudRunSignalHistoryRepository implements SignalHistoryRepository 
   }
 }
 
+/**
+ * Technical provider projection writer used for operator inspection of the latest Finviz import;
+ * Discovery itself reads from Signals History, not this projection.
+ */
 export class CloudRunMarketSignalProjection implements MarketSignalProjection {
   constructor(private readonly context: MutationContext) {}
   replace(batch: MarketSignalBatch, refreshedAt: Date): void {
@@ -642,6 +682,9 @@ export class CloudRunMarketSignalProjection implements MarketSignalProjection {
   }
 }
 
+/**
+ * Request-loaded strategy catalog that resolves the single active version for a Strategy ID.
+ */
 export class LoadedTradingStrategyCatalog implements TradingStrategyCatalog {
   constructor(
     private readonly strategies: readonly TradingStrategy[],
@@ -659,6 +702,10 @@ export class LoadedTradingStrategyCatalog implements TradingStrategyCatalog {
   }
 }
 
+/**
+ * Preloads the tables commonly needed by multi-step mutations so each use case shares the same
+ * request-scoped source data and deferred writer.
+ */
 export async function loadMutationRepositories(context: MutationContext) {
   await context.sheets.batchLoad([
     SHEET_DEFINITIONS.watchlist,

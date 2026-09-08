@@ -82,6 +82,10 @@ const LEGACY_REPORT_SHEETS = ['Dashboard', 'Analytics'] as const;
 const OPTIONAL_REPORT_SHEETS = ['Documentation'] as const;
 const LEGACY_UNUSED_SHEETS = ['Lists', 'Finviz Screener'] as const;
 
+/**
+ * Defines the canonical workbook inventory for the supported Sheets runtime, aligned with API
+ * readers so setup/validation catches schema drift before HTTP endpoints fail.
+ */
 function tableDefinitions(): TableSheetDefinition[] {
   return [
     {
@@ -167,6 +171,10 @@ function tableDefinitions(): TableSheetDefinition[] {
   ];
 }
 
+/**
+ * Creates or initializes missing/empty canonical structures without seeding user-specific
+ * business data such as real accounts or strategy records.
+ */
 export function initializeTradingCockpitWorkbook(): WorkbookSetupReport {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const items: WorkbookSetupItem[] = [];
@@ -190,6 +198,10 @@ export function initializeTradingCockpitWorkbook(): WorkbookSetupReport {
   return report;
 }
 
+/**
+ * Performs read-only workbook validation, reporting schema state and manual-configuration needs
+ * without repairing, migrating or formatting the workbook.
+ */
 export function validateTradingCockpitWorkbook(): WorkbookSetupReport {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const items: WorkbookSetupItem[] = [];
@@ -214,6 +226,10 @@ export function validateTradingCockpitWorkbook(): WorkbookSetupReport {
   return report;
 }
 
+/**
+ * Initializes a missing/empty sheet, but preserves any non-empty sheet unless it already matches
+ * the current canonical schema.
+ */
 function initializeDefinition(
   spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet,
   definition: TableSheetDefinition
@@ -244,6 +260,10 @@ function initializeDefinition(
   return preserveCanonicalSheet(definition);
 }
 
+/**
+ * Validates Data Contract V1 for DATA/CONFIG sheets: row 1 exact headers and row 2+ records.
+ * Technical provider projections may allow extra headers only when the export can add fields.
+ */
 function validateDefinition(
   spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet,
   definition: TableSheetDefinition
@@ -296,6 +316,9 @@ function preserveCanonicalSheet(definition: TableSheetDefinition): WorkbookSetup
   };
 }
 
+/**
+ * Creates only the structural table and minimal DATA-sheet-friendly formatting.
+ */
 function initializeSimpleTable(
   sheetName: string,
   headers: readonly string[]
@@ -322,6 +345,10 @@ function validateRequiredRows(sheetName: string, sheet: GoogleAppsScript.Spreads
   void sheet;
 }
 
+/**
+ * Enforces header order as part of the workbook contract because mappers/formulas still depend on
+ * stable physical column positions in the Google Sheets UI runtime.
+ */
 function requireExactHeaders(
   sheetName: string,
   headers: readonly unknown[],

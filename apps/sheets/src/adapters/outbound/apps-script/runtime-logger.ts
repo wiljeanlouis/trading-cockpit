@@ -72,6 +72,9 @@ export class RuntimeLogger {
     this.emit('info', 'SUCCESS', { ...fields, durationMs: this.now() - this.startedAt });
   }
 
+  /**
+   * Emits best-effort observability; logging failures must never alter workflow behavior.
+   */
   private emit(level: 'info' | 'warn' | 'error', event: string, fields: RuntimeLogFields): void {
     try {
       const details = fieldsText(fields);
@@ -79,7 +82,7 @@ export class RuntimeLogger {
         `[TradingCockpit][${this.workflow}][${this.runId}] ${event}${details ? ` ${details}` : ''}`
       );
     } catch {
-      // Observability must never alter workflow behavior.
+      return;
     }
   }
 }

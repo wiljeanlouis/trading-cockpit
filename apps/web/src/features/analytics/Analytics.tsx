@@ -73,6 +73,10 @@ function monetaryTone(value: number): string | undefined {
   return undefined;
 }
 
+/**
+ * Analytics renders backend-calculated trading performance with account/strategy filters and
+ * account comparison. Ratios and monetary aggregates remain backend-owned.
+ */
 export function Analytics({ gateway }: AnalyticsProps) {
   const [state, setState] = useState<AnalyticsState>({
     data: null,
@@ -107,6 +111,9 @@ export function Analytics({ gateway }: AnalyticsProps) {
     void load();
   }, [load]);
 
+  /**
+   * Refreshes the current Analytics query without changing the selected account/strategy filters.
+   */
   async function refresh() {
     if (state.loading) return;
     await load();

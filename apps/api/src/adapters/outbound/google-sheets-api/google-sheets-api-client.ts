@@ -12,6 +12,10 @@ export interface SheetsValuesClient {
     valueRenderOption: 'UNFORMATTED_VALUE';
     dateTimeRenderOption: 'SERIAL_NUMBER';
   }): Promise<SheetsValuesResponse>;
+  /**
+   * Returns responses keyed by both requested ranges and Google-canonicalized ranges so table
+   * readers can keep stable logical lookup keys even when the API expands A1 notation.
+   */
   batchGetValues?(request: {
     spreadsheetId: string;
     ranges: readonly string[];
@@ -42,6 +46,10 @@ export interface SheetsValuesClient {
   }): Promise<void>;
 }
 
+/**
+ * Creates the production Google Sheets API client using Application Default Credentials from the
+ * runtime service account. Key files and browser credentials do not belong in this boundary.
+ */
 export async function createGoogleSheetsApiClient(): Promise<SheetsValuesClient> {
   const auth = await google.auth.getClient({
     scopes: ['https://www.googleapis.com/auth/spreadsheets']

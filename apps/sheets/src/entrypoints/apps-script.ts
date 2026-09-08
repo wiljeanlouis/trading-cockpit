@@ -54,6 +54,10 @@ import { runGetJournal } from '../composition/journal';
 import { runInitializeTradingCockpit, runValidateTradingCockpit } from '../composition/workbook';
 import type { WorkbookSetupReport } from '../adapters/inbound/google-sheets/ui/trading-cockpit-workbook';
 
+/**
+ * Apps Script global entrypoint surface for the legacy Sheets UI and rollback transport. These
+ * functions should delegate into composition/use cases and avoid owning business behavior.
+ */
 export function getWatchlist(): WatchlistDto {
   return runGetWatchlist();
 }

@@ -67,6 +67,11 @@ function watchlistIdentityKey(identity: ReturnType<typeof watchlistIdentityOf>):
   return `${identity.strategyId}|${identity.strategyVersion}|${identity.ticker}`;
 }
 
+/**
+ * Resolves the currently discoverable Strategy + Version pairs from canonical strategy
+ * configuration. Disabled strategies or versions remain historically readable, but are excluded
+ * from new Discovery candidate selection.
+ */
 function activeDiscoveryStrategies(
   strategies: readonly TradingStrategy[],
   versions: readonly TradingStrategyVersion[]
@@ -93,6 +98,10 @@ function activeDiscoveryStrategies(
   return active;
 }
 
+/**
+ * Finds the latest archived signal snapshot per Strategy ID + Version so Discovery reads current
+ * candidates without requiring a separate materialized ranking sheet.
+ */
 function latestSignalDateByStrategy(signals: readonly SignalSnapshot[]): Map<string, string> {
   const latest = new Map<string, string>();
   for (const signal of signals) {
@@ -105,6 +114,10 @@ function latestSignalDateByStrategy(signals: readonly SignalSnapshot[]): Map<str
   return latest;
 }
 
+/**
+ * Converts a persisted signal snapshot into the serializable Discovery candidate DTO while
+ * preserving provider attributes as read-only evidence and enriching active Watchlist status.
+ */
 function candidateFromSignal(
   signal: SignalSnapshot,
   strategy: DiscoveryStrategyDto,
@@ -146,6 +159,10 @@ function candidateFromSignal(
   };
 }
 
+/**
+ * Creates the Discovery read model from Signals History plus active Watchlist entries. This keeps
+ * provider refresh/import separate from reading already-archived candidates.
+ */
 export function createGetDiscovery({
   signalReader,
   watchlistReader,

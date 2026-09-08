@@ -44,6 +44,9 @@ function isReadyWatchlistStatus(status: string): boolean {
   return normalized(status) === 'READY';
 }
 
+/**
+ * Identifies candidates that deserve Dashboard attention without mutating Watchlist workflow.
+ */
 function isNearBreakout(entry: DashboardWatchlistSnapshot): entry is DashboardWatchlistSnapshot & {
   distanceToBreakout: number;
 } {
@@ -57,11 +60,21 @@ function isNearBreakout(entry: DashboardWatchlistSnapshot): entry is DashboardWa
   );
 }
 
+/**
+ * Applies account scope only to account-owned workflow records.
+ *
+ * Discovery and Watchlist counters are pre-account opportunity flow and remain global.
+ */
 function belongsToScope(accountId: string, scope: PortfolioScopeDto): boolean {
   if (scope.type === 'ALL') return true;
   return normalized(accountId) === scope.accountId;
 }
 
+/**
+ * Computes an open-position triage metric for display only.
+ *
+ * Current price remains indicative and this value must not trigger execution or closing logic.
+ */
 function stopDistance(position: DashboardPositionSnapshot): number | null {
   if (
     position.currentPrice !== null &&
@@ -80,6 +93,12 @@ export function dashboardSummaryFrom(dashboard: DashboardDto): DashboardSummaryD
   return dashboard.summary;
 }
 
+/**
+ * Builds the operational Dashboard from authoritative source snapshots.
+ *
+ * Pipeline/previews come from the DashboardRepository snapshot, performance comes from the
+ * shared Analytics calculation, and account capital comes from the account-equity use case.
+ */
 export function createGetDashboard({
   repository,
   getAnalytics,

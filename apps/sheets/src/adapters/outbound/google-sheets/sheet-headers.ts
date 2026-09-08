@@ -17,6 +17,10 @@ export interface SheetTableData {
   rows: unknown[][];
 }
 
+/**
+ * Reads a sheet as a canonical table from row-1 headers by default. The optional headerRow exists
+ * only for explicitly reviewed adapter cases, not as a legacy fallback chain.
+ */
 export function readSheetTable(
   sheet: GoogleAppsScript.Spreadsheet.Sheet,
   headerRow = 1

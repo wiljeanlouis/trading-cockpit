@@ -65,6 +65,10 @@ function feedbackText(result: CreateTradePlanResponse): string {
     : `An active Trade Plan already exists for ${result.ticker} in ${result.accountId}: ${result.tradePlanId}.`;
 }
 
+/**
+ * Shows a Watchlist candidate beside the Trade Plan creation form. Backend owns account
+ * validation, duplicate detection and all derived planning calculations.
+ */
 export function WatchlistDetail({
   candidate,
   gateway,
@@ -127,6 +131,9 @@ export function WatchlistDetail({
     };
   }, [onClose]);
 
+  /**
+   * Sends only user-owned planning inputs and selected account to the backend creation workflow.
+   */
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!accountId || submitting) return;

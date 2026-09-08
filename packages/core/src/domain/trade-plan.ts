@@ -93,6 +93,11 @@ export function calculateRewardPerShare(
     : null;
 }
 
+/**
+ * Calculates reward/risk only when risk per share is strictly positive.
+ *
+ * Returning null keeps incomplete plans from producing NaN or becoming accidentally executable.
+ */
 export function calculateRiskReward(
   riskPerShare: number | null,
   rewardPerShare: number | null
@@ -135,6 +140,12 @@ export function isActiveTradePlanStatus(status: string): boolean {
   return ACTIVE_TRADE_PLAN_STATUSES.some((activeStatus) => activeStatus === normalizedStatus);
 }
 
+/**
+ * Extracts immutable workflow identity from a Watchlist candidate for Trade Plan creation.
+ *
+ * React may collect planning inputs later, but it must not rewrite Strategy ID/Version/Ticker
+ * lineage.
+ */
 export function normalizeTradePlanSource(source: WatchlistEntry): NormalizedTradePlanSource {
   const watchlistId = String(source.id || '').trim();
   const strategyId = normalizeStrategyId(source.strategyId);
@@ -198,6 +209,12 @@ export function validateTradingRiskConfiguration(config: TradingRiskConfiguratio
   }
 }
 
+/**
+ * Creates an incomplete DRAFT Trade Plan from a Watchlist source and account risk snapshot.
+ *
+ * Planned Entry and Target are user-owned planning inputs; creating a plan never implies an
+ * execution/fill has occurred.
+ */
 export function createTradePlan(
   source: NormalizedTradePlanSource,
   configuration: TradingRiskConfiguration,
@@ -245,6 +262,12 @@ export function createTradePlan(
   };
 }
 
+/**
+ * Applies the authoritative LONG-trade planning invariant and derived sizing calculations.
+ *
+ * React mirrors these rules for fast feedback, but backend validation is what prevents invalid
+ * plans from becoming executable.
+ */
 export function updateTradePlanPlanning(
   tradePlan: TradePlan,
   inputs: TradePlanPlanningInputs

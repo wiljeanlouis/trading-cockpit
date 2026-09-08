@@ -22,6 +22,10 @@ export function isQueryRoute(method: string, pathname: string): boolean {
   return method === 'GET' && Boolean(routeByPath[pathname]);
 }
 
+/**
+ * Handles read-only API routes through the shared timed-query wrapper so normal Cockpit screens
+ * expose comparable Server-Timing diagnostics.
+ */
 export async function handleQueryRoute(dependencies: {
   context: RequestContext;
   method: string;

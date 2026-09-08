@@ -13,6 +13,10 @@ export interface GetAccountEquityDependencies {
 
 export type GetAccountEquity = (accountId: string) => AccountEquitySummary;
 
+/**
+ * Calculates authoritative realized equity for one account from Capital Ledger flows plus
+ * account-attributed Journal P&L. Cockpit Config is intentionally not part of this path.
+ */
 export function createGetAccountEquity({
   tradingAccountRepository,
   capitalTransactionRepository,

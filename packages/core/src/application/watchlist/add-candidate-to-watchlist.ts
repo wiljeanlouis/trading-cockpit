@@ -33,6 +33,11 @@ export type AddCandidateToWatchlist = (
   command: AddCandidateToWatchlistCommand
 ) => AddCandidateToWatchlistResult;
 
+/**
+ * Adds a strategy signal to the active Watchlist once per Strategy ID + Version + Ticker. The
+ * repository remains responsible for persistence, while the use case owns identity validation and
+ * idempotent duplicate handling.
+ */
 export function createAddCandidateToWatchlist({
   watchlistRepository,
   strategyRepository,

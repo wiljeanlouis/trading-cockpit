@@ -36,6 +36,10 @@ export function normalizeTradingStrategyVersionText(value: unknown): string {
   return String(value ?? '').trim();
 }
 
+/**
+ * Normalizes stable Strategy identity and metadata. Versioned provider/screener configuration
+ * lives separately in TradingStrategyVersion.
+ */
 export function normalizeTradingStrategy(strategy: TradingStrategy): TradingStrategy {
   const id = normalizeTradingStrategyId(strategy.id);
   const name = String(strategy.name ?? '').trim();
@@ -54,6 +58,10 @@ export function normalizeTradingStrategy(strategy: TradingStrategy): TradingStra
   };
 }
 
+/**
+ * Normalizes immutable Strategy ID + Version configuration before it can be referenced by signals
+ * or downstream workflow records.
+ */
 export function normalizeTradingStrategyVersion(
   version: TradingStrategyVersion
 ): TradingStrategyVersion {
@@ -81,6 +89,9 @@ export function normalizeTradingStrategyVersion(
   };
 }
 
+/**
+ * Builds the canonical historical identity for a strategy configuration version.
+ */
 export function strategyVersionKey(identity: StrategyVersionIdentity): string {
   return `${normalizeTradingStrategyId(identity.strategyId)}|${normalizeTradingStrategyVersionText(identity.version)}`;
 }

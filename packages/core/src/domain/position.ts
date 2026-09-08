@@ -100,6 +100,11 @@ export function calculateRealizedPnl(
   return (exitPrice - actualEntry) * actualQuantity;
 }
 
+/**
+ * Closes an OPEN Position using explicit exit execution data.
+ *
+ * This never infers a close from an indicative current price or from the market touching a stop.
+ */
 export function closePosition(position: Position, exitPrice: number, closedAt: Date): Position {
   if (!isOpenPositionStatus(position.status)) {
     throw new Error(`${position.ticker} n'est pas une position OPEN.`);
@@ -118,6 +123,11 @@ export function closePosition(position: Position, exitPrice: number, closedAt: D
   };
 }
 
+/**
+ * Converts a Trade Plan into the normalized source required to open a Position.
+ *
+ * Lineage is preserved so Journal/Analytics can trace completed trades through the full workflow.
+ */
 export function normalizePositionSource(tradePlan: TradePlan): NormalizedPositionSource {
   const accountId = String(tradePlan.accountId || '')
     .trim()
@@ -191,6 +201,11 @@ export function requireExecutableTradePlanStatus(source: NormalizedPositionSourc
   }
 }
 
+/**
+ * Validates that the Trade Plan has enough backend-confirmed execution data to create a Position.
+ *
+ * GOOGLEFINANCE/current price is not accepted as proof of fill.
+ */
 export function requirePositionExecutionData(source: NormalizedPositionSource): void {
   const plannedEntry = Number(source.plannedEntry);
   if (!Number.isFinite(plannedEntry) || plannedEntry <= 0) {
@@ -222,6 +237,12 @@ export function requirePositionExecutionData(source: NormalizedPositionSource): 
   }
 }
 
+/**
+ * Creates the persisted OPEN Position from validated planning data.
+ *
+ * Actual Entry/Quantity are explicit fields so later phases can separate planned values from
+ * broker fills more deeply without losing historical compatibility.
+ */
 export function createOpenPosition(
   source: NormalizedPositionSource,
   id: string,

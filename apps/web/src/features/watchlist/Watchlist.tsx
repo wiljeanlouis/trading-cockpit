@@ -120,6 +120,10 @@ function WatchlistRow({ item, onOpen }: { item: WatchlistItemDto; onOpen: () => 
   );
 }
 
+/**
+ * Watchlist is the selection workspace between Discovery and planning. It reads backend
+ * candidates, applies presentation-only table controls and opens the Trade Plan creation detail.
+ */
 export function Watchlist({ gateway }: WatchlistProps) {
   const [state, setState] = useState<WatchlistState>({
     data: null,
@@ -147,6 +151,10 @@ export function Watchlist({ gateway }: WatchlistProps) {
     void load();
   }, [load]);
 
+  /**
+   * Exposes the explicit global signal refresh from Watchlist without automatically importing
+   * provider data on page load.
+   */
   async function refreshAllSignals() {
     if (refreshingSignals) return;
     setRefreshingSignals(true);

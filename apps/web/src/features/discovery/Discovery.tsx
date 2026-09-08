@@ -219,6 +219,10 @@ function DiscoveryRow({
   );
 }
 
+/**
+ * Shows a Discovery candidate as read-only archived evidence plus one deliberate action. The form
+ * side sends only candidate identity so backend resolves authoritative signal data.
+ */
 function DiscoveryCandidateDetail({
   candidate,
   adding,
@@ -403,6 +407,10 @@ function DiscoveryCandidateDetail({
   );
 }
 
+/**
+ * Discovery reads current archived strategy candidates and exposes explicit provider refresh
+ * actions. Changing filters never calls Finviz; refresh remains a deliberate user action.
+ */
 export function Discovery({ gateway }: DiscoveryProps) {
   const [state, setState] = useState<DiscoveryState>({
     data: null,
@@ -462,6 +470,9 @@ export function Discovery({ gateway }: DiscoveryProps) {
   const selectedCandidate =
     state.data?.items.find((candidate) => candidateKey(candidate) === selectedKey) ?? null;
 
+  /**
+   * Refreshes only the currently selected Strategy ID; backend resolves the active version/feed.
+   */
   async function refreshSignals() {
     if (refreshingSignals || !selectedStrategyId) return;
     setRefreshingSignals(true);
@@ -480,6 +491,9 @@ export function Discovery({ gateway }: DiscoveryProps) {
     }
   }
 
+  /**
+   * Runs the explicit global refresh path for all eligible active strategies.
+   */
   async function refreshAllSignals() {
     if (refreshingSignals) return;
     setRefreshingSignals(true);
@@ -498,6 +512,9 @@ export function Discovery({ gateway }: DiscoveryProps) {
     }
   }
 
+  /**
+   * Adds one selected candidate to Watchlist after backend duplicate validation.
+   */
   async function addCandidate(candidate: DiscoveryCandidateDto) {
     const key = candidateKey(candidate);
     if (addingKey || candidate.watchlistStatus || !candidate.signalDate) return;

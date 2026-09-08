@@ -56,6 +56,12 @@ function tickerColumn(headers: unknown[]): number {
   return index;
 }
 
+/**
+ * Apps Script implementation of the provider-neutral MarketSignalSource port for Finviz.
+ *
+ * This keeps the supported Google Sheets UI path aligned with Cloud Run while isolating
+ * Finviz-specific transport, token and CSV behavior from Core.
+ */
 export class FinvizMarketSignalSource implements MarketSignalSource {
   private requestsMade = 0;
 
@@ -68,6 +74,9 @@ export class FinvizMarketSignalSource implements MarketSignalSource {
     private readonly sleep: (ms: number) => void = (ms) => Utilities.sleep(ms)
   ) {}
 
+  /**
+   * Lists configured feeds as provider-neutral identities for the application layer.
+   */
   listFeeds(): MarketSignalFeed[] {
     return this.configurations.map((config) => {
       validateConfiguration(config);
@@ -80,6 +89,12 @@ export class FinvizMarketSignalSource implements MarketSignalSource {
     });
   }
 
+  /**
+   * Fetches one Finviz feed and translates its CSV into a MarketSignalBatch.
+   *
+   * Requests are paced here because the five-second Finviz constraint is infrastructure
+   * behavior, not a trading/domain rule.
+   */
   fetchSignals(feedId: string): MarketSignalBatch {
     const config = this.configurations.find((candidate) => candidate.id === feedId);
     validateConfiguration(config);
@@ -179,6 +194,9 @@ export class FinvizMarketSignalSource implements MarketSignalSource {
     return batch;
   }
 
+  /**
+   * Injects the Finviz auth token into a configured full URL or query string.
+   */
   private urlFor(config: FinvizFeedConfiguration, token: string): string {
     const separator = config.query.includes('?') ? '&' : '?';
     if (/^https?:\/\//i.test(config.query)) {

@@ -50,6 +50,10 @@ export function isMutationRoute(method: string, pathname: string): boolean {
   return Boolean(matchMutationRoute(method, pathname));
 }
 
+/**
+ * Handles workflow-changing API routes with one request-scoped reader cache and one deferred
+ * writer, keeping read-modify-write behavior coherent without pretending Sheets is atomic.
+ */
 export async function handleMutationRoute(dependencies: {
   context: RequestContext;
   method: string;
@@ -102,6 +106,10 @@ export async function handleMutationRoute(dependencies: {
   };
 }
 
+/**
+ * Keeps HTTP payload validation at the boundary so use cases receive plain commands instead of
+ * raw JSON strings or Request objects.
+ */
 function parseJsonBody(body: string | undefined): Record<string, unknown> {
   const text = String(body ?? '').trim();
   if (!text) return {};
@@ -117,6 +125,10 @@ function parseJsonBody(body: string | undefined): Record<string, unknown> {
   }
 }
 
+/**
+ * Protects dynamic routes from accidental cross-record writes when a request body repeats an ID
+ * that is already visible in the URL path.
+ */
 function validatePathBodyIdentity(
   body: Record<string, unknown>,
   pathParams: Record<string, string> | undefined
@@ -131,6 +143,9 @@ function validatePathBodyIdentity(
   }
 }
 
+/**
+ * Resolves collection actions by exact route and resource-targeted commands by URL identity.
+ */
 function matchMutationRoute(method: string, pathname: string): RouteMatch | null {
   const normalizedMethod = method.toUpperCase();
   const exact = exactRoutes[`${normalizedMethod} ${pathname}`];

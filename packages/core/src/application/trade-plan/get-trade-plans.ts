@@ -30,6 +30,10 @@ function serializedDate(value: TradePlanSnapshotValue): string | null {
   return nullableText(value);
 }
 
+/**
+ * Computes the read-model explanation for whether a Trade Plan can be executed. This mirrors the
+ * backend mutation prerequisites without weakening the authoritative execution use case.
+ */
 function executionEligibility(
   plan: ReturnType<TradePlanReader['findAll']>[number],
   configuredStrategyIds: ReadonlySet<string>,
@@ -108,6 +112,10 @@ function toItem(
   };
 }
 
+/**
+ * Builds the Trade Plans projection while loading strategy/version configuration once per query,
+ * avoiding N+1 catalog lookups during execution-eligibility enrichment.
+ */
 export function createGetTradePlans({
   reader,
   strategyIds,

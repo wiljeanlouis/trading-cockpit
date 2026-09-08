@@ -40,6 +40,10 @@ type CloudRunRequestHandler = (request: {
   body?: string;
 }) => Promise<CloudRunHttpResponse>;
 
+/**
+ * Builds the Node HTTP server while keeping request parsing/response writing as runtime plumbing.
+ * Authentication, routing and business dispatch stay testable through handleCloudRunRequest().
+ */
 export function createCloudRunApp({
   spreadsheetId,
   auth,
@@ -79,6 +83,10 @@ export function createCloudRunApp({
   });
 }
 
+/**
+ * Creates the reusable request handler for Cloud Run. The Google API client is memoized for
+ * connection/auth overhead, while sheet data remains request-scoped so reads stay fresh.
+ */
 export function createCloudRunRequestHandler({
   spreadsheetId,
   auth,
@@ -112,6 +120,10 @@ export function createCloudRunRequestHandler({
     });
 }
 
+/**
+ * Dispatches one HTTP request. Health/static assets remain public infrastructure endpoints;
+ * every /api/* route must pass Google ID token verification and authorized-email policy.
+ */
 export async function handleCloudRunRequest(dependencies: {
   method: string;
   url: string;
@@ -199,6 +211,10 @@ export async function handleCloudRunRequest(dependencies: {
   return withCorsHeaders(jsonResponse(404, { error: 'Not found' }), cors.headers);
 }
 
+/**
+ * Memoizes only transport/client construction. Spreadsheet values are intentionally not cached:
+ * Google Sheets remains the source of truth and each request should observe current data.
+ */
 function reuseSheetsClient(
   sheetsClientFactory: () => Promise<SheetsValuesClient>
 ): () => Promise<SheetsValuesClient> {
@@ -235,6 +251,9 @@ function unexpectedErrorResponse(error: unknown, spreadsheetId: string): CloudRu
   return jsonResponse(500, { error: 'Unexpected Trading Cockpit server error.' });
 }
 
+/**
+ * Logs enough context to diagnose production failures without leaking workbook identity or secrets.
+ */
 function logSafeError(error: unknown, spreadsheetId: string): void {
   const rawMessage = error instanceof Error ? error.message : String(error);
   const message = spreadsheetId

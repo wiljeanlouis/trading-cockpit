@@ -29,6 +29,10 @@ export interface ClosePositionDependencies {
 
 export type ClosePosition = (command: ClosePositionCommand) => ClosePositionResult;
 
+/**
+ * Closes a Position through the authoritative domain calculation, creates the Journal snapshot
+ * when missing, and advances Watchlist state while reporting partial-failure diagnostics.
+ */
 export function createClosePosition({
   positionRepository,
   journalRepository,

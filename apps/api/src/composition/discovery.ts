@@ -53,6 +53,12 @@ export async function getDiscoveryForCloudRun(dependencies: {
   })();
 }
 
+/**
+ * Refreshes signals for one selected Strategy ID.
+ *
+ * The caller does not provide a version: Cloud Run resolves the currently active Strategy
+ * Version from canonical workbook configuration before any provider request is made.
+ */
 export async function refreshSignalsForCloudRun({
   mutationContext,
   body
@@ -61,12 +67,24 @@ export async function refreshSignalsForCloudRun({
   return refreshFinvizFeedsForCloudRun({ mutationContext, strategyId });
 }
 
+/**
+ * Explicitly refreshes every active Finviz-backed strategy version.
+ *
+ * Discovery reads are intentionally separate from provider refreshes so navigation/filtering
+ * cannot accidentally consume Finviz request quota.
+ */
 export async function refreshAllSignalsForCloudRun({
   mutationContext
 }: MutationDependencies): Promise<RefreshSignalsResponse> {
   return refreshFinvizFeedsForCloudRun({ mutationContext });
 }
 
+/**
+ * Bridges HTTP mutations to the reusable market-signal use cases.
+ *
+ * This function batches strategy configuration reads, creates the Finviz adapter, preloads
+ * provider data with adapter-level pacing, then delegates projection/archive semantics to Core.
+ */
 async function refreshFinvizFeedsForCloudRun({
   mutationContext,
   strategyId
@@ -113,6 +131,12 @@ async function refreshFinvizFeedsForCloudRun({
   };
 }
 
+/**
+ * Converts enabled Strategy Version rows into concrete Finviz feed configurations.
+ *
+ * Scoped refreshes fail fast when the requested strategy is missing, disabled or lacks an
+ * active Finviz version; they never silently fall back to another strategy.
+ */
 export function buildFinvizFeeds({
   strategies,
   versions,
@@ -161,6 +185,12 @@ export function buildFinvizFeeds({
   return feeds;
 }
 
+/**
+ * Creates refresh-owned technical sheets only when an explicit refresh needs them.
+ *
+ * This is not a general workbook migration path; normal reads should still rely on the
+ * canonical workbook contract and fail clearly when required structures are missing.
+ */
 async function ensureSheets(context: MutationContext, sheetNames: string[]): Promise<void> {
   const client = context.writer['dependencies'].sheetsClient;
   const spreadsheetId = context.writer['dependencies'].spreadsheetId;
@@ -175,6 +205,12 @@ async function ensureSheets(context: MutationContext, sheetNames: string[]): Pro
   });
 }
 
+/**
+ * Loads existing Signals History identities so archiving remains idempotent.
+ *
+ * The set is request-local: it avoids duplicate appends for the current refresh without
+ * introducing persistent data caching or rewriting unrelated strategy history.
+ */
 async function readExistingSignalKeys(context: MutationContext): Promise<Set<string>> {
   const keys = new Set<string>();
   const table = (await context.sheets.getTable(SHEET_DEFINITIONS.signalsHistory)).table;

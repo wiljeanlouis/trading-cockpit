@@ -48,6 +48,10 @@ function displayPercent(value: number | null): string {
   );
 }
 
+/**
+ * Presents one open Position and its close workflow. Exit data must be explicit; indicative
+ * market values are never treated as execution evidence in React.
+ */
 export function PositionDetail({ position, gateway, onClose, onClosed }: PositionDetailProps) {
   const modalRef = useRef<HTMLElement>(null);
   const [confirming, setConfirming] = useState(false);
@@ -72,6 +76,10 @@ export function PositionDetail({ position, gateway, onClose, onClosed }: Positio
     };
   }, [onClose, submitting]);
 
+  /**
+   * Sends the explicit exit price to the backend close use case and waits for Journal-confirmed
+   * results before refreshing the Positions screen.
+   */
   async function closePosition() {
     if (submitting) return;
     const parsedExitPrice = Number(exitPrice);

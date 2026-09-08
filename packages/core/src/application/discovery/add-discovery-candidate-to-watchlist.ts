@@ -34,6 +34,10 @@ function normalizeIdentity(request: AddDiscoveryCandidateToWatchlistRequest) {
   };
 }
 
+/**
+ * Resolves the React-selected candidate identity against authoritative Signals History snapshots.
+ * React sends identity only; backend-owned signal attributes are used to create Watchlist data.
+ */
 function findCandidate(
   snapshots: readonly SignalSnapshot[],
   identity: ReturnType<typeof normalizeIdentity>
@@ -49,6 +53,10 @@ function findCandidate(
   );
 }
 
+/**
+ * Adds a Discovery candidate to Watchlist through the existing Watchlist use case, preserving the
+ * active duplicate rule and avoiding trust in client-provided market/provider fields.
+ */
 export function createAddDiscoveryCandidateToWatchlist({
   signalReader,
   addCandidateToWatchlist

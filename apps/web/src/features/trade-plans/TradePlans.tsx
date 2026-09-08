@@ -126,6 +126,10 @@ function TradePlanRow({ plan, onOpen }: { plan: TradePlanItemDto; onOpen: () => 
   );
 }
 
+/**
+ * Lists backend Trade Plans with presentation-only sort/filter state and opens detail actions
+ * without duplicating workflow or execution rules in React.
+ */
 export function TradePlans({ gateway }: TradePlansProps) {
   const [state, setState] = useState<TradePlansState>({ data: null, loading: true, error: null });
   const [selectedId, setSelectedId] = useState<string | null>(null);

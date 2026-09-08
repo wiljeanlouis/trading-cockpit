@@ -119,6 +119,10 @@ function CompactRows({
   return <div className="divide-y divide-[#1d3045]">{rows.map(render)}</div>;
 }
 
+/**
+ * Dashboard combines account-scoped operational/performance metrics with global discovery
+ * context. Financial values are rendered from the backend DTO, not recomputed in React.
+ */
 export function Dashboard({ gateway }: DashboardProps) {
   const [state, setState] = useState<DashboardState>({
     dashboard: null,

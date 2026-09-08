@@ -79,6 +79,10 @@ function average(values: readonly number[]): number {
   return values.length > 0 ? sum(values) / values.length : 0;
 }
 
+/**
+ * Converts a Journal row into an analytics trade while preserving the legacy rule that only
+ * entries attached to a Position count as realized trade history.
+ */
 function tradeFromEntry(entry: JournalEntry): AnalyticsTrade | null {
   if (!String(entry.positionId || '').trim()) return null;
 
@@ -96,6 +100,12 @@ function tradeFromEntry(entry: JournalEntry): AnalyticsTrade | null {
   };
 }
 
+/**
+ * Recomputes metrics from raw trades for a scope/group.
+ *
+ * This deliberately avoids averaging precomputed ratios, which would make global account
+ * analytics mathematically incorrect.
+ */
 function groupMetrics(trades: readonly AnalyticsTrade[]) {
   const winners = trades.filter((trade) => trade.pnl > 0);
   const losers = trades.filter((trade) => trade.pnl < 0);
@@ -118,6 +128,12 @@ function groupMetrics(trades: readonly AnalyticsTrade[]) {
   };
 }
 
+/**
+ * Groups the already-scoped trade set by stable Strategy ID.
+ *
+ * Account filtering happens before this function, so the same logic supports both ALL and
+ * account-specific views.
+ */
 function calculateByStrategy(trades: readonly AnalyticsTrade[]): AnalyticsStrategyRowDto[] {
   const groups = new Map<
     string,
@@ -142,6 +158,12 @@ function calculateByStrategy(trades: readonly AnalyticsTrade[]): AnalyticsStrate
     .sort((left, right) => right.totalR - left.totalR);
 }
 
+/**
+ * Groups by Strategy ID + Version, which is the historical strategy identity in Journal rows.
+ *
+ * Disabled historical versions remain analyzable because Journal rows represent immutable trade
+ * history rather than current strategy configuration.
+ */
 function calculateByStrategyVersion(
   trades: readonly AnalyticsTrade[]
 ): AnalyticsStrategyVersionRowDto[] {
@@ -175,6 +197,11 @@ function calculateByStrategyVersion(
     );
 }
 
+/**
+ * Builds account comparison rows from the same scoped trade set used by the summary.
+ *
+ * React only renders these backend-calculated rows and must not recalculate ratios itself.
+ */
 function calculateByAccount(
   trades: readonly AnalyticsTrade[],
   accounts: readonly TradingAccount[]
@@ -208,6 +235,9 @@ function calculateByAccount(
     .sort((left, right) => left.accountId.localeCompare(right.accountId));
 }
 
+/**
+ * Normalizes query scope without treating ALL as a persisted account.
+ */
 function normalizeScope(scope?: PortfolioScopeDto): PortfolioScopeDto {
   if (!scope || scope.type === 'ALL') return { type: 'ALL' };
   const accountId = String(scope.accountId || '')
@@ -294,6 +324,12 @@ export function calculateAnalyticsFromJournalEntries(
   };
 }
 
+/**
+ * Creates the on-demand Analytics query from authoritative Journal rows.
+ *
+ * The materialized Analytics sheet is not a source of truth; callers receive a fresh DTO from the
+ * current persisted trading history.
+ */
 export function createGetAnalytics({
   journalReader,
   now,

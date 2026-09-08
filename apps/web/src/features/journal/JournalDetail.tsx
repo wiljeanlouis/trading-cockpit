@@ -53,6 +53,9 @@ function pnlClass(value: number | null): string {
   return 'text-[#b6c2d0]!';
 }
 
+/**
+ * Presents a completed trade lifecycle from the immutable Journal projection.
+ */
 export function JournalDetail({ entry, onClose }: JournalDetailProps) {
   const modalRef = useRef<HTMLElement>(null);
 

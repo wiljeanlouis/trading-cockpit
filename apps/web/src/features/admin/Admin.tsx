@@ -173,6 +173,10 @@ function parseRiskPercentInput(value: string): number {
   return parsed / 100;
 }
 
+/**
+ * Administration coordinates provider credentials, account funding/risk settings and strategy
+ * configuration while leaving all authoritative validation to the backend.
+ */
 export function Admin({ gateway }: AdminProps) {
   const [state, setState] = useState<AdminState>({
     loading: true,
@@ -228,6 +232,9 @@ export function Admin({ gateway }: AdminProps) {
     [strategies, managedStrategyId]
   );
 
+  /**
+   * Wraps Admin mutations with one busy state, toast feedback and backend-confirmed refresh.
+   */
   async function runAction(
     action: string,
     operation: () => Promise<unknown>,
@@ -296,6 +303,9 @@ export function Admin({ gateway }: AdminProps) {
     });
   }
 
+  /**
+   * Creates an account and its initial funding transaction as one backend workflow.
+   */
   async function handleCreateAccountSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const riskPercentPerTrade = parseRiskPercentInput(createAccountForm.riskPercent);
@@ -324,6 +334,9 @@ export function Admin({ gateway }: AdminProps) {
     if (created) setCreateAccountOpen(false);
   }
 
+  /**
+   * Updates account identity/risk settings; capital remains owned by Capital Ledger transactions.
+   */
   async function handleSettingsSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!managedAccount) return;
@@ -345,6 +358,9 @@ export function Admin({ gateway }: AdminProps) {
     );
   }
 
+  /**
+   * Records external capital movement without allowing React to recalculate account equity.
+   */
   async function handleCapitalSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!managedAccount) return;
@@ -367,6 +383,9 @@ export function Admin({ gateway }: AdminProps) {
     if (recorded) setCapitalForm(EMPTY_CAPITAL_FORM);
   }
 
+  /**
+   * Creates the stable Strategy identity; versioned screener configuration is added separately.
+   */
   async function handleCreateStrategySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const request: CreateStrategyRequest = { ...createStrategyForm };
@@ -388,6 +407,10 @@ export function Admin({ gateway }: AdminProps) {
     );
   }
 
+  /**
+   * Adds a Strategy Version configuration while preserving Strategy ID + Version as historical
+   * identity once signals and workflow records reference it.
+   */
   async function handleCreateVersionSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!managedStrategy) return;
@@ -408,6 +431,10 @@ export function Admin({ gateway }: AdminProps) {
     }
   }
 
+  /**
+   * Toggles one Strategy Version and relies on backend rules to enforce at most one active version
+   * per Strategy ID and parent-strategy eligibility.
+   */
   async function toggleStrategyVersion(version: StrategyVersionDto) {
     await runAction(
       `toggle-version-${version.strategyId}-${version.version}`,

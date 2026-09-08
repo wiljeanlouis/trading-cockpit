@@ -146,6 +146,9 @@ function PositionRow({ position, onOpen }: { position: PositionItemDto; onOpen: 
   );
 }
 
+/**
+ * Lists open backend Positions and delegates all management actions to the detail workflow.
+ */
 export function Positions({ gateway }: PositionsProps) {
   const [state, setState] = useState<PositionsState>({ data: null, loading: true, error: null });
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -220,6 +223,9 @@ export function Positions({ gateway }: PositionsProps) {
 
   const selectedPosition = state.data?.items.find((position) => position.id === selectedId) ?? null;
 
+  /**
+   * Applies backend-confirmed close results by notifying the user and reloading open Positions.
+   */
   async function handleClosed(result: ClosePositionResponse) {
     setCloseResult(result);
     setSelectedId(null);

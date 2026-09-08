@@ -60,6 +60,10 @@ export async function getTradingAccountsForCloudRun(dependencies: {
   };
 }
 
+/**
+ * Builds the Admin overview as one composite query so React can render account, capital,
+ * strategy and provider state without issuing many initial requests.
+ */
 export async function getAdminOverviewForCloudRun(dependencies: {
   sheets: RequestScopedSheets;
 }): Promise<AdminOverviewDto> {
@@ -147,6 +151,9 @@ export async function validateStrategiesForCloudRun(dependencies: {
   return validateStrategiesFromSheets(dependencies.sheets);
 }
 
+/**
+ * Checks provider credential presence through Secret Manager without exposing the token value.
+ */
 export async function checkFinvizAuthMutationForCloudRun(): Promise<{ configured: boolean }> {
   const tokenService = new AsyncFinvizTokenService(new SecretManagerFinvizTokenStorage());
   return { configured: await tokenService.isConfigured() };
@@ -180,6 +187,9 @@ export async function createTradingAccountForCloudRun({
   return account;
 }
 
+/**
+ * Creates a Trading Account and its initial funding transaction through one backend command.
+ */
 export async function createFundedTradingAccountForCloudRun({
   mutationContext,
   body
@@ -213,6 +223,9 @@ export async function updateTradingAccountForCloudRun({
   return account;
 }
 
+/**
+ * Records account capital flows through the core command selected by transaction type.
+ */
 export async function recordCapitalTransactionForCloudRun({
   mutationContext,
   body
@@ -245,6 +258,9 @@ export async function recordCapitalTransactionForCloudRun({
   };
 }
 
+/**
+ * Creates only stable Strategy metadata; provider/screener settings belong to Strategy Versions.
+ */
 export async function createStrategyForCloudRun({
   mutationContext,
   body
@@ -269,6 +285,9 @@ export async function createStrategyForCloudRun({
   ) as StrategyDto;
 }
 
+/**
+ * Updates mutable Strategy metadata and prevents disabling a parent while active versions remain.
+ */
 export async function updateStrategyForCloudRun({
   mutationContext,
   body
@@ -301,6 +320,10 @@ export async function updateStrategyForCloudRun({
   ).find((candidate) => candidate.strategyId === strategy.id) as StrategyDto;
 }
 
+/**
+ * Adds a versioned screener configuration and relies on validation to preserve one active version
+ * per Strategy ID.
+ */
 export async function createStrategyVersionForCloudRun({
   mutationContext,
   body
@@ -324,6 +347,9 @@ export async function createStrategyVersionForCloudRun({
   return strategyDtoOrThrow(strategies, [...versions, version], version.strategyId);
 }
 
+/**
+ * Updates mutable Strategy Version activation state without changing its historical identity.
+ */
 export async function updateStrategyVersionForCloudRun({
   mutationContext,
   body

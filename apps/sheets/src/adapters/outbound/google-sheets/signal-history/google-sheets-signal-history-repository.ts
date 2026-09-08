@@ -20,7 +20,14 @@ function formatDate(value: unknown): string {
   return String(value).trim().substring(0, 10);
 }
 
+/**
+ * Apps Script repository for Signals History. It owns canonical sheet readiness, duplicate-key
+ * loading and append-only archival of provider snapshots for the Sheets runtime.
+ */
 export class GoogleSheetsSignalHistoryRepository implements SignalHistoryRepository {
+  /**
+   * Verifies the complete canonical archive schema before importing provider data.
+   */
   ensureReady(attributeNames: string[]): void {
     const unsupportedAttribute = attributeNames.find(
       (header) => !isSupportedMomentumBreakoutAttribute(header)
@@ -47,6 +54,9 @@ export class GoogleSheetsSignalHistoryRepository implements SignalHistoryReposit
     });
   }
 
+  /**
+   * Loads durable signal identity keys so refresh operations preserve archive deduplication.
+   */
   loadExistingKeys(): Set<string> {
     const sheet = this.sheet();
     const keys = new Set<string>();
@@ -73,6 +83,9 @@ export class GoogleSheetsSignalHistoryRepository implements SignalHistoryReposit
     return keys;
   }
 
+  /**
+   * Appends provider snapshots to the canonical row-1/row-2+ Signals History table.
+   */
   append(snapshots: SignalSnapshot[]): void {
     if (snapshots.length === 0) return;
     const rows = snapshots.map((snapshot) => [

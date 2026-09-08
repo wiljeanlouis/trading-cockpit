@@ -53,6 +53,10 @@ export interface HttpCockpitGatewayOptions {
   onUnauthorized?: () => void;
 }
 
+/**
+ * Production browser gateway for the React Cockpit. Components depend on CockpitGateway methods,
+ * while this adapter owns HTTP routes, bearer-token transport and API error translation.
+ */
 export class HttpCockpitGateway implements CockpitGateway {
   private readonly fetchImpl: typeof fetch;
   private readonly getIdToken: TokenProvider;
@@ -232,6 +236,10 @@ export class HttpCockpitGateway implements CockpitGateway {
     return this.request<T>('DELETE', path);
   }
 
+  /**
+   * Sends one authenticated same-origin API request and normalizes backend failures into a
+   * consistent gateway error for feature screens.
+   */
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const token = await this.getIdToken();
     if (!token) {
@@ -259,6 +267,9 @@ export class HttpCockpitGateway implements CockpitGateway {
   }
 }
 
+/**
+ * Parses JSON defensively because all Cockpit API contracts are serializable DTOs.
+ */
 async function parseJsonResponse(response: Response): Promise<unknown> {
   if (response.status === 204) return undefined;
   const text = await response.text();
@@ -277,6 +288,10 @@ function errorMessage(payload: unknown, status: number): string {
   return `Trading Cockpit API request failed (${status}).`;
 }
 
+/**
+ * Serializes optional account/analytics filters without exposing HTTP query details to React
+ * feature components.
+ */
 function withQuery(path: string, query?: AccountScopedQuery | AnalyticsQuery): string {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query ?? {})) {
