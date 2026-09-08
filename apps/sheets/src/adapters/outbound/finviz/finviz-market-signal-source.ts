@@ -32,6 +32,8 @@ export interface FinvizDiagnostics {
   error(stage: string, error: unknown): void;
 }
 
+const FINVIZ_REQUEST_INTERVAL_MS = 5_000;
+
 function validateConfiguration(config: FinvizFeedConfiguration | undefined): void {
   if (!config) throw new Error('Configuration de screener absente.');
   if (!String(config.strategyId || '').trim()) {
@@ -55,12 +57,15 @@ function tickerColumn(headers: unknown[]): number {
 }
 
 export class FinvizMarketSignalSource implements MarketSignalSource {
+  private requestsMade = 0;
+
   constructor(
     private readonly baseUrl: string,
     private readonly configurations: FinvizFeedConfiguration[],
     private readonly tokenProvider: FinvizTokenProvider,
     private readonly transport: FinvizTransport,
-    private readonly diagnostics?: FinvizDiagnostics
+    private readonly diagnostics?: FinvizDiagnostics,
+    private readonly sleep: (ms: number) => void = (ms) => Utilities.sleep(ms)
   ) {}
 
   listFeeds(): MarketSignalFeed[] {
@@ -93,7 +98,9 @@ export class FinvizMarketSignalSource implements MarketSignalSource {
     });
     let response: FinvizHttpResponse;
     try {
+      if (this.requestsMade > 0) this.sleep(FINVIZ_REQUEST_INTERVAL_MS);
       response = this.transport.fetch(this.urlFor(config!, token));
+      this.requestsMade += 1;
     } catch (error) {
       this.diagnostics?.error('HTTP_FETCH', error);
       throw error;

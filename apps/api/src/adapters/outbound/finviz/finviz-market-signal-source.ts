@@ -14,6 +14,8 @@ export interface FinvizFeedConfiguration {
   query: string;
 }
 
+const FINVIZ_REQUEST_INTERVAL_MS = 5_000;
+
 export class CloudRunFinvizMarketSignalSource implements MarketSignalSource {
   private fetched = new Map<string, MarketSignalBatch>();
 
@@ -21,7 +23,9 @@ export class CloudRunFinvizMarketSignalSource implements MarketSignalSource {
     private readonly baseUrl: string,
     private readonly configurations: readonly FinvizFeedConfiguration[],
     private readonly tokenService: AsyncFinvizTokenService,
-    private readonly transport: FinvizTransport
+    private readonly transport: FinvizTransport,
+    private readonly wait: (ms: number) => Promise<void> = (ms) =>
+      new Promise((resolve) => setTimeout(resolve, ms))
   ) {}
 
   listFeeds(): MarketSignalFeed[] {
@@ -41,7 +45,8 @@ export class CloudRunFinvizMarketSignalSource implements MarketSignalSource {
 
   async preload(): Promise<void> {
     const token = await this.tokenService.getToken();
-    for (const config of this.configurations) {
+    for (const [index, config] of this.configurations.entries()) {
+      if (index > 0) await this.wait(FINVIZ_REQUEST_INTERVAL_MS);
       const response = await this.transport.fetch(this.urlFor(config, token));
       if (response.status !== 200) {
         throw new Error(`Finviz API error pour ${config.strategyName}: HTTP ${response.status}`);

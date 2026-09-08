@@ -5,6 +5,9 @@ import type { AsyncFinvizTokenService } from '../../src/adapters/outbound/finviz
 describe('CloudRunFinvizMarketSignalSource', () => {
   it('preloads configured Finviz feeds sequentially', async () => {
     const order: string[] = [];
+    const wait = vi.fn(async (ms: number) => {
+      order.push(`wait:${ms}`);
+    });
     const source = new CloudRunFinvizMarketSignalSource(
       '',
       [
@@ -40,7 +43,8 @@ describe('CloudRunFinvizMarketSignalSource', () => {
           ['Ticker', 'Price'],
           ['BOX', '34']
         ])
-      }
+      },
+      wait
     );
 
     await source.preload();
@@ -48,6 +52,7 @@ describe('CloudRunFinvizMarketSignalSource', () => {
     expect(order).toEqual([
       'start:?v=151&f=momentum&auth=token',
       'end:?v=151&f=momentum&auth=token',
+      'wait:5000',
       'start:?v=151&f=quality&auth=token',
       'end:?v=151&f=quality&auth=token'
     ]);

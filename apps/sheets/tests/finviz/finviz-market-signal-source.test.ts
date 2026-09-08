@@ -95,4 +95,42 @@ describe('Finviz market signal adapter', () => {
       source({ status: 200, content: 'csv' }, [['Symbol'], ['BOX']]).source.fetchSignals(config.id)
     ).toThrow('La colonne Ticker est absente de l’export Finviz.');
   });
+
+  it('waits 5 seconds before each additional Finviz request', () => {
+    const calls: string[] = [];
+    const secondConfig: FinvizFeedConfiguration = {
+      ...config,
+      id: 'QUALITY_DIP_V1',
+      strategyId: 'QUALITY_DIP',
+      strategyName: 'Quality Dip',
+      query: 'v=151&f=quality'
+    };
+    const transport: FinvizTransport = {
+      fetch: vi.fn((url: string) => {
+        calls.push(`fetch:${url}`);
+        return { status: 200, content: 'csv' };
+      }),
+      parseCsv: vi.fn(() => [['Ticker'], ['box']])
+    };
+    const sleep = vi.fn((ms: number) => {
+      calls.push(`sleep:${ms}`);
+    });
+    const value = new FinvizMarketSignalSource(
+      'https://elite.finviz.com/export/screener',
+      [config, secondConfig],
+      { getToken: () => 'token' },
+      transport,
+      undefined,
+      sleep
+    );
+
+    value.fetchSignals(config.id);
+    value.fetchSignals(secondConfig.id);
+
+    expect(calls).toEqual([
+      'fetch:https://elite.finviz.com/export/screener?v=151&f=cap_smallover&auth=token',
+      'sleep:5000',
+      'fetch:https://elite.finviz.com/export/screener?v=151&f=quality&auth=token'
+    ]);
+  });
 });
