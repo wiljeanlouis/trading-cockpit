@@ -198,6 +198,10 @@ future portfolio/query scope. New Trade Plans, Positions, and Journal entries ca
 
 Watchlist contains human-selected actionable candidates. Active duplicate detection uses Strategy
 ID + Strategy Version + Ticker. Closed/rejected entries are terminal for duplicate purposes.
+Generic Watchlist/setup vocabulary is strategy-neutral: candidates carry signal context, setup,
+trigger level, invalidation level, event risk, and notes. Strategy-specific analysis terms such as
+“breakout” or strategy-specific scores must stay inside the strategy/provider capability that
+produces them; they must not automatically become generic Watchlist or Trade Plan fields.
 
 ### Trade Plans
 
@@ -223,7 +227,7 @@ Capital Ledger is append-only external active-trading capital: `INITIAL_FUNDING`
 `WITHDRAWAL`. These are not trading P&L. Account realized equity is derived from external capital
 plus Journal realized P&L.
 
-### Momentum Discovery
+### Discovery
 
 Discovery reads the latest strategy-version snapshots from Signals History for human selection
 before adding candidates to Watchlist. Provider refresh is explicit: normal manual usage refreshes

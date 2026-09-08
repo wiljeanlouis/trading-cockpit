@@ -3,7 +3,7 @@ export type {
   DashboardAccountDto,
   DashboardDto,
   DashboardDiscoveryCandidateDto,
-  DashboardNearBreakoutActionDto,
+  DashboardNearTriggerActionDto,
   DashboardOpenPositionActionDto,
   DashboardPerformanceDto,
   DashboardPipelineDto,

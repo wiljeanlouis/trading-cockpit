@@ -44,8 +44,7 @@ interface WatchlistState {
   error: string | null;
 }
 
-type WatchlistSortKey =
-  'ticker' | 'strategy' | 'signalDate' | 'sector' | 'currentPrice' | 'momentumScore' | 'status';
+type WatchlistSortKey = 'ticker' | 'strategy' | 'signalDate' | 'sector' | 'currentPrice' | 'status';
 
 const DEFAULT_WATCHLIST_STATUSES = ['WATCHING', 'PLANNED'] as const;
 
@@ -102,9 +101,6 @@ function WatchlistRow({ item, onOpen }: { item: WatchlistItemDto; onOpen: () => 
       <TableCell>{formattedDate(item.signalDate)}</TableCell>
       <TableCell>{item.sector ?? '—'}</TableCell>
       <TableCell className={numericCellClassName}>{formattedNumber(item.currentPrice)}</TableCell>
-      <TableCell className={`${numericCellClassName} font-extrabold text-[#79e9b4]`}>
-        {formattedNumber(item.momentumScore, 0)}
-      </TableCell>
       <TableCell>
         <Badge tone={statusTone(item.status)}>{item.status || '—'}</Badge>
         {item.setupStatus && (
@@ -131,7 +127,6 @@ export function Watchlist({ gateway }: WatchlistProps) {
     error: null
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [refreshingSignals, setRefreshingSignals] = useState(false);
 
   const load = useCallback(async () => {
     setState((current) => ({ ...current, loading: true, error: null }));
@@ -151,21 +146,6 @@ export function Watchlist({ gateway }: WatchlistProps) {
     void load();
   }, [load]);
 
-  /**
-   * Exposes the explicit global signal refresh from Watchlist without automatically importing
-   * provider data on page load.
-   */
-  async function refreshAllSignals() {
-    if (refreshingSignals) return;
-    setRefreshingSignals(true);
-    try {
-      await gateway.refreshAllSignals();
-      await load();
-    } finally {
-      setRefreshingSignals(false);
-    }
-  }
-
   const table = useCockpitTable<WatchlistItemDto, WatchlistSortKey>({
     items: state.data?.items ?? [],
     getStatus: (item: WatchlistItemDto) => item.status,
@@ -173,7 +153,7 @@ export function Watchlist({ gateway }: WatchlistProps) {
     sortConfig: {
       defaultSortKey: 'ticker',
       defaultSortDirection: 'asc',
-      descendingByDefaultKeys: ['signalDate', 'currentPrice', 'momentumScore']
+      descendingByDefaultKeys: ['signalDate', 'currentPrice']
     },
     sorters: {
       ticker: (left, right) =>
@@ -192,9 +172,6 @@ export function Watchlist({ gateway }: WatchlistProps) {
       currentPrice: (left, right) =>
         (left.currentPrice ?? Number.NEGATIVE_INFINITY) -
         (right.currentPrice ?? Number.NEGATIVE_INFINITY),
-      momentumScore: (left, right) =>
-        (left.momentumScore ?? Number.NEGATIVE_INFINITY) -
-        (right.momentumScore ?? Number.NEGATIVE_INFINITY),
       status: (left, right) =>
         String(left.status || '').localeCompare(String(right.status || ''), undefined, {
           sensitivity: 'base',
@@ -217,16 +194,9 @@ export function Watchlist({ gateway }: WatchlistProps) {
           {state.data && (
             <UpdatedAt>Updated {formattedTimestamp(state.data.generatedAt)}</UpdatedAt>
           )}
-          <Button
-            onClick={() => void refreshAllSignals()}
-            disabled={state.loading || refreshingSignals}
-          >
+          <Button onClick={() => void load()} disabled={state.loading}>
             <span aria-hidden="true">↻</span>
-            {refreshingSignals
-              ? 'Refreshing signals'
-              : state.loading
-                ? 'Refreshing'
-                : 'Refresh All Signals'}
+            {state.loading ? 'Refreshing' : 'Refresh'}
           </Button>
         </PageActions>
       </PageHeader>
@@ -394,33 +364,6 @@ export function Watchlist({ gateway }: WatchlistProps) {
                         Current price{' '}
                         <span className="ml-2 text-[10px] text-[#62748d]">
                           {table.sortKey === 'currentPrice'
-                            ? table.sortDirection === 'asc'
-                              ? '↑'
-                              : '↓'
-                            : '↕'}
-                        </span>
-                      </button>
-                    </TableHead>
-                    <TableHead
-                      scope="col"
-                      className={`${numericCellClassName} p-0`}
-                      aria-sort={
-                        table.sortKey === 'momentumScore'
-                          ? table.sortDirection === 'asc'
-                            ? 'ascending'
-                            : 'descending'
-                          : undefined
-                      }
-                    >
-                      <button
-                        type="button"
-                        onClick={() => table.setSort('momentumScore')}
-                        aria-label={`Momentum${table.sortKey === 'momentumScore' ? `, sorted ${table.sortDirection === 'asc' ? 'ascending' : 'descending'}` : ', sortable'}`}
-                        className="flex h-full w-full items-center justify-end px-5 py-3 text-right"
-                      >
-                        Momentum{' '}
-                        <span className="ml-2 text-[10px] text-[#62748d]">
-                          {table.sortKey === 'momentumScore'
                             ? table.sortDirection === 'asc'
                               ? '↑'
                               : '↓'

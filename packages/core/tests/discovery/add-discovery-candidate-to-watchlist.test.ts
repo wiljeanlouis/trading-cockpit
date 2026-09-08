@@ -28,7 +28,7 @@ describe('add Discovery candidate to Watchlist', () => {
         currentPrice: command.signalPrice,
         status: 'WATCHING',
         setupStatus: '',
-        breakoutLevel: null,
+        triggerLevel: null,
         invalidationLevel: null,
         earningsDate: null,
         eventRisk: '',
@@ -60,8 +60,7 @@ describe('add Discovery candidate to Watchlist', () => {
       ticker: 'BOX',
       company: 'Box Inc',
       sector: 'Technology',
-      signalPrice: 34.82,
-      momentumScore: null
+      signalPrice: 34.82
     });
     expect(result).toEqual({
       kind: 'added',

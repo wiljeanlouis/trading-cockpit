@@ -18,10 +18,9 @@ const data: WatchlistDto = {
       signalDate: '2026-08-27T04:00:00.000Z',
       signalPrice: 33.4,
       currentPrice: 34.82,
-      momentumScore: 87,
       status: 'READY',
       setupStatus: 'VALID',
-      breakoutLevel: 34.5,
+      triggerLevel: 34.5,
       invalidationLevel: 32.8,
       earningsDate: '2026-09-10T04:00:00.000Z',
       eventRisk: 'CLEAR',
@@ -50,14 +49,13 @@ describe('Watchlist', () => {
     expect(await screen.findByText('BOX')).toBeInTheDocument();
     expect(screen.getByText('Momentum Breakout')).toBeInTheDocument();
     expect(screen.getByText('34.82')).toBeInTheDocument();
-    expect(screen.getByText('87')).toBeInTheDocument();
     const candidateRow = screen.getByRole('row', { name: /BOX/ });
     const cells = within(candidateRow).getAllByRole('cell');
     expect(cells[0]).toHaveTextContent('BOX');
     expect(cells[1]).toHaveTextContent('Momentum Breakout');
     expect(cells[2]).toHaveTextContent('2026');
-    expect(within(cells[6]).getByText('READY')).toBeInTheDocument();
-    expect(cells[7]).toContainElement(screen.getByRole('button', { name: 'View BOX details' }));
+    expect(within(cells[5]).getByText('READY')).toBeInTheDocument();
+    expect(cells[6]).toContainElement(screen.getByRole('button', { name: 'View BOX details' }));
     expect(load).toHaveBeenCalledOnce();
   });
 
@@ -99,13 +97,16 @@ describe('Watchlist', () => {
     render(<Watchlist gateway={createGatewayStub({ getWatchlist: load })} />);
     expect(await screen.findByText('BOX')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh All Signals' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
     expect(screen.getByText('BOX')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Refreshing signals' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Refreshing' })).toBeDisabled();
 
     await waitFor(() => expect(resolveRefresh).toBeDefined());
-    resolveRefresh?.({ ...data, items: [{ ...data.items[0], momentumScore: 91 }] });
-    await waitFor(() => expect(screen.getByText('91')).toBeInTheDocument());
+    resolveRefresh?.({
+      ...data,
+      items: [{ ...data.items[0], currentPrice: 35.91 }]
+    });
+    await waitFor(() => expect(screen.getByText('35.91')).toBeInTheDocument());
   });
 
   it('opens candidate details with persisted signal and trade context', async () => {
@@ -126,7 +127,7 @@ describe('Watchlist', () => {
     const dialog = screen.getByRole('dialog', { name: 'BOX' });
     expect(dialog).toBeInTheDocument();
     expect(within(dialog).getByRole('heading', { name: 'Overview' })).toBeInTheDocument();
-    expect(within(dialog).getByRole('heading', { name: 'Signal & momentum' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Signal Context' })).toBeInTheDocument();
     expect(within(dialog).getByRole('heading', { name: 'Setup & risk' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'BOX' })).toBeInTheDocument();
     expect(screen.getByText('33.4')).toBeInTheDocument();
@@ -164,7 +165,7 @@ describe('Watchlist', () => {
     expect(cockpit.createTradePlan).toHaveBeenCalledWith({
       watchlistId: 'W1',
       accountId: 'A1',
-      breakoutLevel: 34.5,
+      triggerLevel: 34.5,
       invalidationLevel: 32.8,
       eventRisk: 'CLEAR'
     });

@@ -57,11 +57,10 @@ export const WATCHLIST_HEADERS = [
   'Signal Price',
   'Current Price',
   'Change Since Signal',
-  'Momentum Score',
   'Status',
   'Setup Status',
-  'Breakout Level',
-  'Distance to Breakout',
+  'Trigger Level',
+  'Distance to Trigger',
   'Invalidation Level',
   'Earnings Date',
   'Event Risk',
@@ -79,9 +78,8 @@ const TRADE_PLAN_HEADERS = [
   'Signal Price',
   'Ticker',
   'Reference Price',
-  'Momentum Score',
   'Setup Status',
-  'Breakout Level',
+  'Trigger Level',
   'Invalidation Level',
   'Event Risk',
   'Created At',
@@ -174,14 +172,14 @@ export const SHEET_DEFINITIONS = {
   watchlist: {
     key: 'watchlist',
     sheetName: 'Watchlist',
-    range: "'Watchlist'!A:V",
+    range: "'Watchlist'!A:U",
     requiredHeaders: WATCHLIST_HEADERS,
     dateHeaders: ['Signal Date', 'Added At', 'Earnings Date', 'Closed At']
   },
   tradePlans: {
     key: 'tradePlans',
     sheetName: 'Trade Plans',
-    range: "'Trade Plans'!A:AD",
+    range: "'Trade Plans'!A:AC",
     requiredHeaders: TRADE_PLAN_HEADERS,
     dateHeaders: ['Signal Date', 'Created At']
   },
@@ -453,7 +451,6 @@ export async function readDashboardSnapshot(
     discoveryCandidates: latestSignals(signalSnapshots).map((signal, index) => ({
       rank: index + 1,
       ticker: signal.ticker,
-      score: null,
       price: numberOrNull(signal.attributes.Price),
       high52: numberOrNull(signal.attributes['52-Week High']),
       relativeVolume: numberOrNull(signal.attributes['Relative Volume']),
@@ -468,9 +465,9 @@ export async function readDashboardSnapshot(
         changeSinceSignal: numberOrNull(
           valueByHeader(watchlist.headers, row, 'Change Since Signal')
         ),
-        breakoutLevel: numberOrNull(valueByHeader(watchlist.headers, row, 'Breakout Level')),
-        distanceToBreakout: numberOrNull(
-          valueByHeader(watchlist.headers, row, 'Distance to Breakout')
+        triggerLevel: numberOrNull(valueByHeader(watchlist.headers, row, 'Trigger Level')),
+        distanceToTrigger: numberOrNull(
+          valueByHeader(watchlist.headers, row, 'Distance to Trigger')
         ),
         setupStatus: nullableText(valueByHeader(watchlist.headers, row, 'Setup Status')),
         status: textValue(valueByHeader(watchlist.headers, row, 'Status')).toUpperCase()
@@ -519,10 +516,9 @@ function watchlistEntryFromRow(headers: string[], row: unknown[]): WatchlistEntr
     addedAt: snapshotValue(valueByHeader(headers, row, 'Added At')),
     signalPrice: snapshotValue(valueByHeader(headers, row, 'Signal Price')),
     currentPrice: snapshotValue(valueByHeader(headers, row, 'Current Price')),
-    momentumScore: snapshotValue(valueByHeader(headers, row, 'Momentum Score')),
     status: textValue(valueByHeader(headers, row, 'Status')),
     setupStatus: textValue(valueByHeader(headers, row, 'Setup Status')),
-    breakoutLevel: snapshotValue(valueByHeader(headers, row, 'Breakout Level')),
+    triggerLevel: snapshotValue(valueByHeader(headers, row, 'Trigger Level')),
     invalidationLevel: snapshotValue(valueByHeader(headers, row, 'Invalidation Level')),
     earningsDate: snapshotValue(valueByHeader(headers, row, 'Earnings Date')),
     eventRisk: textValue(valueByHeader(headers, row, 'Event Risk')),
@@ -543,9 +539,8 @@ function tradePlanFromRow(headers: string[], row: unknown[]): TradePlan {
     signalPrice: snapshotValue(valueByHeader(headers, row, 'Signal Price')),
     ticker: textValue(valueByHeader(headers, row, 'Ticker')),
     referencePrice: snapshotValue(valueByHeader(headers, row, 'Reference Price')),
-    momentumScore: snapshotValue(valueByHeader(headers, row, 'Momentum Score')),
     setupStatus: textValue(valueByHeader(headers, row, 'Setup Status')),
-    breakoutLevel: snapshotValue(valueByHeader(headers, row, 'Breakout Level')),
+    triggerLevel: snapshotValue(valueByHeader(headers, row, 'Trigger Level')),
     invalidationLevel: snapshotValue(valueByHeader(headers, row, 'Invalidation Level')),
     eventRisk: textValue(valueByHeader(headers, row, 'Event Risk')),
     createdAt: snapshotValue(valueByHeader(headers, row, 'Created At')),

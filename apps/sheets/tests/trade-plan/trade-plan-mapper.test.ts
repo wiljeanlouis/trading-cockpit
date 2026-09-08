@@ -19,13 +19,12 @@ const tradePlan: TradePlan = {
   signalPrice: 54.25,
   ticker: 'URNB',
   referencePrice: 56.5,
-  momentumScore: 88,
   setupStatus: 'READY',
-  breakoutLevel: 57,
+  triggerLevel: 57,
   invalidationLevel: 52,
   eventRisk: 'LOW',
   createdAt,
-  entryType: 'BREAKOUT',
+  entryType: 'TRIGGER',
   entryPrice: '',
   stopPrice: 52,
   targetPrice: '',
@@ -42,7 +41,7 @@ const tradePlan: TradePlan = {
 };
 
 describe('Trade Plan row mapper', () => {
-  it('appends Account ID after the exact 29-column legacy row', () => {
+  it('appends Account ID after the exact 29-column generic workflow row', () => {
     expect(tradePlanToRow(tradePlan)).toEqual([
       'TP-1',
       'WL-1',
@@ -53,13 +52,12 @@ describe('Trade Plan row mapper', () => {
       54.25,
       'URNB',
       56.5,
-      88,
       'READY',
       57,
       52,
       'LOW',
       createdAt,
-      'BREAKOUT',
+      'TRIGGER',
       '',
       52,
       '',
@@ -79,14 +77,14 @@ describe('Trade Plan row mapper', () => {
 
   it('reads all values and calculated formula results explicitly by header', () => {
     const row = tradePlanToRow(tradePlan);
-    row[16] = 57;
-    row[18] = 67;
-    row[19] = 5;
-    row[20] = 10;
-    row[21] = 2;
-    row[24] = 50;
-    row[25] = 10;
-    row[26] = 570;
+    row[15] = 57;
+    row[17] = 67;
+    row[18] = 5;
+    row[19] = 10;
+    row[20] = 2;
+    row[23] = 50;
+    row[24] = 10;
+    row[25] = 570;
 
     expect(tradePlanFromRow([...TRADE_PLAN_HEADERS], row)).toEqual({
       ...tradePlan,

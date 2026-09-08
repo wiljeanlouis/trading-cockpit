@@ -16,8 +16,7 @@ const command: AddCandidateToWatchlistCommand = {
   ticker: ' urnb ',
   company: 'Urban Outfitters',
   sector: 'Consumer Cyclical',
-  signalPrice: 54.25,
-  momentumScore: 88
+  signalPrice: 54.25
 };
 
 function createDependencies(existing: WatchlistEntry | null = null) {
@@ -110,10 +109,9 @@ describe('add candidate to Watchlist', () => {
       addedAt: new Date('2026-08-20T14:00:00.000Z'),
       signalPrice: 50,
       currentPrice: 51,
-      momentumScore: 80,
       status: 'WATCHING',
       setupStatus: '',
-      breakoutLevel: '',
+      triggerLevel: '',
       invalidationLevel: '',
       earningsDate: '',
       eventRisk: '',

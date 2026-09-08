@@ -39,8 +39,8 @@ describe('GoogleSheetsWatchlistReader', () => {
     row[6] = 'Box, Inc.';
     row[7] = 'Technology';
     row[10] = 34.82;
-    row[12] = 87;
-    row[13] = 'READY';
+    row[12] = 'READY';
+    row[13] = 'VALID';
     const sheet = stubSpreadsheet([row]);
 
     expect(new GoogleSheetsWatchlistReader().findAll()).toEqual([

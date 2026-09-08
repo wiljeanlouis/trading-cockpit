@@ -85,8 +85,7 @@ export function createAddDiscoveryCandidateToWatchlist({
       ticker: candidate.ticker,
       company: toWatchlistSnapshotValue(candidate.attributes.Company),
       sector: toWatchlistSnapshotValue(candidate.attributes.Sector),
-      signalPrice: toWatchlistSnapshotValue(candidate.attributes.Price),
-      momentumScore: null
+      signalPrice: toWatchlistSnapshotValue(candidate.attributes.Price)
     });
 
     if (result.kind === 'duplicate') {

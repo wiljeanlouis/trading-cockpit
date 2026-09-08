@@ -25,7 +25,7 @@ describe('Watchlist physical sheet contract', () => {
     expect(sheet.getRange).not.toHaveBeenCalled();
   });
 
-  it('validates the exact 22-column legacy schema', () => {
+  it('validates the exact 21-column generic workflow schema', () => {
     const headers = [
       'Watchlist ID',
       'Strategy ID',
@@ -39,11 +39,10 @@ describe('Watchlist physical sheet contract', () => {
       'Signal Price',
       'Current Price',
       'Change Since Signal',
-      'Momentum Score',
       'Status',
       'Setup Status',
-      'Breakout Level',
-      'Distance to Breakout',
+      'Trigger Level',
+      'Distance to Trigger',
       'Invalidation Level',
       'Earnings Date',
       'Event Risk',
@@ -75,7 +74,7 @@ describe('Watchlist physical sheet contract', () => {
     expect(Object.fromEntries(formulas)).toEqual({
       11: '=IFERROR(GOOGLEFINANCE(F7,"price"),"")',
       12: '=IF(OR(J7="",K7=""),"",K7/J7-1)',
-      17: '=IF(OR(K7="",P7=""),"",K7/P7-1)'
+      16: '=IF(OR(K7="",O7=""),"",K7/O7-1)'
     });
     expect(formats).toEqual([
       [[7, 5], 'yyyy-mm-dd'],
@@ -83,22 +82,40 @@ describe('Watchlist physical sheet contract', () => {
       [[7, 10], '$0.00'],
       [[7, 11], '$0.00'],
       [[7, 12], '0.00%'],
-      [[7, 13], '0'],
-      [[7, 16], '$0.00'],
-      [[7, 17], '0.00%'],
-      [[7, 18], '$0.00'],
-      [[7, 19], 'yyyy-mm-dd'],
-      [[7, 22], 'yyyy-mm-dd hh:mm:ss']
+      [[7, 15], '$0.00'],
+      [[7, 16], '0.00%'],
+      [[7, 17], '$0.00'],
+      [[7, 18], 'yyyy-mm-dd'],
+      [[7, 21], 'yyyy-mm-dd hh:mm:ss']
     ]);
   });
 
   it('preserves validation lists, allow-invalid flags, ranges, and toast', () => {
     const rules: unknown[] = [];
     const validationRanges: number[][] = [];
-    const headers = Array.from({ length: 20 }, (_, index) => `C${index}`);
-    headers[13] = 'Status';
-    headers[14] = 'Setup Status';
-    headers[19] = 'Event Risk';
+    const headers = [
+      'Watchlist ID',
+      'Strategy ID',
+      'Strategy',
+      'Strategy Version',
+      'Signal Date',
+      'Ticker',
+      'Company',
+      'Sector',
+      'Added At',
+      'Signal Price',
+      'Current Price',
+      'Change Since Signal',
+      'Status',
+      'Setup Status',
+      'Trigger Level',
+      'Distance to Trigger',
+      'Invalidation Level',
+      'Earnings Date',
+      'Event Risk',
+      'Notes',
+      'Closed At'
+    ];
     const sheet = {
       getLastColumn: () => 20,
       getMaxRows: () => 100,
@@ -145,10 +162,10 @@ describe('Watchlist physical sheet contract', () => {
       'REJECTED'
     ]);
     expect(builders[1].list).toEqual([
-      'NEAR BREAKOUT',
-      'BREAKOUT',
+      'WAITING_FOR_TRIGGER',
+      'TRIGGERED',
       'CONFIRMED',
-      'FAILED BREAKOUT',
+      'INVALIDATED',
       'EXTENDED'
     ]);
     expect(builders[2].list).toEqual([
@@ -159,9 +176,9 @@ describe('Watchlist physical sheet contract', () => {
       'OTHER'
     ]);
     expect(validationRanges).toEqual([
+      [2, 13, 99, 1],
       [2, 14, 99, 1],
-      [2, 15, 99, 1],
-      [2, 20, 99, 1]
+      [2, 19, 99, 1]
     ]);
     expect(rules).toHaveLength(3);
     expect(toast).toHaveBeenCalledWith(

@@ -83,7 +83,7 @@ export class GoogleSheetsWatchlistRepository implements WatchlistRepository {
 
   updateTradePlanningInputs(
     id: string,
-    inputs: { breakoutLevel: number | null; invalidationLevel: number; eventRisk: string }
+    inputs: { triggerLevel: number | null; invalidationLevel: number; eventRisk: string }
   ): void {
     const sheet = this.getValidatedSheet();
     const lastRow = sheet.getLastRow();
@@ -99,8 +99,8 @@ export class GoogleSheetsWatchlistRepository implements WatchlistRepository {
 
     const row = offset + 2;
     sheet
-      .getRange(row, requireColumn(headers, 'Breakout Level') + 1)
-      .setValue(inputs.breakoutLevel ?? '');
+      .getRange(row, requireColumn(headers, 'Trigger Level') + 1)
+      .setValue(inputs.triggerLevel ?? '');
     sheet
       .getRange(row, requireColumn(headers, 'Invalidation Level') + 1)
       .setValue(inputs.invalidationLevel);

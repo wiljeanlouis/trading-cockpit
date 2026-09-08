@@ -25,7 +25,7 @@ describe('Apps Script Trade Plan web adapter', () => {
       createTradePlanFromWeb(create, {
         watchlistId: 'WL-1',
         accountId: 'A1',
-        breakoutLevel: 101,
+        triggerLevel: 101,
         invalidationLevel: 95,
         eventRisk: 'CLEAR'
       })
@@ -40,7 +40,7 @@ describe('Apps Script Trade Plan web adapter', () => {
     expect(create).toHaveBeenCalledWith({
       watchlistId: 'WL-1',
       accountId: 'A1',
-      breakoutLevel: 101,
+      triggerLevel: 101,
       invalidationLevel: 95,
       eventRisk: 'CLEAR'
     });
@@ -58,7 +58,7 @@ describe('Apps Script Trade Plan web adapter', () => {
       createTradePlanFromWeb(create, {
         watchlistId: 'WL-1',
         accountId: 'A1',
-        breakoutLevel: null,
+        triggerLevel: null,
         invalidationLevel: 95,
         eventRisk: null
       })

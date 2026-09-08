@@ -12,7 +12,7 @@ export interface DashboardPipelineDto {
   signals: number;
   watchlist: number;
   ready: number;
-  nearBreakout: number;
+  nearTrigger: number;
   activeTradePlans: number;
   openPositions: number;
   closedTrades: number;
@@ -50,7 +50,6 @@ export interface DashboardAccountDto {
 export interface DashboardDiscoveryCandidateDto {
   rank: number | null;
   ticker: string;
-  score: number | null;
   price: number | null;
   high52: number | null;
   relativeVolume: number | null;
@@ -63,8 +62,8 @@ export interface DashboardWatchlistPreviewDto {
   currentPrice: number | null;
   signalPrice: number | null;
   changeSinceSignal: number | null;
-  breakoutLevel: number | null;
-  distanceToBreakout: number | null;
+  triggerLevel: number | null;
+  distanceToTrigger: number | null;
   setupStatus: string | null;
   status: string;
 }
@@ -80,18 +79,18 @@ export interface DashboardPositionPreviewDto {
   unrealizedPnlPercent: number | null;
 }
 
-export interface DashboardNearBreakoutActionDto {
+export interface DashboardNearTriggerActionDto {
   ticker: string;
   distance: number;
   currentPrice: number | null;
-  breakoutLevel: number | null;
+  triggerLevel: number | null;
   setupStatus: string | null;
 }
 
 export interface DashboardReadyActionDto {
   ticker: string;
   currentPrice: number | null;
-  breakoutLevel: number | null;
+  triggerLevel: number | null;
   setupStatus: string | null;
 }
 
@@ -105,7 +104,7 @@ export interface DashboardOpenPositionActionDto {
 }
 
 export interface DashboardActionsDto {
-  nearBreakout: DashboardNearBreakoutActionDto[];
+  nearTrigger: DashboardNearTriggerActionDto[];
   ready: DashboardReadyActionDto[];
   openPositions: DashboardOpenPositionActionDto[];
 }

@@ -16,8 +16,7 @@ const candidate: WatchlistCandidate = {
   ticker: ' urnb ',
   company: 'Urban Outfitters',
   sector: 'Consumer Cyclical',
-  signalPrice: 54.25,
-  momentumScore: 88
+  signalPrice: 54.25
 };
 
 describe('Watchlist domain', () => {
@@ -75,10 +74,9 @@ describe('Watchlist domain', () => {
       addedAt,
       signalPrice: 54.25,
       currentPrice: '',
-      momentumScore: 88,
       status: 'WATCHING',
       setupStatus: '',
-      breakoutLevel: '',
+      triggerLevel: '',
       invalidationLevel: '',
       earningsDate: '',
       eventRisk: '',

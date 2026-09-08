@@ -6,20 +6,19 @@ const plan: TradePlan = {
   id: 'TP-1',
   accountId: 'A1',
   watchlistId: 'WL-1',
-  strategyId: 'BREAKOUT',
+  strategyId: 'TRIGGER',
   strategyName: 'Breakout',
   strategyVersion: 'V1',
   signalDate: new Date('2026-08-27T04:00:00.000Z'),
   signalPrice: 33,
   ticker: 'BOX',
   referencePrice: 34,
-  momentumScore: 87,
   setupStatus: 'CONFIRMED',
-  breakoutLevel: 34.5,
+  triggerLevel: 34.5,
   invalidationLevel: 32.8,
   eventRisk: 'CLEAR',
   createdAt: new Date('2026-08-28T14:00:00.000Z'),
-  entryType: 'BREAKOUT',
+  entryType: 'TRIGGER',
   entryPrice: 35,
   stopPrice: 32.8,
   targetPrice: 40,
@@ -39,7 +38,7 @@ describe('get Trade Plans', () => {
   it('returns persisted financial snapshots without recalculating them', () => {
     const result = createGetTradePlans({
       reader: { findAll: () => [plan] },
-      strategyIds: () => ['BREAKOUT'],
+      strategyIds: () => ['TRIGGER'],
       now: () => new Date('2026-08-28T16:00:00.000Z')
     })();
 
@@ -51,19 +50,18 @@ describe('get Trade Plans', () => {
           watchlistId: 'WL-1',
           accountId: 'A1',
           ticker: 'BOX',
-          strategyId: 'BREAKOUT',
+          strategyId: 'TRIGGER',
           strategyName: 'Breakout',
           strategyVersion: 'V1',
           signalDate: '2026-08-27T04:00:00.000Z',
           signalPrice: 33,
           referencePrice: 34,
-          momentumScore: 87,
           setupStatus: 'CONFIRMED',
-          breakoutLevel: 34.5,
+          triggerLevel: 34.5,
           invalidationLevel: 32.8,
           eventRisk: 'CLEAR',
           createdAt: '2026-08-28T14:00:00.000Z',
-          entryType: 'BREAKOUT',
+          entryType: 'TRIGGER',
           entryPrice: 35,
           stopPrice: 32.8,
           targetPrice: 40,
@@ -97,7 +95,7 @@ describe('get Trade Plans', () => {
           }
         ]
       },
-      strategyIds: () => ['BREAKOUT'],
+      strategyIds: () => ['TRIGGER'],
       now: () => new Date()
     })();
 
@@ -117,7 +115,7 @@ describe('get Trade Plans', () => {
       { ...plan, id: 'TP-2', ticker: 'URBN' },
       { ...plan, id: 'TP-3', ticker: 'DK' }
     ]);
-    const strategyIds = vi.fn(() => ['BREAKOUT']);
+    const strategyIds = vi.fn(() => ['TRIGGER']);
 
     const result = createGetTradePlans({
       reader: { findAll: findAllPlans },
@@ -138,14 +136,14 @@ describe('get Trade Plans', () => {
   it('marks execution ineligible when the historical Strategy Version is not configured', () => {
     const result = createGetTradePlans({
       reader: { findAll: () => [plan] },
-      strategyIds: () => ['BREAKOUT'],
-      strategyVersions: () => [{ strategyId: 'BREAKOUT', version: 'V2' }],
+      strategyIds: () => ['TRIGGER'],
+      strategyVersions: () => [{ strategyId: 'TRIGGER', version: 'V2' }],
       now: () => new Date('2026-08-28T16:00:00.000Z')
     })();
 
     expect(result.items[0].executionEligibility).toEqual({
       eligible: false,
-      reason: 'Version de stratégie inconnue : BREAKOUT V1'
+      reason: 'Version de stratégie inconnue : TRIGGER V1'
     });
   });
 

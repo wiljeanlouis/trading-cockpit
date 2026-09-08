@@ -14,10 +14,9 @@ const entry: WatchlistEntry = {
   addedAt: new Date('2026-08-27T14:00:00.000Z'),
   signalPrice: 33.2,
   currentPrice: 34.82,
-  momentumScore: 87,
   status: 'READY',
   setupStatus: 'VALID',
-  breakoutLevel: 35,
+  triggerLevel: 35,
   invalidationLevel: 31,
   earningsDate: null,
   eventRisk: '',
@@ -46,10 +45,9 @@ describe('get Watchlist', () => {
           signalDate: '2026-08-27T04:00:00.000Z',
           signalPrice: 33.2,
           currentPrice: 34.82,
-          momentumScore: 87,
           status: 'READY',
           setupStatus: 'VALID',
-          breakoutLevel: 35,
+          triggerLevel: 35,
           invalidationLevel: 31,
           earningsDate: null,
           eventRisk: null,
@@ -62,10 +60,10 @@ describe('get Watchlist', () => {
 
   it('does not coerce unavailable formula values into financial numbers', () => {
     const getWatchlist = createGetWatchlist({
-      reader: { findAll: () => [{ ...entry, currentPrice: '#N/A', momentumScore: '' }] },
+      reader: { findAll: () => [{ ...entry, currentPrice: '#N/A' }] },
       now: () => new Date('2026-08-28T16:04:00.000Z')
     });
 
-    expect(getWatchlist().items[0]).toMatchObject({ currentPrice: null, momentumScore: null });
+    expect(getWatchlist().items[0]).toMatchObject({ currentPrice: null });
   });
 });

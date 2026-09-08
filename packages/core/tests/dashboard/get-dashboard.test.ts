@@ -52,7 +52,6 @@ function snapshot(): DashboardRepositorySnapshot {
       {
         rank: 1,
         ticker: 'BOX',
-        score: 87,
         price: 34.98,
         high52: 0.01,
         relativeVolume: 1.5,
@@ -62,7 +61,6 @@ function snapshot(): DashboardRepositorySnapshot {
       {
         rank: 2,
         ticker: 'NVDA',
-        score: 86,
         price: 217.55,
         high52: 0.02,
         relativeVolume: 1.8,
@@ -76,8 +74,8 @@ function snapshot(): DashboardRepositorySnapshot {
         currentPrice: 34,
         signalPrice: 33,
         changeSinceSignal: 0.03,
-        breakoutLevel: 35,
-        distanceToBreakout: -0.01,
+        triggerLevel: 35,
+        distanceToTrigger: -0.01,
         setupStatus: 'CONFIRMED',
         status: 'READY'
       },
@@ -86,8 +84,8 @@ function snapshot(): DashboardRepositorySnapshot {
         currentPrice: 70,
         signalPrice: 68,
         changeSinceSignal: 0.02,
-        breakoutLevel: 72,
-        distanceToBreakout: -0.015,
+        triggerLevel: 72,
+        distanceToTrigger: -0.015,
         setupStatus: null,
         status: 'WATCHING'
       },
@@ -96,8 +94,8 @@ function snapshot(): DashboardRepositorySnapshot {
         currentPrice: 10,
         signalPrice: 10,
         changeSinceSignal: 0,
-        breakoutLevel: 11,
-        distanceToBreakout: -0.01,
+        triggerLevel: 11,
+        distanceToTrigger: -0.01,
         setupStatus: null,
         status: 'REJECTED'
       }
@@ -175,7 +173,7 @@ describe('get Dashboard', () => {
       signals: 2,
       watchlist: 3,
       ready: 1,
-      nearBreakout: 2,
+      nearTrigger: 2,
       activeTradePlans: 2,
       openPositions: 2,
       closedTrades: 3
@@ -195,7 +193,7 @@ describe('get Dashboard', () => {
     });
     expect(dashboard.watchlistPreview.map((item) => item.ticker)).toEqual(['BOX', 'DK']);
     expect(dashboard.openPositionsPreview.map((item) => item.ticker)).toEqual(['BOX', 'NVDA']);
-    expect(dashboard.actions.nearBreakout.map((item) => item.ticker)).toEqual(['BOX', 'DK']);
+    expect(dashboard.actions.nearTrigger.map((item) => item.ticker)).toEqual(['BOX', 'DK']);
     expect(dashboard.actions.ready.map((item) => item.ticker)).toEqual(['BOX']);
     expect(dashboard.actions.openPositions.map((item) => item.ticker)).toEqual(['BOX', 'NVDA']);
     expect(dashboard.actions.openPositions[0].stopDistance).toBeCloseTo((34 - 33.8) / 34);

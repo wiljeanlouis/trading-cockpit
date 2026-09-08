@@ -72,7 +72,7 @@ const EMPTY_DASHBOARD: DashboardDto = {
     signals: 0,
     watchlist: 0,
     ready: 0,
-    nearBreakout: 0,
+    nearTrigger: 0,
     activeTradePlans: 0,
     openPositions: 0,
     closedTrades: 0
@@ -89,7 +89,7 @@ const EMPTY_DASHBOARD: DashboardDto = {
   watchlistPreview: [],
   openPositionsPreview: [],
   actions: {
-    nearBreakout: [],
+    nearTrigger: [],
     ready: [],
     openPositions: []
   }

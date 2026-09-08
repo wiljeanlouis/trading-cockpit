@@ -30,7 +30,7 @@ const dashboard: DashboardDto = {
     signals: 12,
     watchlist: 8,
     ready: 3,
-    nearBreakout: 2,
+    nearTrigger: 2,
     activeTradePlans: 2,
     openPositions: 1,
     closedTrades: 14
@@ -52,7 +52,6 @@ const dashboard: DashboardDto = {
     {
       rank: 1,
       ticker: 'BOX',
-      score: 87,
       price: 34.98,
       high52: 0.01,
       relativeVolume: 1.5,
@@ -66,8 +65,8 @@ const dashboard: DashboardDto = {
       currentPrice: 34.98,
       signalPrice: 33.4,
       changeSinceSignal: 0.04,
-      breakoutLevel: 35,
-      distanceToBreakout: -0.01,
+      triggerLevel: 35,
+      distanceToTrigger: -0.01,
       setupStatus: 'CONFIRMED',
       status: 'READY'
     }
@@ -85,12 +84,12 @@ const dashboard: DashboardDto = {
     }
   ],
   actions: {
-    nearBreakout: [
+    nearTrigger: [
       {
         ticker: 'BOX',
         distance: -0.01,
         currentPrice: 34.98,
-        breakoutLevel: 35,
+        triggerLevel: 35,
         setupStatus: 'CONFIRMED'
       }
     ],
@@ -98,7 +97,7 @@ const dashboard: DashboardDto = {
       {
         ticker: 'BOX',
         currentPrice: 34.98,
-        breakoutLevel: 35,
+        triggerLevel: 35,
         setupStatus: 'CONFIRMED'
       }
     ],

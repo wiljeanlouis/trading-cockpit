@@ -182,20 +182,20 @@ export class CloudRunWatchlistRepository implements WatchlistRepository {
 
   updateTradePlanningInputs(
     id: string,
-    inputs: { breakoutLevel: number | null; invalidationLevel: number; eventRisk: string }
+    inputs: { triggerLevel: number | null; invalidationLevel: number; eventRisk: string }
   ): void {
     const rowNumber = this.requireRowNumberById(id);
     this.context.writer.batchUpdate([
       {
-        range: cellRange(SHEET_DEFINITIONS.watchlist.sheetName, rowNumber, 16),
-        values: [[inputs.breakoutLevel ?? '']]
+        range: cellRange(SHEET_DEFINITIONS.watchlist.sheetName, rowNumber, 15),
+        values: [[inputs.triggerLevel ?? '']]
       },
       {
-        range: cellRange(SHEET_DEFINITIONS.watchlist.sheetName, rowNumber, 18),
+        range: cellRange(SHEET_DEFINITIONS.watchlist.sheetName, rowNumber, 17),
         values: [[inputs.invalidationLevel]]
       },
       {
-        range: cellRange(SHEET_DEFINITIONS.watchlist.sheetName, rowNumber, 20),
+        range: cellRange(SHEET_DEFINITIONS.watchlist.sheetName, rowNumber, 19),
         values: [[inputs.eventRisk]]
       }
     ]);
@@ -203,7 +203,7 @@ export class CloudRunWatchlistRepository implements WatchlistRepository {
       entry.id === id
         ? {
             ...entry,
-            breakoutLevel: inputs.breakoutLevel ?? '',
+            triggerLevel: inputs.triggerLevel ?? '',
             invalidationLevel: inputs.invalidationLevel,
             eventRisk: inputs.eventRisk
           }
@@ -274,7 +274,7 @@ export class CloudRunTradePlanRepository implements TradePlanRepository {
     const rowNumber = this.requireRowNumberById(tradePlan.id);
     const updates = [
       {
-        range: rowRange(SHEET_DEFINITIONS.tradePlans.sheetName, rowNumber, 17, 27),
+        range: rowRange(SHEET_DEFINITIONS.tradePlans.sheetName, rowNumber, 16, 26),
         values: [
           tradePlanPlanningCells(tradePlan, rowNumber, Boolean(options?.positionSizeOverridden))
         ]
@@ -286,7 +286,7 @@ export class CloudRunTradePlanRepository implements TradePlanRepository {
 
   updateStatus(id: string, status: string): void {
     const rowNumber = this.requireRowNumberById(id);
-    this.context.writer.update(cellRange(SHEET_DEFINITIONS.tradePlans.sheetName, rowNumber, 28), [
+    this.context.writer.update(cellRange(SHEET_DEFINITIONS.tradePlans.sheetName, rowNumber, 27), [
       [status]
     ]);
     this.plans = this.loaded().map((plan) => (plan.id === id ? { ...plan, status } : plan));
@@ -762,11 +762,10 @@ function watchlistEntryToRow(entry: WatchlistEntry, rowNumber: number): unknown[
     entry.signalPrice,
     `=IFERROR(GOOGLEFINANCE(F${rowNumber},"price"),"")`,
     `=IF(OR(J${rowNumber}="",K${rowNumber}=""),"",K${rowNumber}/J${rowNumber}-1)`,
-    entry.momentumScore,
     entry.status,
     entry.setupStatus,
-    entry.breakoutLevel,
-    `=IF(OR(K${rowNumber}="",P${rowNumber}=""),"",K${rowNumber}/P${rowNumber}-1)`,
+    entry.triggerLevel,
+    `=IF(OR(K${rowNumber}="",O${rowNumber}=""),"",K${rowNumber}/O${rowNumber}-1)`,
     entry.invalidationLevel,
     entry.earningsDate,
     entry.eventRisk,
@@ -786,9 +785,8 @@ function tradePlanToRow(tradePlan: TradePlan, rowNumber: number): unknown[] {
     tradePlan.signalPrice,
     tradePlan.ticker,
     tradePlan.referencePrice,
-    tradePlan.momentumScore,
     tradePlan.setupStatus,
-    tradePlan.breakoutLevel,
+    tradePlan.triggerLevel,
     tradePlan.invalidationLevel,
     tradePlan.eventRisk,
     tradePlan.createdAt,
@@ -796,14 +794,14 @@ function tradePlanToRow(tradePlan: TradePlan, rowNumber: number): unknown[] {
     tradePlan.entryPrice,
     tradePlan.stopPrice,
     tradePlan.targetPrice,
-    `=IF(OR(Q${rowNumber}="",R${rowNumber}=""),"",Q${rowNumber}-R${rowNumber})`,
-    `=IF(OR(Q${rowNumber}="",S${rowNumber}=""),"",S${rowNumber}-Q${rowNumber})`,
-    `=IF(OR(T${rowNumber}="",T${rowNumber}<=0,U${rowNumber}=""),"",U${rowNumber}/T${rowNumber})`,
+    `=IF(OR(P${rowNumber}="",Q${rowNumber}=""),"",P${rowNumber}-Q${rowNumber})`,
+    `=IF(OR(P${rowNumber}="",R${rowNumber}=""),"",R${rowNumber}-P${rowNumber})`,
+    `=IF(OR(S${rowNumber}="",S${rowNumber}<=0,T${rowNumber}=""),"",T${rowNumber}/S${rowNumber})`,
     tradePlan.accountEquity,
     tradePlan.riskPercent,
-    `=IF(OR(W${rowNumber}="",X${rowNumber}=""),"",W${rowNumber}*X${rowNumber})`,
-    `=IF(OR(Y${rowNumber}="",T${rowNumber}="",T${rowNumber}<=0),"",FLOOR(Y${rowNumber}/T${rowNumber},1))`,
-    `=IF(OR(Z${rowNumber}="",Q${rowNumber}=""),"",Z${rowNumber}*Q${rowNumber})`,
+    `=IF(OR(V${rowNumber}="",W${rowNumber}=""),"",V${rowNumber}*W${rowNumber})`,
+    `=IF(OR(X${rowNumber}="",S${rowNumber}="",S${rowNumber}<=0),"",FLOOR(X${rowNumber}/S${rowNumber},1))`,
+    `=IF(OR(Y${rowNumber}="",P${rowNumber}=""),"",Y${rowNumber}*P${rowNumber})`,
     tradePlan.status,
     tradePlan.notes,
     tradePlan.accountId
@@ -819,18 +817,18 @@ function tradePlanPlanningCells(
     tradePlan.entryPrice,
     tradePlan.stopPrice,
     tradePlan.targetPrice,
-    `=IF(OR(Q${rowNumber}="",R${rowNumber}=""),"",Q${rowNumber}-R${rowNumber})`,
-    `=IF(OR(Q${rowNumber}="",S${rowNumber}=""),"",S${rowNumber}-Q${rowNumber})`,
-    `=IF(OR(T${rowNumber}="",T${rowNumber}<=0,U${rowNumber}=""),"",U${rowNumber}/T${rowNumber})`,
+    `=IF(OR(P${rowNumber}="",Q${rowNumber}=""),"",P${rowNumber}-Q${rowNumber})`,
+    `=IF(OR(P${rowNumber}="",R${rowNumber}=""),"",R${rowNumber}-P${rowNumber})`,
+    `=IF(OR(S${rowNumber}="",S${rowNumber}<=0,T${rowNumber}=""),"",T${rowNumber}/S${rowNumber})`,
     tradePlan.accountEquity,
     tradePlan.riskPercent,
-    `=IF(OR(W${rowNumber}="",X${rowNumber}=""),"",W${rowNumber}*X${rowNumber})`,
+    `=IF(OR(V${rowNumber}="",W${rowNumber}=""),"",V${rowNumber}*W${rowNumber})`,
     positionSizeOverridden
       ? tradePlan.positionSize
-      : `=IF(OR(Y${rowNumber}="",T${rowNumber}="",T${rowNumber}<=0),"",FLOOR(Y${rowNumber}/T${rowNumber},1))`,
+      : `=IF(OR(X${rowNumber}="",S${rowNumber}="",S${rowNumber}<=0),"",FLOOR(X${rowNumber}/S${rowNumber},1))`,
     positionSizeOverridden
       ? tradePlan.positionValue
-      : `=IF(OR(Z${rowNumber}="",Q${rowNumber}=""),"",Z${rowNumber}*Q${rowNumber})`
+      : `=IF(OR(Y${rowNumber}="",P${rowNumber}=""),"",Y${rowNumber}*P${rowNumber})`
   ];
 }
 

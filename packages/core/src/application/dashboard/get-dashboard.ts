@@ -47,16 +47,16 @@ function isReadyWatchlistStatus(status: string): boolean {
 /**
  * Identifies candidates that deserve Dashboard attention without mutating Watchlist workflow.
  */
-function isNearBreakout(entry: DashboardWatchlistSnapshot): entry is DashboardWatchlistSnapshot & {
-  distanceToBreakout: number;
+function isNearTrigger(entry: DashboardWatchlistSnapshot): entry is DashboardWatchlistSnapshot & {
+  distanceToTrigger: number;
 } {
   const status = normalized(entry.status);
   return (
     (status === 'WATCHING' || status === 'READY') &&
-    entry.distanceToBreakout !== null &&
-    Number.isFinite(entry.distanceToBreakout) &&
-    entry.distanceToBreakout >= -0.02 &&
-    entry.distanceToBreakout <= 0
+    entry.distanceToTrigger !== null &&
+    Number.isFinite(entry.distanceToTrigger) &&
+    entry.distanceToTrigger >= -0.02 &&
+    entry.distanceToTrigger <= 0
   );
 }
 
@@ -120,14 +120,14 @@ export function createGetDashboard({
     const openPositions = scopedPositions.filter((position) =>
       isOpenPositionStatus(position.status)
     );
-    const nearBreakout = watchlistWithTicker.filter(isNearBreakout);
+    const nearTrigger = watchlistWithTicker.filter(isNearTrigger);
     const ready = watchlistWithTicker.filter((entry) => isReadyWatchlistStatus(entry.status));
 
     const pipeline = {
       signals: snapshot.discoveryCandidates.length,
       watchlist: watchlistWithTicker.length,
       ready: ready.length,
-      nearBreakout: nearBreakout.length,
+      nearTrigger: nearTrigger.length,
       activeTradePlans: scopedTradePlans.filter((plan) => isActiveTradePlanStatus(plan.status))
         .length,
       openPositions: openPositions.length,
@@ -203,19 +203,19 @@ export function createGetDashboard({
         unrealizedPnlPercent: position.unrealizedPnlPercent
       })),
       actions: {
-        nearBreakout: nearBreakout
+        nearTrigger: nearTrigger
           .map((entry) => ({
             ticker: entry.ticker,
-            distance: entry.distanceToBreakout,
+            distance: entry.distanceToTrigger,
             currentPrice: entry.currentPrice,
-            breakoutLevel: entry.breakoutLevel,
+            triggerLevel: entry.triggerLevel,
             setupStatus: entry.setupStatus
           }))
           .sort((left, right) => Math.abs(left.distance) - Math.abs(right.distance)),
         ready: ready.map((entry) => ({
           ticker: entry.ticker,
           currentPrice: entry.currentPrice,
-          breakoutLevel: entry.breakoutLevel,
+          triggerLevel: entry.triggerLevel,
           setupStatus: entry.setupStatus
         })),
         openPositions: openPositionActions

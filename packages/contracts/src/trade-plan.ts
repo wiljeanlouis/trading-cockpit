@@ -12,7 +12,7 @@ export interface TradingAccountsDto {
 export interface CreateTradePlanRequest {
   watchlistId: string;
   accountId: string;
-  breakoutLevel: number | null;
+  triggerLevel: number | null;
   invalidationLevel: number;
   eventRisk: string | null;
 }
@@ -46,9 +46,8 @@ export interface TradePlanItemDto {
   signalDate: string | null;
   signalPrice: number | null;
   referencePrice: number | null;
-  momentumScore: number | null;
   setupStatus: string | null;
-  breakoutLevel: number | null;
+  triggerLevel: number | null;
   invalidationLevel: number | null;
   eventRisk: string | null;
   createdAt: string | null;

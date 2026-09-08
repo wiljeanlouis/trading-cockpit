@@ -9,10 +9,9 @@ export interface WatchlistItemDto {
   signalDate: string | null;
   signalPrice: number | null;
   currentPrice: number | null;
-  momentumScore: number | null;
   status: string;
   setupStatus: string;
-  breakoutLevel: number | null;
+  triggerLevel: number | null;
   invalidationLevel: number | null;
   earningsDate: string | null;
   eventRisk: string | null;

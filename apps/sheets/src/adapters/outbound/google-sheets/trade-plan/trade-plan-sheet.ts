@@ -32,7 +32,7 @@ export function validateTradePlansHeaders(headers: readonly unknown[]): true {
 export function refreshTradePlanValidations(sheet: GoogleAppsScript.Spreadsheet.Sheet): void {
   const headers = readSheetHeaders(sheet);
   const definitions = [
-    [requireColumn(headers, 'Entry Type') + 1, ['BREAKOUT', 'RETEST', 'LIMIT']],
+    [requireColumn(headers, 'Entry Type') + 1, ['TRIGGER', 'RETEST', 'LIMIT']],
     [requireColumn(headers, 'Status') + 1, ['DRAFT', 'READY', 'EXECUTED', 'CANCELLED']]
   ] as const;
   definitions.forEach(([column, values]) => {
@@ -45,30 +45,30 @@ export function refreshTradePlanValidations(sheet: GoogleAppsScript.Spreadsheet.
 }
 
 export function addTradePlanFormulas(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number): void {
-  sheet.getRange(row, 20).setFormula(`=IF(OR(Q${row}="",R${row}=""),"",Q${row}-R${row})`);
-  sheet.getRange(row, 21).setFormula(`=IF(OR(Q${row}="",S${row}=""),"",S${row}-Q${row})`);
+  sheet.getRange(row, 19).setFormula(`=IF(OR(P${row}="",Q${row}=""),"",P${row}-Q${row})`);
+  sheet.getRange(row, 20).setFormula(`=IF(OR(P${row}="",R${row}=""),"",R${row}-P${row})`);
   sheet
-    .getRange(row, 22)
-    .setFormula(`=IF(OR(T${row}="",T${row}<=0,U${row}=""),"",U${row}/T${row})`);
-  sheet.getRange(row, 25).setFormula(`=IF(OR(W${row}="",X${row}=""),"",W${row}*X${row})`);
+    .getRange(row, 21)
+    .setFormula(`=IF(OR(S${row}="",S${row}<=0,T${row}=""),"",T${row}/S${row})`);
+  sheet.getRange(row, 24).setFormula(`=IF(OR(V${row}="",W${row}=""),"",V${row}*W${row})`);
   sheet
-    .getRange(row, 26)
-    .setFormula(`=IF(OR(Y${row}="",T${row}="",T${row}<=0),"",FLOOR(Y${row}/T${row},1))`);
-  sheet.getRange(row, 27).setFormula(`=IF(OR(Z${row}="",Q${row}=""),"",Z${row}*Q${row})`);
+    .getRange(row, 25)
+    .setFormula(`=IF(OR(X${row}="",S${row}="",S${row}<=0),"",FLOOR(X${row}/S${row},1))`);
+  sheet.getRange(row, 26).setFormula(`=IF(OR(Y${row}="",P${row}=""),"",Y${row}*P${row})`);
 }
 
 export function formatTradePlanRow(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number): void {
   sheet.getRange(row, 6).setNumberFormat('yyyy-mm-dd');
   sheet.getRange(row, 7).setNumberFormat('$0.00');
   sheet.getRange(row, 9).setNumberFormat('$0.00');
-  sheet.getRange(row, 12, 1, 2).setNumberFormat('$0.00');
-  sheet.getRange(row, 15).setNumberFormat('yyyy-mm-dd hh:mm:ss');
-  sheet.getRange(row, 17, 1, 3).setNumberFormat('$0.00');
-  sheet.getRange(row, 20, 1, 2).setNumberFormat('$0.00');
-  sheet.getRange(row, 22).setNumberFormat('0.00');
-  sheet.getRange(row, 23).setNumberFormat('$#,##0.00');
-  sheet.getRange(row, 24).setNumberFormat('0.00%');
-  sheet.getRange(row, 25).setNumberFormat('$0.00');
-  sheet.getRange(row, 26).setNumberFormat('0');
-  sheet.getRange(row, 27).setNumberFormat('$#,##0.00');
+  sheet.getRange(row, 11, 1, 2).setNumberFormat('$0.00');
+  sheet.getRange(row, 14).setNumberFormat('yyyy-mm-dd hh:mm:ss');
+  sheet.getRange(row, 16, 1, 3).setNumberFormat('$0.00');
+  sheet.getRange(row, 19, 1, 2).setNumberFormat('$0.00');
+  sheet.getRange(row, 21).setNumberFormat('0.00');
+  sheet.getRange(row, 22).setNumberFormat('$#,##0.00');
+  sheet.getRange(row, 23).setNumberFormat('0.00%');
+  sheet.getRange(row, 24).setNumberFormat('$0.00');
+  sheet.getRange(row, 25).setNumberFormat('0');
+  sheet.getRange(row, 26).setNumberFormat('$#,##0.00');
 }

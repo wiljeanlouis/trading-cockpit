@@ -15,7 +15,7 @@ import type { GetAccountEquity } from '../trading-account/get-account-equity';
 export interface CreateTradePlanFromWatchlistCommand {
   watchlistId: string;
   accountId: string;
-  breakoutLevel?: number | null;
+  triggerLevel?: number | null;
   invalidationLevel?: number | null;
   eventRisk?: string | null;
 }
@@ -78,7 +78,7 @@ export function createCreateTradePlanFromWatchlist({
   getAccountEquity,
   runtime
 }: CreateTradePlanFromWatchlistDependencies): CreateTradePlanFromWatchlist {
-  return ({ watchlistId, accountId, breakoutLevel, invalidationLevel, eventRisk }) => {
+  return ({ watchlistId, accountId, triggerLevel, invalidationLevel, eventRisk }) => {
     const normalizedWatchlistId = String(watchlistId || '').trim();
     const normalizedAccountId = String(accountId || '')
       .trim()
@@ -99,11 +99,11 @@ export function createCreateTradePlanFromWatchlist({
     }
 
     const hasWebPlanningInputs =
-      breakoutLevel !== undefined || invalidationLevel !== undefined || eventRisk !== undefined;
-    const normalizedBreakoutLevel =
-      breakoutLevel === undefined
-        ? watchlistEntry.breakoutLevel
-        : (optionalPositiveLevel(breakoutLevel, 'Breakout Level') ?? '');
+      triggerLevel !== undefined || invalidationLevel !== undefined || eventRisk !== undefined;
+    const normalizedTriggerLevel =
+      triggerLevel === undefined
+        ? watchlistEntry.triggerLevel
+        : (optionalPositiveLevel(triggerLevel, 'Trigger Level') ?? '');
     const normalizedInvalidationLevel =
       invalidationLevel === undefined
         ? watchlistEntry.invalidationLevel
@@ -117,7 +117,7 @@ export function createCreateTradePlanFromWatchlist({
     const duplicateTicker = String(watchlistEntry.ticker || '').trim();
     const source = normalizeTradePlanSource({
       ...watchlistEntry,
-      breakoutLevel: normalizedBreakoutLevel,
+      triggerLevel: normalizedTriggerLevel,
       invalidationLevel: normalizedInvalidationLevel,
       eventRisk: normalizedEventRisk
     });
@@ -164,7 +164,7 @@ export function createCreateTradePlanFromWatchlist({
     tradePlanRepository.save(tradePlan);
     if (hasWebPlanningInputs) {
       watchlistRepository.updateTradePlanningInputs(source.watchlistId, {
-        breakoutLevel: typeof normalizedBreakoutLevel === 'number' ? normalizedBreakoutLevel : null,
+        triggerLevel: typeof normalizedTriggerLevel === 'number' ? normalizedTriggerLevel : null,
         invalidationLevel: Number(normalizedInvalidationLevel),
         eventRisk: normalizedEventRisk
       });

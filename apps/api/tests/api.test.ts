@@ -125,7 +125,6 @@ describe('Cloud Run Trading Cockpit API', () => {
         Company: 'Box, Inc.',
         Sector: 'Technology',
         'Current Price': 34.82,
-        'Momentum Score': 87,
         Status: 'READY',
         'Setup Status': 'CONFIRMED'
       })
@@ -140,7 +139,7 @@ describe('Cloud Run Trading Cockpit API', () => {
 
     expect(client.getValues).toHaveBeenCalledWith({
       spreadsheetId: 'spreadsheet-id',
-      range: "'Watchlist'!A:V",
+      range: "'Watchlist'!A:U",
       valueRenderOption: 'UNFORMATTED_VALUE',
       dateTimeRenderOption: 'SERIAL_NUMBER'
     });
@@ -148,7 +147,6 @@ describe('Cloud Run Trading Cockpit API', () => {
       expect.objectContaining({
         ticker: 'BOX',
         currentPrice: 34.82,
-        momentumScore: 87,
         status: 'READY'
       })
     ]);
@@ -193,7 +191,6 @@ describe('Cloud Run Trading Cockpit API', () => {
             'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
             Ticker: 'BOX',
             'Current Price': '',
-            'Momentum Score': '#N/A',
             Status: 'WATCHING'
           })
         ]),
@@ -203,8 +200,7 @@ describe('Cloud Run Trading Cockpit API', () => {
     });
 
     expect(result.items[0]).toMatchObject({
-      currentPrice: null,
-      momentumScore: null
+      currentPrice: null
     });
   });
 
@@ -721,7 +717,7 @@ describe('Cloud Run Trading Cockpit API', () => {
       body: JSON.stringify({
         watchlistId: 'W1',
         accountId: 'A1',
-        breakoutLevel: 35,
+        triggerLevel: 35,
         invalidationLevel: 30,
         eventRisk: 'CLEAR'
       }),
@@ -744,14 +740,14 @@ describe('Cloud Run Trading Cockpit API', () => {
       })
     );
     expect(client.appendValues).toHaveBeenCalledWith(
-      expect.objectContaining({ range: "'Trade Plans'!A:AD" })
+      expect.objectContaining({ range: "'Trade Plans'!A:AC" })
     );
     expect(client.batchUpdateValues).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.arrayContaining([
-          expect.objectContaining({ range: "'Watchlist'!P2" }),
-          expect.objectContaining({ range: "'Watchlist'!R2" }),
-          expect.objectContaining({ range: "'Watchlist'!T2" })
+          expect.objectContaining({ range: "'Watchlist'!O2" }),
+          expect.objectContaining({ range: "'Watchlist'!Q2" }),
+          expect.objectContaining({ range: "'Watchlist'!S2" })
         ])
       })
     );
@@ -786,8 +782,8 @@ describe('Cloud Run Trading Cockpit API', () => {
       expect.objectContaining({
         data: [
           expect.objectContaining({
-            range: "'Trade Plans'!Q2:AA2",
-            values: [expect.arrayContaining(['=IF(OR(Q2="",R2=""),"",Q2-R2)'])]
+            range: "'Trade Plans'!P2:Z2",
+            values: [expect.arrayContaining(['=IF(OR(P2="",Q2=""),"",P2-Q2)'])]
           })
         ]
       })
@@ -824,7 +820,7 @@ describe('Cloud Run Trading Cockpit API', () => {
       expect.objectContaining({ range: "'Positions'!A:Z" })
     );
     expect(client.updateValues).toHaveBeenCalledWith(
-      expect.objectContaining({ range: "'Trade Plans'!AB2", values: [['EXECUTED']] })
+      expect.objectContaining({ range: "'Trade Plans'!AA2", values: [['EXECUTED']] })
     );
     expect(client.updateValues).toHaveBeenCalledWith(
       expect.objectContaining({ range: "'Watchlist'!N2", values: [['ENTERED']] })
@@ -1617,9 +1613,8 @@ function queryFixtureByRange(
         Ticker: 'BOX',
         'Current Price': 34,
         'Signal Price': 33,
-        'Momentum Score': 87,
-        'Breakout Level': 35,
-        'Distance to Breakout': -0.01,
+        'Trigger Level': 35,
+        'Distance to Trigger': -0.01,
         Status: 'READY',
         'Setup Status': 'CONFIRMED'
       })

@@ -56,7 +56,6 @@ describe('Cloud Run Google Sheets API query readers', () => {
             Company: 'Box Inc',
             Sector: 'Technology',
             'Current Price': 34.82,
-            'Momentum Score': 87,
             Status: 'WATCHING'
           })
         ]
@@ -69,7 +68,6 @@ describe('Cloud Run Google Sheets API query readers', () => {
         strategyId: 'momentum_breakout',
         ticker: 'BOX',
         currentPrice: 34.82,
-        momentumScore: 87,
         status: 'WATCHING'
       })
     ]);
@@ -376,7 +374,7 @@ describe('Cloud Run Google Sheets API query readers', () => {
             })
           ]
         },
-        'Watchlist!A1:V1000': {
+        'Watchlist!A1:U1000': {
           values: [
             [...watchlistHeaders],
             rowFor(watchlistHeaders, {
@@ -419,7 +417,7 @@ describe('Cloud Run Google Sheets API query readers', () => {
     const client: SheetsValuesClient = {
       getValues: vi.fn(async () => ({ values: [] })),
       batchGetValues: vi.fn(async () => ({
-        'Trade Plans!A1:AD1000': {
+        'Trade Plans!A1:AC1000': {
           values: [
             [...tradePlanHeaders],
             rowFor(tradePlanHeaders, {
@@ -506,7 +504,7 @@ describe('Cloud Run Google Sheets API query readers', () => {
             })
           ]
         },
-        'Watchlist!A1:V1000': {
+        'Watchlist!A1:U1000': {
           values: [
             [...watchlistHeaders],
             rowFor(watchlistHeaders, {
@@ -514,14 +512,14 @@ describe('Cloud Run Google Sheets API query readers', () => {
               Ticker: 'BOX',
               'Current Price': 34,
               'Signal Price': 33,
-              'Breakout Level': 35,
-              'Distance to Breakout': -0.01,
+              'Trigger Level': 35,
+              'Distance to Trigger': -0.01,
               Status: 'READY',
               'Setup Status': 'CONFIRMED'
             })
           ]
         },
-        'Trade Plans!A1:AD1000': {
+        'Trade Plans!A1:AC1000': {
           values: [
             [...tradePlanHeaders],
             rowFor(tradePlanHeaders, {

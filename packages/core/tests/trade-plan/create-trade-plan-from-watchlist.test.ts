@@ -19,10 +19,9 @@ const watchlist: WatchlistEntry = {
   addedAt: new Date(),
   signalPrice: 100,
   currentPrice: 100,
-  momentumScore: 80,
   status: 'WATCHING',
   setupStatus: 'READY',
-  breakoutLevel: 100,
+  triggerLevel: 100,
   invalidationLevel: 95,
   earningsDate: '',
   eventRisk: '',
@@ -54,7 +53,7 @@ function context(
 ) {
   let saved: TradePlan | null = null;
   let updatedPlanningInputs: {
-    breakoutLevel: number | null;
+    triggerLevel: number | null;
     invalidationLevel: number;
     eventRisk: string;
   } | null = null;
@@ -135,20 +134,20 @@ describe('create account-aware Trade Plan from Watchlist', () => {
     const result = createCreateTradePlanFromWatchlist(c.dependencies)({
       watchlistId: 'WL-1',
       accountId: 'A1',
-      breakoutLevel: 102,
+      triggerLevel: 102,
       invalidationLevel: 94,
       eventRisk: 'earnings soon'
     });
 
     expect(result.kind).toBe('created');
     expect(c.saved()).toMatchObject({
-      breakoutLevel: 102,
+      triggerLevel: 102,
       invalidationLevel: 94,
       stopPrice: 94,
       eventRisk: 'EARNINGS SOON'
     });
     expect(c.updatedPlanningInputs()).toEqual({
-      breakoutLevel: 102,
+      triggerLevel: 102,
       invalidationLevel: 94,
       eventRisk: 'EARNINGS SOON'
     });
@@ -160,11 +159,11 @@ describe('create account-aware Trade Plan from Watchlist', () => {
       createCreateTradePlanFromWatchlist(c.dependencies)({
         watchlistId: 'WL-1',
         accountId: 'A1',
-        breakoutLevel: 0,
+        triggerLevel: 0,
         invalidationLevel: 94,
         eventRisk: null
       })
-    ).toThrow('Breakout Level doit être supérieur à 0.');
+    ).toThrow('Trigger Level doit être supérieur à 0.');
     expect(c.saved()).toBeNull();
   });
 

@@ -27,7 +27,7 @@ export function createTradePlanFromWeb(
   const result = createTradePlan({
     watchlistId: String(request?.watchlistId ?? ''),
     accountId: String(request?.accountId ?? ''),
-    breakoutLevel: request?.breakoutLevel ?? null,
+    triggerLevel: request?.triggerLevel ?? null,
     invalidationLevel: request?.invalidationLevel ?? null,
     eventRisk: request?.eventRisk ?? null
   });

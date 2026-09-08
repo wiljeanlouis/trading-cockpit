@@ -6,7 +6,7 @@ export interface WatchlistRepository {
   save(entry: WatchlistEntry): void;
   updateTradePlanningInputs(
     id: string,
-    inputs: { breakoutLevel: number | null; invalidationLevel: number; eventRisk: string }
+    inputs: { triggerLevel: number | null; invalidationLevel: number; eventRisk: string }
   ): void;
   updateStatus(id: string, status: string): void;
 }

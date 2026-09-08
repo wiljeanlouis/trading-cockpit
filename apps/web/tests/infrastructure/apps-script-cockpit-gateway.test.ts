@@ -26,7 +26,7 @@ const dashboard: DashboardDto = {
     signals: 12,
     watchlist: 8,
     ready: 3,
-    nearBreakout: 2,
+    nearTrigger: 2,
     activeTradePlans: 2,
     openPositions: 1,
     closedTrades: 14
@@ -43,7 +43,7 @@ const dashboard: DashboardDto = {
   watchlistPreview: [],
   openPositionsPreview: [],
   actions: {
-    nearBreakout: [],
+    nearTrigger: [],
     ready: [],
     openPositions: []
   }
@@ -242,7 +242,7 @@ describe('AppsScriptCockpitGateway', () => {
     const command = {
       watchlistId: 'WL-1',
       accountId: 'A1',
-      breakoutLevel: 101,
+      triggerLevel: 101,
       invalidationLevel: 95,
       eventRisk: 'CLEAR'
     };

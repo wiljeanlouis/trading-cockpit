@@ -197,20 +197,20 @@ describe('Cloud Run Google Sheets API mutation repositories', () => {
       spreadsheetId: 'spreadsheet-id',
       data: [
         {
-          range: "'Trade Plans'!Q2:AA2",
+          range: "'Trade Plans'!P2:Z2",
           values: [
             [
               34,
               30,
               42,
-              '=IF(OR(Q2="",R2=""),"",Q2-R2)',
-              '=IF(OR(Q2="",S2=""),"",S2-Q2)',
-              '=IF(OR(T2="",T2<=0,U2=""),"",U2/T2)',
+              '=IF(OR(P2="",Q2=""),"",P2-Q2)',
+              '=IF(OR(P2="",R2=""),"",R2-P2)',
+              '=IF(OR(S2="",S2<=0,T2=""),"",T2/S2)',
               20_000,
               0.005,
-              '=IF(OR(W2="",X2=""),"",W2*X2)',
-              '=IF(OR(Y2="",T2="",T2<=0),"",FLOOR(Y2/T2,1))',
-              '=IF(OR(Z2="",Q2=""),"",Z2*Q2)'
+              '=IF(OR(V2="",W2=""),"",V2*W2)',
+              '=IF(OR(X2="",S2="",S2<=0),"",FLOOR(X2/S2,1))',
+              '=IF(OR(Y2="",P2=""),"",Y2*P2)'
             ]
           ]
         }
@@ -238,7 +238,7 @@ describe('Cloud Run Google Sheets API mutation repositories', () => {
       expect.objectContaining({
         data: [
           expect.objectContaining({
-            range: "'Trade Plans'!Q2:AA2",
+            range: "'Trade Plans'!P2:Z2",
             values: [expect.arrayContaining([12, 408])]
           })
         ]

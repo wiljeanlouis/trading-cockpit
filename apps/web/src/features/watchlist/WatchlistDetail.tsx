@@ -81,8 +81,8 @@ export function WatchlistDetail({
     error: null
   });
   const [accountId, setAccountId] = useState('');
-  const [breakoutLevel, setBreakoutLevel] = useState(
-    candidate.breakoutLevel === null ? '' : String(candidate.breakoutLevel)
+  const [triggerLevel, setTriggerLevel] = useState(
+    candidate.triggerLevel === null ? '' : String(candidate.triggerLevel)
   );
   const [invalidationLevel, setInvalidationLevel] = useState(
     candidate.invalidationLevel === null ? '' : String(candidate.invalidationLevel)
@@ -138,15 +138,15 @@ export function WatchlistDetail({
     event.preventDefault();
     if (!accountId || submitting) return;
 
-    const parsedBreakoutLevel = breakoutLevel.trim() === '' ? null : Number(breakoutLevel);
+    const parsedTriggerLevel = triggerLevel.trim() === '' ? null : Number(triggerLevel);
     const parsedInvalidationLevel = Number(invalidationLevel);
     if (
-      (parsedBreakoutLevel !== null &&
-        (!Number.isFinite(parsedBreakoutLevel) || parsedBreakoutLevel <= 0)) ||
+      (parsedTriggerLevel !== null &&
+        (!Number.isFinite(parsedTriggerLevel) || parsedTriggerLevel <= 0)) ||
       !Number.isFinite(parsedInvalidationLevel) ||
       parsedInvalidationLevel <= 0
     ) {
-      setSubmitError('Breakout Level et Invalidation Level doivent être supérieurs à 0.');
+      setSubmitError('Trigger Level et Invalidation Level doivent être supérieurs à 0.');
       return;
     }
 
@@ -157,7 +157,7 @@ export function WatchlistDetail({
       const response = await gateway.createTradePlan({
         watchlistId: candidate.id,
         accountId,
-        breakoutLevel: parsedBreakoutLevel,
+        triggerLevel: parsedTriggerLevel,
         invalidationLevel: parsedInvalidationLevel,
         eventRisk: eventRisk.trim() || null
       });
@@ -235,7 +235,7 @@ export function WatchlistDetail({
               <header>
                 <span aria-hidden="true">02</span>
                 <div>
-                  <h3>Signal &amp; momentum</h3>
+                  <h3>Signal Context</h3>
                   <p>Persisted signal and indicative market context</p>
                 </div>
               </header>
@@ -243,12 +243,6 @@ export function WatchlistDetail({
                 <div>
                   <dt>Signal date</dt>
                   <dd>{displayDate(candidate.signalDate)}</dd>
-                </div>
-                <div>
-                  <dt>Momentum score</dt>
-                  <dd className="text-[19px]! font-extrabold! text-[#79e9b4]!">
-                    {displayNumber(candidate.momentumScore, 0)}
-                  </dd>
                 </div>
                 <div>
                   <dt>Signal price</dt>
@@ -271,8 +265,8 @@ export function WatchlistDetail({
               </header>
               <FactGrid columns={2}>
                 <div>
-                  <dt>Breakout level</dt>
-                  <dd>{displayNumber(candidate.breakoutLevel)}</dd>
+                  <dt>Trigger level</dt>
+                  <dd>{displayNumber(candidate.triggerLevel)}</dd>
                 </div>
                 <div>
                   <dt>Invalidation level</dt>
@@ -336,18 +330,18 @@ export function WatchlistDetail({
                 ))}
               </select>
 
-              <label className={formLabelClassName} htmlFor={`breakout-${candidate.id}`}>
-                Breakout Level <small className="normal-case opacity-70">Optional</small>
+              <label className={formLabelClassName} htmlFor={`trigger-${candidate.id}`}>
+                Trigger Level <small className="normal-case opacity-70">Optional</small>
               </label>
               <input
                 className={inputClassName}
-                id={`breakout-${candidate.id}`}
+                id={`trigger-${candidate.id}`}
                 type="number"
                 min="0"
                 step="any"
-                value={breakoutLevel}
+                value={triggerLevel}
                 onChange={(event) => {
-                  setBreakoutLevel(event.target.value);
+                  setTriggerLevel(event.target.value);
                   setResult(null);
                   setSubmitError(null);
                 }}

@@ -1,7 +1,6 @@
 export interface DashboardDiscoveryCandidateSnapshot {
   rank: number | null;
   ticker: string;
-  score: number | null;
   price: number | null;
   high52: number | null;
   relativeVolume: number | null;
@@ -14,8 +13,8 @@ export interface DashboardWatchlistSnapshot {
   currentPrice: number | null;
   signalPrice: number | null;
   changeSinceSignal: number | null;
-  breakoutLevel: number | null;
-  distanceToBreakout: number | null;
+  triggerLevel: number | null;
+  distanceToTrigger: number | null;
   setupStatus: string | null;
   status: string;
 }

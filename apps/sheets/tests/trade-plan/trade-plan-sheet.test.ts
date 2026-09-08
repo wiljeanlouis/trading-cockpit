@@ -44,7 +44,7 @@ describe('Trade Plan physical sheet contract', () => {
     );
   });
 
-  it('writes all exact formulas and formats without touching AD', () => {
+  it('writes all exact formulas and formats with Account ID in the final canonical column', () => {
     const formulas = new Map<number, string>();
     const formats: Array<[number[], string]> = [];
     const sheet = {
@@ -56,34 +56,34 @@ describe('Trade Plan physical sheet contract', () => {
     addTradePlanFormulas(sheet as never, 7);
     formatTradePlanRow(sheet as never, 7);
     expect(Object.fromEntries(formulas)).toEqual({
-      20: '=IF(OR(Q7="",R7=""),"",Q7-R7)',
-      21: '=IF(OR(Q7="",S7=""),"",S7-Q7)',
-      22: '=IF(OR(T7="",T7<=0,U7=""),"",U7/T7)',
-      25: '=IF(OR(W7="",X7=""),"",W7*X7)',
-      26: '=IF(OR(Y7="",T7="",T7<=0),"",FLOOR(Y7/T7,1))',
-      27: '=IF(OR(Z7="",Q7=""),"",Z7*Q7)'
+      19: '=IF(OR(P7="",Q7=""),"",P7-Q7)',
+      20: '=IF(OR(P7="",R7=""),"",R7-P7)',
+      21: '=IF(OR(S7="",S7<=0,T7=""),"",T7/S7)',
+      24: '=IF(OR(V7="",W7=""),"",V7*W7)',
+      25: '=IF(OR(X7="",S7="",S7<=0),"",FLOOR(X7/S7,1))',
+      26: '=IF(OR(Y7="",P7=""),"",Y7*P7)'
     });
     expect(formats).toEqual([
       [[7, 6], 'yyyy-mm-dd'],
       [[7, 7], '$0.00'],
       [[7, 9], '$0.00'],
-      [[7, 12, 1, 2], '$0.00'],
-      [[7, 15], 'yyyy-mm-dd hh:mm:ss'],
-      [[7, 17, 1, 3], '$0.00'],
-      [[7, 20, 1, 2], '$0.00'],
-      [[7, 22], '0.00'],
-      [[7, 23], '$#,##0.00'],
-      [[7, 24], '0.00%'],
-      [[7, 25], '$0.00'],
-      [[7, 26], '0'],
-      [[7, 27], '$#,##0.00']
+      [[7, 11, 1, 2], '$0.00'],
+      [[7, 14], 'yyyy-mm-dd hh:mm:ss'],
+      [[7, 16, 1, 3], '$0.00'],
+      [[7, 19, 1, 2], '$0.00'],
+      [[7, 21], '0.00'],
+      [[7, 22], '$#,##0.00'],
+      [[7, 23], '0.00%'],
+      [[7, 24], '$0.00'],
+      [[7, 25], '0'],
+      [[7, 26], '$#,##0.00']
     ]);
   });
 
   it('preserves validation lists and disallows invalid values', () => {
-    const headers = Array.from({ length: 28 }, (_, index) => `C${index}`);
+    const headers = Array.from({ length: 29 }, (_, index) => `C${index}`);
     headers[15] = 'Entry Type';
-    headers[27] = 'Status';
+    headers[26] = 'Status';
     const ranges: number[][] = [];
     const states: Array<{ list?: string[]; allow?: boolean }> = [];
     const sheet = {
@@ -114,12 +114,12 @@ describe('Trade Plan physical sheet contract', () => {
     });
     refreshTradePlanValidations(sheet as never);
     expect(states).toEqual([
-      { list: ['BREAKOUT', 'RETEST', 'LIMIT'], allow: false },
+      { list: ['TRIGGER', 'RETEST', 'LIMIT'], allow: false },
       { list: ['DRAFT', 'READY', 'EXECUTED', 'CANCELLED'], allow: false }
     ]);
     expect(ranges).toEqual([
       [2, 16, 49, 1],
-      [2, 28, 49, 1]
+      [2, 27, 49, 1]
     ]);
     vi.unstubAllGlobals();
   });

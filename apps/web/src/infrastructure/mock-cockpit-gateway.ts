@@ -64,10 +64,9 @@ const DEVELOPMENT_WATCHLIST: WatchlistDto = {
       signalDate: '2026-08-27T04:00:00.000Z',
       signalPrice: 33.4,
       currentPrice: 34.82,
-      momentumScore: 87,
       status: 'READY',
       setupStatus: 'VALID',
-      breakoutLevel: 34.5,
+      triggerLevel: 34.5,
       invalidationLevel: 32.8,
       earningsDate: '2026-09-10T04:00:00.000Z',
       eventRisk: 'CLEAR',
@@ -84,10 +83,9 @@ const DEVELOPMENT_WATCHLIST: WatchlistDto = {
       signalDate: '2026-08-26T04:00:00.000Z',
       signalPrice: 1.68,
       currentPrice: 1.74,
-      momentumScore: 72,
       status: 'WATCHING',
       setupStatus: '',
-      breakoutLevel: null,
+      triggerLevel: null,
       invalidationLevel: null,
       earningsDate: null,
       eventRisk: null,
@@ -186,13 +184,12 @@ const DEVELOPMENT_TRADE_PLANS: TradePlanItemDto[] = [
     signalDate: '2026-08-27T04:00:00.000Z',
     signalPrice: 33.4,
     referencePrice: 34.82,
-    momentumScore: 87,
     setupStatus: 'CONFIRMED',
-    breakoutLevel: 34.5,
+    triggerLevel: 34.5,
     invalidationLevel: 32.8,
     eventRisk: 'CLEAR',
     createdAt: '2026-08-28T14:00:00.000Z',
-    entryType: 'BREAKOUT',
+    entryType: 'TRIGGER',
     entryPrice: 35,
     stopPrice: 32.8,
     targetPrice: 40,
@@ -219,13 +216,12 @@ const DEVELOPMENT_TRADE_PLANS: TradePlanItemDto[] = [
     signalDate: '2026-08-26T04:00:00.000Z',
     signalPrice: 1.68,
     referencePrice: 1.74,
-    momentumScore: 72,
     setupStatus: null,
-    breakoutLevel: null,
+    triggerLevel: null,
     invalidationLevel: 1.55,
     eventRisk: null,
     createdAt: '2026-08-28T15:00:00.000Z',
-    entryType: 'BREAKOUT',
+    entryType: 'TRIGGER',
     entryPrice: null,
     stopPrice: 1.55,
     targetPrice: null,
@@ -426,23 +422,23 @@ export class MockCockpitGateway implements CockpitGateway {
     const generatedAt = new Date().toISOString();
     const activeWatchlist = this.watchlistItems.filter((item) => item.ticker);
     const ready = activeWatchlist.filter((item) => item.status === 'READY');
-    const nearBreakout = activeWatchlist
+    const nearTrigger = activeWatchlist
       .filter(
         (item) =>
           ['WATCHING', 'READY'].includes(item.status) &&
-          item.breakoutLevel !== null &&
+          item.triggerLevel !== null &&
           item.currentPrice !== null &&
-          item.currentPrice <= item.breakoutLevel &&
-          (item.breakoutLevel - item.currentPrice) / item.breakoutLevel <= 0.02
+          item.currentPrice <= item.triggerLevel &&
+          (item.triggerLevel - item.currentPrice) / item.triggerLevel <= 0.02
       )
       .map((item) => ({
         ticker: item.ticker,
         distance:
-          item.breakoutLevel && item.currentPrice
-            ? (item.currentPrice - item.breakoutLevel) / item.breakoutLevel
+          item.triggerLevel && item.currentPrice
+            ? (item.currentPrice - item.triggerLevel) / item.triggerLevel
             : 0,
         currentPrice: item.currentPrice,
-        breakoutLevel: item.breakoutLevel,
+        triggerLevel: item.triggerLevel,
         setupStatus: item.setupStatus
       }));
     const openPositions = this.positionItems.filter((item) => item.status === 'OPEN');
@@ -451,7 +447,7 @@ export class MockCockpitGateway implements CockpitGateway {
       signals: this.discoveryItems.length,
       watchlist: activeWatchlist.length,
       ready: ready.length,
-      nearBreakout: nearBreakout.length,
+      nearTrigger: nearTrigger.length,
       activeTradePlans: this.tradePlanItems.filter((item) =>
         ['DRAFT', 'READY'].includes(item.status)
       ).length,
@@ -498,7 +494,6 @@ export class MockCockpitGateway implements CockpitGateway {
       topDiscoveryCandidates: this.discoveryItems.slice(0, 5).map((item, index) => ({
         rank: index + 1,
         ticker: item.ticker,
-        score: null,
         price: item.price,
         high52: item.high52,
         relativeVolume: item.relativeVolume,
@@ -516,10 +511,10 @@ export class MockCockpitGateway implements CockpitGateway {
             item.currentPrice !== null && item.signalPrice !== null
               ? item.currentPrice / item.signalPrice - 1
               : null,
-          breakoutLevel: item.breakoutLevel,
-          distanceToBreakout:
-            item.breakoutLevel !== null && item.currentPrice !== null
-              ? (item.currentPrice - item.breakoutLevel) / item.breakoutLevel
+          triggerLevel: item.triggerLevel,
+          distanceToTrigger:
+            item.triggerLevel !== null && item.currentPrice !== null
+              ? (item.currentPrice - item.triggerLevel) / item.triggerLevel
               : null,
           setupStatus: item.setupStatus,
           status: item.status
@@ -535,11 +530,11 @@ export class MockCockpitGateway implements CockpitGateway {
         unrealizedPnlPercent: item.unrealizedPnlPercent
       })),
       actions: {
-        nearBreakout,
+        nearTrigger,
         ready: ready.map((item) => ({
           ticker: item.ticker,
           currentPrice: item.currentPrice,
-          breakoutLevel: item.breakoutLevel,
+          triggerLevel: item.triggerLevel,
           setupStatus: item.setupStatus
         })),
         openPositions: openPositions.map((item) => ({
@@ -709,10 +704,9 @@ export class MockCockpitGateway implements CockpitGateway {
       signalDate: candidate.signalDate,
       signalPrice: candidate.price,
       currentPrice: candidate.price,
-      momentumScore: null,
       status: 'WATCHING',
       setupStatus: '',
-      breakoutLevel: null,
+      triggerLevel: null,
       invalidationLevel: null,
       earningsDate: null,
       eventRisk: null,

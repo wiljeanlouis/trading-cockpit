@@ -187,7 +187,7 @@ function writeDocumentationFlow_(sheet: Sheet, row: number): number {
 
     ['↓', ''],
 
-    ['MOMENTUM RANKING', 'Classe et enrichit les candidats.'],
+    ['DISCOVERY', 'Présente les derniers candidats disponibles par stratégie.'],
 
     ['↓', 'Sélection humaine'],
 
@@ -513,11 +513,12 @@ function getDocumentationDefinitions_(): DocumentationSheetDefinition[] {
 
         ['Current Price', 'Prix courant indicatif, généralement récupéré automatiquement.'],
 
-        ['Momentum Score', 'Score historique du candidat lorsque disponible.'],
-
         ['Setup Status', 'État qualitatif du setup observé.'],
 
-        ['Breakout Level', 'Niveau de prix dont le franchissement confirmerait le breakout.'],
+        [
+          'Trigger Level',
+          'Niveau de prix ou condition numérique déclenchant la suite du workflow.'
+        ],
 
         ['Invalidation Level', 'Niveau de prix qui invalide l’hypothèse de trade.'],
 
@@ -563,11 +564,9 @@ function getDocumentationDefinitions_(): DocumentationSheetDefinition[] {
 
         ['Reference Price', 'Prix observé au moment de la création du plan.'],
 
-        ['Momentum Score', 'Score du candidat au moment de la sélection.'],
-
         ['Setup Status', 'État du setup hérité de la Watchlist.'],
 
-        ['Breakout Level', 'Niveau associé à la confirmation du breakout.'],
+        ['Trigger Level', 'Niveau associé au déclenchement de la stratégie.'],
 
         ['Invalidation Level', 'Niveau qui invalide le setup.'],
 
@@ -942,11 +941,7 @@ function writeDocumentationWorkflow_(sheet: Sheet, row: number): number {
 
     ['4', 'Watchlist', 'Ajouter le candidat à la Watchlist.'],
 
-    [
-      '5',
-      'Analyse du setup',
-      'Définir notamment Breakout Level, Invalidation Level et Event Risk.'
-    ],
+    ['5', 'Analyse du setup', 'Définir notamment Trigger Level, Invalidation Level et Event Risk.'],
 
     ['6', 'Trade Plan', 'Créer le plan lorsque le setup justifie une préparation de trade.'],
 
@@ -1163,7 +1158,7 @@ function formatDocumentationSheet_(sheet: Sheet): void {
       'DASHBOARD',
       'STRATEGIES',
       'SIGNALS HISTORY',
-      'MOMENTUM RANKING',
+      'DISCOVERY',
       'WATCHLIST',
       'TRADE PLANS',
       'POSITIONS',

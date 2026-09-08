@@ -255,12 +255,6 @@ export function TradePlanDetail({ plan, gateway, onClose, onExecuted }: TradePla
                     <dd>{displayDate(plan.signalDate)}</dd>
                   </div>
                   <div>
-                    <dt>Momentum score</dt>
-                    <dd className="text-[19px]! font-extrabold! text-[#79e9b4]!">
-                      {displayNumber(plan.momentumScore, 0)}
-                    </dd>
-                  </div>
-                  <div>
                     <dt>Setup status</dt>
                     <dd>{plan.setupStatus ?? '—'}</dd>
                   </div>
@@ -290,8 +284,8 @@ export function TradePlanDetail({ plan, gateway, onClose, onExecuted }: TradePla
                     <small>Snapshot, not a live quote</small>
                   </div>
                   <div>
-                    <dt>Breakout level</dt>
-                    <dd>{displayNumber(plan.breakoutLevel)}</dd>
+                    <dt>Trigger level</dt>
+                    <dd>{displayNumber(plan.triggerLevel)}</dd>
                   </div>
                   <div>
                     <dt>Invalidation level</dt>

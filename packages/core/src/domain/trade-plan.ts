@@ -9,7 +9,7 @@ export type TradePlanSnapshotValue = WatchlistSnapshotValue;
 export type TradePlanCalculationValue = number | null;
 
 export const INITIAL_TRADE_PLAN_STATUS = 'DRAFT' as const;
-export const INITIAL_TRADE_PLAN_ENTRY_TYPE = 'BREAKOUT' as const;
+export const INITIAL_TRADE_PLAN_ENTRY_TYPE = 'TRIGGER' as const;
 export const ACTIVE_TRADE_PLAN_STATUSES = ['DRAFT', 'READY'] as const;
 
 export interface TradingRiskConfiguration {
@@ -33,9 +33,8 @@ export interface NormalizedTradePlanSource {
   signalPrice: TradePlanSnapshotValue;
   ticker: string;
   referencePrice: TradePlanSnapshotValue;
-  momentumScore: TradePlanSnapshotValue;
   setupStatus: string;
-  breakoutLevel: TradePlanSnapshotValue;
+  triggerLevel: TradePlanSnapshotValue;
   invalidationLevel: TradePlanSnapshotValue;
   eventRisk: string;
 }
@@ -51,9 +50,8 @@ export interface TradePlan {
   signalPrice: TradePlanSnapshotValue;
   ticker: string;
   referencePrice: TradePlanSnapshotValue;
-  momentumScore: TradePlanSnapshotValue;
   setupStatus: string;
-  breakoutLevel: TradePlanSnapshotValue;
+  triggerLevel: TradePlanSnapshotValue;
   invalidationLevel: TradePlanSnapshotValue;
   eventRisk: string;
   createdAt: TradePlanSnapshotValue;
@@ -182,9 +180,8 @@ export function normalizeTradePlanSource(source: WatchlistEntry): NormalizedTrad
     signalPrice: source.signalPrice,
     ticker,
     referencePrice: source.currentPrice,
-    momentumScore: source.momentumScore,
     setupStatus: source.setupStatus,
-    breakoutLevel: source.breakoutLevel,
+    triggerLevel: source.triggerLevel,
     invalidationLevel: source.invalidationLevel,
     eventRisk: source.eventRisk
   };
@@ -239,9 +236,8 @@ export function createTradePlan(
     signalPrice: source.signalPrice,
     ticker: source.ticker,
     referencePrice: source.referencePrice,
-    momentumScore: source.momentumScore,
     setupStatus: source.setupStatus,
-    breakoutLevel: source.breakoutLevel,
+    triggerLevel: source.triggerLevel,
     invalidationLevel: source.invalidationLevel,
     eventRisk: source.eventRisk,
     createdAt,

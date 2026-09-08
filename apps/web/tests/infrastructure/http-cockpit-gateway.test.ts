@@ -125,7 +125,7 @@ describe('HttpCockpitGateway', () => {
       {
         watchlistId: 'W1',
         accountId: 'A1',
-        breakoutLevel: 35,
+        triggerLevel: 35,
         invalidationLevel: 30,
         eventRisk: null
       }
@@ -184,7 +184,7 @@ describe('HttpCockpitGateway', () => {
     await gateway.createTradePlan({
       watchlistId: 'W1',
       accountId: 'A1',
-      breakoutLevel: null,
+      triggerLevel: null,
       invalidationLevel: 30,
       eventRisk: null
     });
@@ -196,7 +196,7 @@ describe('HttpCockpitGateway', () => {
         body: JSON.stringify({
           watchlistId: 'W1',
           accountId: 'A1',
-          breakoutLevel: null,
+          triggerLevel: null,
           invalidationLevel: 30,
           eventRisk: null
         }),

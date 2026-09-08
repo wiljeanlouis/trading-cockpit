@@ -18,7 +18,6 @@ export interface WatchlistCandidate {
   company: WatchlistSnapshotValue;
   sector: WatchlistSnapshotValue;
   signalPrice: WatchlistSnapshotValue;
-  momentumScore: WatchlistSnapshotValue;
 }
 
 export interface NormalizedWatchlistCandidate extends WatchlistCandidate {
@@ -40,10 +39,9 @@ export interface WatchlistEntry {
   addedAt: WatchlistSnapshotValue;
   signalPrice: WatchlistSnapshotValue;
   currentPrice: WatchlistSnapshotValue;
-  momentumScore: WatchlistSnapshotValue;
   status: string;
   setupStatus: string;
-  breakoutLevel: WatchlistSnapshotValue;
+  triggerLevel: WatchlistSnapshotValue;
   invalidationLevel: WatchlistSnapshotValue;
   earningsDate: WatchlistSnapshotValue;
   eventRisk: string;
@@ -150,10 +148,9 @@ export function createWatchlistEntry(
     addedAt,
     signalPrice: candidate.signalPrice,
     currentPrice: '',
-    momentumScore: candidate.momentumScore,
     status: INITIAL_WATCHLIST_STATUS,
     setupStatus: '',
-    breakoutLevel: '',
+    triggerLevel: '',
     invalidationLevel: '',
     earningsDate: '',
     eventRisk: '',
