@@ -4,7 +4,6 @@ import {
   tradePlanFromRow,
   tradePlanToRow
 } from '../../src/adapters/outbound/google-sheets/trade-plan/trade-plan-mapper';
-import { selectedWatchlistRowToCommand } from '../../src/adapters/inbound/google-sheets/ui/watchlist-selection-mapper';
 import type { TradePlan } from '@trading-cockpit/core/domain/trade-plan';
 
 const createdAt = new Date('2026-08-27T14:00:00.000Z');
@@ -106,20 +105,5 @@ describe('Trade Plan row mapper', () => {
   it('keeps historical rows unattributed when the appended Account ID cell is blank', () => {
     const row = tradePlanToRow({ ...tradePlan, accountId: '' });
     expect(tradePlanFromRow([...TRADE_PLAN_HEADERS], row).accountId).toBe('');
-  });
-});
-
-describe('selected Watchlist row mapper', () => {
-  it('copies only the Watchlist ID required by the application API', () => {
-    expect(
-      selectedWatchlistRowToCommand(
-        ['Ticker', 'Watchlist ID', 'Status'],
-        ['URNB', ' WL-1 ', 'READY']
-      )
-    ).toEqual({ watchlistId: ' WL-1 ' });
-  });
-
-  it('fails with the established missing-column message', () => {
-    expect(() => selectedWatchlistRowToCommand([], [])).toThrow('Colonne absente : Watchlist ID');
   });
 });

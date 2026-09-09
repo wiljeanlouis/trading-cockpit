@@ -1,40 +1,56 @@
 import { CAPITAL_LEDGER_HEADERS } from '../../../outbound/google-sheets/capital-transaction/capital-transaction-mapper';
 import {
-  FINVIZ_MOMENTUM_EXPORT_HEADERS,
-  SIGNALS_HISTORY_HEADERS,
-  STRATEGY_HEADERS,
-  STRATEGY_VERSION_HEADERS
-} from '@trading-cockpit/contracts';
+  getOrCreateCapitalLedgerSheet,
+  validateCapitalLedgerHeaders
+} from '../../../outbound/google-sheets/capital-transaction/capital-transaction-sheet';
+import {
+  FINVIZ_SIGNALS_HEADERS,
+  getOrCreateFinvizSignalsSheet,
+  validateFinvizSignalsHeaders
+} from '../../../outbound/google-sheets/finviz-signals/finviz-signals-sheet';
 import { JOURNAL_HEADERS } from '../../../outbound/google-sheets/journal/journal-mapper';
 import {
-  refreshJournalValidations,
+  getOrCreateJournalSheet,
   validateJournalHeaders
 } from '../../../outbound/google-sheets/journal/journal-sheet';
 import { POSITION_HEADERS } from '../../../outbound/google-sheets/position/position-mapper';
 import {
-  refreshPositionValidations,
+  getOrCreatePositionsSheet,
   validatePositionsHeaders
 } from '../../../outbound/google-sheets/position/position-sheet';
 import {
-  readSheetHeaders,
-  requireSheetHeaders
-} from '../../../outbound/google-sheets/sheet-headers';
+  getOrCreateSignalHistorySheet,
+  validateSignalHistoryHeaders
+} from '../../../outbound/google-sheets/signal-history/signal-history-sheet';
+import { readSheetHeaders } from '../../../outbound/google-sheets/sheet-headers';
 import { TRADE_PLAN_HEADERS } from '../../../outbound/google-sheets/trade-plan/trade-plan-mapper';
 import {
-  refreshTradePlanValidations,
+  getOrCreateTradePlansSheet,
   validateTradePlansHeaders
 } from '../../../outbound/google-sheets/trade-plan/trade-plan-sheet';
 import { TRADING_ACCOUNT_HEADERS } from '../../../outbound/google-sheets/trading-account/trading-account-mapper';
-import { GoogleSheetsTradingAccountRiskPolicyRepository } from '../../../outbound/google-sheets/trading-account/google-sheets-trading-account-risk-policy-repository';
+import {
+  getOrCreateTradingAccountsSheet,
+  validateTradingAccountHeaders
+} from '../../../outbound/google-sheets/trading-account/trading-account-sheet';
 import { WATCHLIST_HEADERS } from '../../../outbound/google-sheets/watchlist/watchlist-mapper';
 import {
-  refreshWatchlistValidations,
+  getOrCreateWatchlistSheet,
   validateWatchlistHeaders
 } from '../../../outbound/google-sheets/watchlist/watchlist-sheet';
-import { setupStrategiesInSheets, validateStrategiesInSheets } from './setup-strategies';
+import {
+  getOrCreateStrategiesSheet,
+  getOrCreateStrategyVersionsSheet,
+  validateStrategiesHeaders,
+  validateStrategiesInSheets
+} from '../../../outbound/google-sheets/trading-strategy/trading-strategy-sheet';
+import {
+  SIGNALS_HISTORY_HEADERS,
+  STRATEGY_HEADERS,
+  STRATEGY_VERSION_HEADERS
+} from '@trading-cockpit/contracts';
 
-export type WorkbookSheetClassification =
-  'DATA' | 'CONFIG' | 'TECHNICAL' | 'OPTIONAL_REPORT' | 'LEGACY_UNUSED';
+export type WorkbookSheetClassification = 'DATA' | 'CONFIG' | 'TECHNICAL' | 'LEGACY_UNUSED';
 
 export type WorkbookSetupStatus =
   | 'CREATED'
@@ -67,19 +83,7 @@ interface TableSheetDefinition {
   allowAdditionalHeaders?: boolean;
 }
 
-const SIGNALS_HISTORY_SHEET_NAME = 'Signals History';
-
-const FINVIZ_SIGNALS_SHEET_NAME = 'Finviz Signals';
-const FINVIZ_SIGNALS_HEADERS = [
-  'Strategy ID',
-  'Strategy',
-  'Strategy Version',
-  'Refreshed At',
-  ...FINVIZ_MOMENTUM_EXPORT_HEADERS
-] as const;
-
 const LEGACY_REPORT_SHEETS = ['Dashboard', 'Analytics'] as const;
-const OPTIONAL_REPORT_SHEETS = ['Documentation'] as const;
 const LEGACY_UNUSED_SHEETS = ['Lists', 'Finviz Screener'] as const;
 
 /**
@@ -92,80 +96,71 @@ function tableDefinitions(): TableSheetDefinition[] {
       sheetName: 'Watchlist',
       classification: 'DATA',
       headers: WATCHLIST_HEADERS,
-      initialize: () => {
-        initializeSimpleTable('Watchlist', WATCHLIST_HEADERS);
-        refreshWatchlistValidations();
-      },
+      initialize: getOrCreateWatchlistSheet,
       validateHeaders: validateWatchlistHeaders
     },
     {
       sheetName: 'Trade Plans',
       classification: 'DATA',
       headers: TRADE_PLAN_HEADERS,
-      initialize: () => {
-        const sheet = initializeSimpleTable('Trade Plans', TRADE_PLAN_HEADERS);
-        refreshTradePlanValidations(sheet);
-      },
+      initialize: getOrCreateTradePlansSheet,
       validateHeaders: validateTradePlansHeaders
     },
     {
       sheetName: 'Positions',
       classification: 'DATA',
       headers: POSITION_HEADERS,
-      initialize: () => {
-        const sheet = initializeSimpleTable('Positions', POSITION_HEADERS);
-        refreshPositionValidations(sheet);
-      },
+      initialize: getOrCreatePositionsSheet,
       validateHeaders: validatePositionsHeaders
     },
     {
       sheetName: 'Journal',
       classification: 'DATA',
       headers: JOURNAL_HEADERS,
-      initialize: () => {
-        const sheet = initializeSimpleTable('Journal', JOURNAL_HEADERS);
-        refreshJournalValidations(sheet);
-      },
+      initialize: getOrCreateJournalSheet,
       validateHeaders: validateJournalHeaders
     },
     {
       sheetName: 'Capital Ledger',
       classification: 'DATA',
       headers: CAPITAL_LEDGER_HEADERS,
-      initialize: () => initializeSimpleTable('Capital Ledger', CAPITAL_LEDGER_HEADERS)
+      initialize: getOrCreateCapitalLedgerSheet,
+      validateHeaders: validateCapitalLedgerHeaders
     },
     {
-      sheetName: SIGNALS_HISTORY_SHEET_NAME,
+      sheetName: 'Signals History',
       classification: 'DATA',
       headers: SIGNALS_HISTORY_HEADERS,
-      initialize: () => initializeSimpleTable(SIGNALS_HISTORY_SHEET_NAME, SIGNALS_HISTORY_HEADERS),
-      validateHeaders: (headers) =>
-        requireSheetHeaders(headers, SIGNALS_HISTORY_HEADERS, SIGNALS_HISTORY_SHEET_NAME)
+      initialize: getOrCreateSignalHistorySheet,
+      validateHeaders: validateSignalHistoryHeaders
     },
     {
       sheetName: 'Accounts',
       classification: 'CONFIG',
       headers: TRADING_ACCOUNT_HEADERS,
-      initialize: initializeAccounts
+      initialize: getOrCreateTradingAccountsSheet,
+      validateHeaders: validateTradingAccountHeaders
     },
     {
       sheetName: 'Strategies',
       classification: 'CONFIG',
       headers: STRATEGY_HEADERS,
-      initialize: setupStrategiesInSheets
+      initialize: getOrCreateStrategiesSheet,
+      validateHeaders: validateStrategiesHeaders
     },
     {
       sheetName: 'Strategy Versions',
       classification: 'CONFIG',
       headers: STRATEGY_VERSION_HEADERS,
-      initialize: setupStrategiesInSheets,
+      initialize: getOrCreateStrategyVersionsSheet,
       validateHeaders: () => validateStrategiesInSheets()
     },
     {
-      sheetName: FINVIZ_SIGNALS_SHEET_NAME,
+      sheetName: 'Finviz Signals',
       classification: 'TECHNICAL',
       headers: FINVIZ_SIGNALS_HEADERS,
-      initialize: () => initializeSimpleTable(FINVIZ_SIGNALS_SHEET_NAME, FINVIZ_SIGNALS_HEADERS),
+      initialize: getOrCreateFinvizSignalsSheet,
+      validateHeaders: validateFinvizSignalsHeaders,
       allowAdditionalHeaders: true
     }
   ];
@@ -184,7 +179,7 @@ export function initializeTradingCockpitWorkbook(): WorkbookSetupReport {
   }
 
   items.push(...LEGACY_REPORT_SHEETS.map(skippedLegacy));
-  items.push(...OPTIONAL_REPORT_SHEETS.map(skippedOptional));
+  items.push(skippedLegacy('Documentation'));
   items.push(...LEGACY_UNUSED_SHEETS.map(skippedLegacy));
   items.push({
     sheetName: 'Accounts',
@@ -211,7 +206,7 @@ export function validateTradingCockpitWorkbook(): WorkbookSetupReport {
   }
 
   items.push(...LEGACY_REPORT_SHEETS.map(skippedLegacy));
-  items.push(...OPTIONAL_REPORT_SHEETS.map(skippedOptional));
+  items.push(skippedLegacy('Documentation'));
   items.push(...LEGACY_UNUSED_SHEETS.map(skippedLegacy));
   items.push({
     sheetName: 'Accounts',
@@ -316,30 +311,6 @@ function preserveCanonicalSheet(definition: TableSheetDefinition): WorkbookSetup
   };
 }
 
-/**
- * Creates only the structural table and minimal DATA-sheet-friendly formatting.
- */
-function initializeSimpleTable(
-  sheetName: string,
-  headers: readonly string[]
-): GoogleAppsScript.Spreadsheet.Sheet {
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = spreadsheet.getSheetByName(sheetName) ?? spreadsheet.insertSheet(sheetName);
-  sheet.clear();
-  sheet
-    .getRange(1, 1, 1, headers.length)
-    .setValues([[...headers]])
-    .setFontWeight('bold');
-  sheet.setFrozenRows(1);
-  sheet.autoResizeColumns(1, headers.length);
-  return sheet;
-}
-
-function initializeAccounts(): void {
-  initializeSimpleTable('Accounts', TRADING_ACCOUNT_HEADERS);
-  new GoogleSheetsTradingAccountRiskPolicyRepository().ensureReady();
-}
-
 function validateRequiredRows(sheetName: string, sheet: GoogleAppsScript.Spreadsheet.Sheet): void {
   void sheetName;
   void sheet;
@@ -378,15 +349,6 @@ function isContentEmpty(sheet: GoogleAppsScript.Spreadsheet.Sheet): boolean {
     .getValues()
     .flat()
     .every((value) => !String(value || '').trim());
-}
-
-function skippedOptional(sheetName: string): WorkbookSetupItem {
-  return {
-    sheetName,
-    classification: 'OPTIONAL_REPORT',
-    status: 'SKIPPED_OPTIONAL',
-    message: `${sheetName} est un rapport optionnel généré; non requis pour la structure DATA.`
-  };
 }
 
 function skippedLegacy(sheetName: string): WorkbookSetupItem {

@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { GoogleSheetsTradingStrategyReader } from '../../src/adapters/outbound/google-sheets/trading-strategy/google-sheets-trading-strategy-reader';
 import {
-  GoogleSheetsTradingStrategyReader,
   mapTradingStrategyRow,
   mapTradingStrategyVersionRow,
   type SheetTradingStrategy
-} from '../../src/adapters/outbound/google-sheets/trading-strategy/google-sheets-trading-strategy-reader';
+} from '../../src/adapters/outbound/google-sheets/trading-strategy/trading-strategy-mapper';
 import {
   validateEnabledStrategies,
   validateStrategyVersions
-} from '../../src/adapters/inbound/google-sheets/ui/setup-strategies';
+} from '../../src/adapters/outbound/google-sheets/trading-strategy/trading-strategy-sheet';
 
 afterEach(() => vi.unstubAllGlobals());
 

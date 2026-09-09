@@ -95,7 +95,8 @@ npm run check:apps-script
 
 ## 4. Apps Script Build and Deployment
 
-Maintained Apps Script source lives under `apps/sheets/src`. The generated Apps Script runtime is:
+Maintained Apps Script source lives under `apps/sheets/src`. It exposes only workbook
+setup/validation and technical maintenance callbacks. The generated Apps Script runtime is:
 
 ```text
 apps/sheets/build/Cockpit.js
@@ -153,9 +154,9 @@ not silently interpreted through fallback layouts.
 
 Finviz is the current external screener provider. It is not a domain concept.
 
-For the Apps Script / Sheets runtime, configure the Finviz token through the supported Sheets menu.
-For the Cloud Run API runtime, configure the token through the current Google Cloud secret/runtime
-configuration. Do not commit tokens or secret values.
+Configure the Finviz token through the current Google Cloud secret/runtime configuration. The
+Sheets menu no longer manages provider credentials or operational signal refresh. Do not commit
+tokens or secret values.
 
 Signals History archives the complete configured Finviz CSV snapshot. React Discovery reads the
 latest snapshots from Signals History and lets the trader manually select candidates for Watchlist.
@@ -241,7 +242,7 @@ A concise end-to-end smoke test after deployment:
 1. Open the React application and sign in with an authorized Google account.
 2. Call `/health` or confirm the app shell loads.
 3. In the Google Sheet, run `Validate Trading Cockpit` and require `VALID`.
-4. Configure Finviz if needed.
+4. Configure the Cloud Run Finviz secret/runtime configuration if needed.
 5. In React Discovery, select a Strategy and run `Refresh Signals`, or explicitly run
    `Refresh All` when all active strategy feeds should be refreshed.
 6. Confirm Signals History receives rows with complete canonical headers.

@@ -1,6 +1,8 @@
 /**
- * Installs the supported Google Sheets UI callbacks. React is the primary UI, but these menu
- * actions remain the Sheets/admin fallback and should not expose internal use cases directly.
+ * Installs the supported Google Sheets technical menu.
+ *
+ * Operational workflows live in React/Cloud Run; the spreadsheet menu is intentionally limited to
+ * canonical workbook setup and read-only validation.
  */
 export function installCockpitMenu(): void {
   const ui = SpreadsheetApp.getUi();
@@ -11,19 +13,5 @@ export function installCockpitMenu(): void {
         .addItem('Initialize Trading Cockpit', 'initializeTradingCockpit')
         .addItem('Validate Trading Cockpit', 'validateTradingCockpit')
     )
-    .addItem('Refresh All Signals', 'refreshAllSignals')
-    .addSeparator()
-    .addItem('Créer Trade Plan', 'createTradePlanFromSelectedWatchlist')
-    .addItem('Exécuter Trade Plan', 'executeSelectedTradePlan')
-    .addItem('Fermer Position', 'closeSelectedPosition')
-    .addSeparator()
-    .addItem('Reconcile Selected Position', 'reconcileSelectedPosition')
-    .addSeparator()
-    .addItem('Record Initial Funding', 'recordInitialFunding')
-    .addItem('Record Deposit', 'recordDeposit')
-    .addItem('Record Withdrawal', 'recordWithdrawal')
-    .addSeparator()
-    .addItem('Configurer le token Finviz', 'configureFinvizToken')
-    .addItem('Refresh Documentation', 'refreshDocumentation')
     .addToUi();
 }

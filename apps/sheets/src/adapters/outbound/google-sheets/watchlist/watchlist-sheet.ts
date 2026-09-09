@@ -1,7 +1,7 @@
 import { WATCHLIST_HEADERS } from './watchlist-mapper';
 import { readSheetHeaders, requireColumn, requireSheetHeaders } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
-import { isSheetEffectivelyEmpty } from '../data-sheet';
+import { initializeCanonicalTableSheet, isSheetEffectivelyEmpty } from '../data-sheet';
 
 const SHEET_NAME = 'Watchlist';
 
@@ -9,12 +9,8 @@ export function getOrCreateWatchlistSheet(): GoogleAppsScript.Spreadsheet.Sheet 
   const spreadsheet = getTradingCockpitSpreadsheet();
   let sheet = spreadsheet.getSheetByName(SHEET_NAME);
   if (sheet && !isSheetEffectivelyEmpty(sheet)) return sheet;
-  sheet = sheet ?? spreadsheet.insertSheet(SHEET_NAME);
-  sheet.clear();
-  sheet.getRange(1, 1, 1, WATCHLIST_HEADERS.length).setValues([[...WATCHLIST_HEADERS]]);
-  sheet.setFrozenRows(1);
+  sheet = initializeCanonicalTableSheet(SHEET_NAME, WATCHLIST_HEADERS);
   refreshWatchlistValidations();
-  sheet.autoResizeColumns(1, WATCHLIST_HEADERS.length);
   return sheet;
 }
 

@@ -126,9 +126,6 @@ for (const filePath of coreFiles) {
 for (const filePath of webFiles) {
   const source = readFileSync(filePath, 'utf8');
   const repositoryPath = relative(workspaceRoot, filePath).replaceAll('\\', '/');
-  const isAppsScriptGateway =
-    repositoryPath.endsWith('infrastructure/apps-script/apps-script-cockpit-gateway.ts') ||
-    repositoryPath.endsWith('tests/infrastructure/apps-script-cockpit-gateway.test.ts');
   const isRuntimeBoundaryTest = repositoryPath.endsWith(
     'tests/infrastructure/react-runtime-boundary.test.ts'
   );
@@ -139,10 +136,8 @@ for (const filePath of webFiles) {
   if (/\bSpreadsheetApp\b/.test(source)) {
     violations.push(`${repositoryPath}: web must not use SpreadsheetApp`);
   }
-  if (/google\.script\.run/.test(source) && !isAppsScriptGateway && !isRuntimeBoundaryTest) {
-    violations.push(
-      `${repositoryPath}: google.script.run is restricted to AppsScriptCockpitGateway`
-    );
+  if (/google\.script\.run/.test(source) && !isRuntimeBoundaryTest) {
+    violations.push(`${repositoryPath}: forbidden legacy google.script.run transport`);
   }
   if (
     /\/(?:app|features|components)\//.test(repositoryPath) &&

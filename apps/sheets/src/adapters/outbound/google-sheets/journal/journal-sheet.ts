@@ -1,7 +1,7 @@
 import { JOURNAL_HEADERS } from './journal-mapper';
 import { readSheetHeaders, requireColumn, requireSheetHeaders } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
-import { isSheetEffectivelyEmpty } from '../data-sheet';
+import { initializeCanonicalTableSheet, isSheetEffectivelyEmpty } from '../data-sheet';
 
 const SHEET_NAME = 'Journal';
 
@@ -9,15 +9,8 @@ export function getOrCreateJournalSheet(): GoogleAppsScript.Spreadsheet.Sheet {
   const spreadsheet = getTradingCockpitSpreadsheet();
   const existing = spreadsheet.getSheetByName(SHEET_NAME);
   if (existing && !isSheetEffectivelyEmpty(existing)) return existing;
-  const sheet = existing ?? spreadsheet.insertSheet(SHEET_NAME);
-  sheet.clear();
-  sheet
-    .getRange(1, 1, 1, JOURNAL_HEADERS.length)
-    .setValues([Array.from(JOURNAL_HEADERS)])
-    .setFontWeight('bold');
-  sheet.setFrozenRows(1);
+  const sheet = initializeCanonicalTableSheet(SHEET_NAME, JOURNAL_HEADERS);
   refreshJournalValidations(sheet);
-  sheet.autoResizeColumns(1, JOURNAL_HEADERS.length);
   return sheet;
 }
 

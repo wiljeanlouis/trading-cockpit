@@ -14,7 +14,7 @@ describe('Cockpit Apps Script bundle', () => {
     expect(() => new Script(bundleSource, { filename: 'Cockpit.js' })).not.toThrow();
   });
 
-  it('exposes exactly the migrated Watchlist, Trade Plan, Open and Close Position entrypoints', () => {
+  it('exposes only the workbook setup and validation entrypoints', () => {
     const context = createContext({});
 
     new Script(bundleSource, { filename: 'Cockpit.js' }).runInContext(context);
@@ -23,98 +23,82 @@ describe('Cockpit Apps Script bundle', () => {
     expect(context.CockpitBundle?.getDashboardSummary).toBeUndefined();
     expect(context.CockpitBundle?.getDashboard).toBeUndefined();
     expect(context.CockpitBundle?.refreshDashboard).toBeUndefined();
-    expect(context.CockpitBundle?.getWatchlist).toBeTypeOf('function');
+    expect(context.CockpitBundle?.getWatchlist).toBeUndefined();
     expect(context.CockpitBundle?.getMomentumRanking).toBeUndefined();
-    expect(context.CockpitBundle?.getTradingAccounts).toBeTypeOf('function');
-    expect(context.CockpitBundle?.createTradePlan).toBeTypeOf('function');
-    expect(context.CockpitBundle?.getTradePlans).toBeTypeOf('function');
-    expect(context.CockpitBundle?.executeTradePlan).toBeTypeOf('function');
-    expect(context.CockpitBundle?.updateTradePlanPlanning).toBeTypeOf('function');
-    expect(context.CockpitBundle?.getOpenPositions).toBeTypeOf('function');
-    expect(context.CockpitBundle?.closePosition).toBeTypeOf('function');
-    expect(context.CockpitBundle?.getJournal).toBeTypeOf('function');
-    expect(context.CockpitBundle?.refreshFinviz).toBeTypeOf('function');
-    expect(context.CockpitBundle?.refreshSignals).toBeTypeOf('function');
-    expect(context.CockpitBundle?.refreshAllSignals).toBeTypeOf('function');
+    expect(context.CockpitBundle?.getTradingAccounts).toBeUndefined();
+    expect(context.CockpitBundle?.createTradePlan).toBeUndefined();
+    expect(context.CockpitBundle?.getTradePlans).toBeUndefined();
+    expect(context.CockpitBundle?.executeTradePlan).toBeUndefined();
+    expect(context.CockpitBundle?.updateTradePlanPlanning).toBeUndefined();
+    expect(context.CockpitBundle?.getOpenPositions).toBeUndefined();
+    expect(context.CockpitBundle?.closePosition).toBeUndefined();
+    expect(context.CockpitBundle?.getJournal).toBeUndefined();
+    expect(context.CockpitBundle?.refreshFinviz).toBeUndefined();
+    expect(context.CockpitBundle?.refreshSignals).toBeUndefined();
+    expect(context.CockpitBundle?.refreshAllSignals).toBeUndefined();
     expect(context.CockpitBundle?.getAnalytics).toBeUndefined();
     expect(context.CockpitBundle?.refreshAnalytics).toBeUndefined();
     expect(context.CockpitBundle?.refreshMomentumRanking).toBeUndefined();
     expect(context.CockpitBundle?.initializeTradingCockpit).toBeTypeOf('function');
     expect(context.CockpitBundle?.validateTradingCockpit).toBeTypeOf('function');
     expect(context.CockpitBundle?.getTradingConfig).toBeUndefined();
-    expect(context.CockpitBundle?.configureFinvizToken).toBeTypeOf('function');
-    expect(context.CockpitBundle?.getFinvizToken).toBeTypeOf('function');
-    expect(context.CockpitBundle?.setFinvizToken).toBeTypeOf('function');
-    expect(context.CockpitBundle?.checkFinvizAuth).toBeTypeOf('function');
-    expect(context.CockpitBundle?.deleteFinvizToken).toBeTypeOf('function');
+    expect(context.CockpitBundle?.configureFinvizToken).toBeUndefined();
+    expect(context.CockpitBundle?.getFinvizToken).toBeUndefined();
+    expect(context.CockpitBundle?.setFinvizToken).toBeUndefined();
+    expect(context.CockpitBundle?.checkFinvizAuth).toBeUndefined();
+    expect(context.CockpitBundle?.deleteFinvizToken).toBeUndefined();
     expect(context.CockpitBundle?.addSelectedToWatchlist).toBeUndefined();
-    expect(context.CockpitBundle?.createTradePlanFromSelectedWatchlist).toBeTypeOf('function');
-    expect(context.CockpitBundle?.executeSelectedTradePlan).toBeTypeOf('function');
-    expect(context.CockpitBundle?.closeSelectedPosition).toBeTypeOf('function');
-    expect(context.CockpitBundle?.reconcileSelectedPosition).toBeTypeOf('function');
-    expect(context.CockpitBundle?.recordInitialFunding).toBeTypeOf('function');
-    expect(context.CockpitBundle?.recordDeposit).toBeTypeOf('function');
-    expect(context.CockpitBundle?.recordWithdrawal).toBeTypeOf('function');
+    expect(context.CockpitBundle?.createTradePlanFromSelectedWatchlist).toBeUndefined();
+    expect(context.CockpitBundle?.executeSelectedTradePlan).toBeUndefined();
+    expect(context.CockpitBundle?.closeSelectedPosition).toBeUndefined();
+    expect(context.CockpitBundle?.reconcileSelectedPosition).toBeUndefined();
+    expect(context.CockpitBundle?.recordInitialFunding).toBeUndefined();
+    expect(context.CockpitBundle?.recordDeposit).toBeUndefined();
+    expect(context.CockpitBundle?.recordWithdrawal).toBeUndefined();
     expect(context.addSelectedToWatchlist).toBeUndefined();
-    expect(context.createTradePlanFromSelectedWatchlist).toBeTypeOf('function');
-    expect(context.executeSelectedTradePlan).toBeTypeOf('function');
-    expect(context.closeSelectedPosition).toBeTypeOf('function');
-    expect(context.reconcileSelectedPosition).toBeTypeOf('function');
-    expect(context.recordInitialFunding).toBeTypeOf('function');
-    expect(context.recordDeposit).toBeTypeOf('function');
-    expect(context.recordWithdrawal).toBeTypeOf('function');
+    expect(context.createTradePlanFromSelectedWatchlist).toBeUndefined();
+    expect(context.executeSelectedTradePlan).toBeUndefined();
+    expect(context.closeSelectedPosition).toBeUndefined();
+    expect(context.reconcileSelectedPosition).toBeUndefined();
+    expect(context.recordInitialFunding).toBeUndefined();
+    expect(context.recordDeposit).toBeUndefined();
+    expect(context.recordWithdrawal).toBeUndefined();
     expect(context.onOpen).toBeTypeOf('function');
     expect(context.getDashboardSummary).toBeUndefined();
     expect(context.getDashboard).toBeUndefined();
     expect(context.refreshDashboard).toBeUndefined();
-    expect(context.getWatchlist).toBeTypeOf('function');
+    expect(context.getWatchlist).toBeUndefined();
     expect(context.getMomentumRanking).toBeUndefined();
-    expect(context.getTradingAccounts).toBeTypeOf('function');
-    expect(context.createTradePlan).toBeTypeOf('function');
-    expect(context.getTradePlans).toBeTypeOf('function');
-    expect(context.executeTradePlan).toBeTypeOf('function');
-    expect(context.updateTradePlanPlanning).toBeTypeOf('function');
-    expect(context.getOpenPositions).toBeTypeOf('function');
-    expect(context.closePosition).toBeTypeOf('function');
-    expect(context.getJournal).toBeTypeOf('function');
-    expect(context.refreshFinviz).toBeTypeOf('function');
-    expect(context.refreshSignals).toBeTypeOf('function');
-    expect(context.refreshAllSignals).toBeTypeOf('function');
+    expect(context.getTradingAccounts).toBeUndefined();
+    expect(context.createTradePlan).toBeUndefined();
+    expect(context.getTradePlans).toBeUndefined();
+    expect(context.executeTradePlan).toBeUndefined();
+    expect(context.updateTradePlanPlanning).toBeUndefined();
+    expect(context.getOpenPositions).toBeUndefined();
+    expect(context.closePosition).toBeUndefined();
+    expect(context.getJournal).toBeUndefined();
+    expect(context.refreshFinviz).toBeUndefined();
+    expect(context.refreshSignals).toBeUndefined();
+    expect(context.refreshAllSignals).toBeUndefined();
     expect(context.getAnalytics).toBeUndefined();
     expect(context.refreshAnalytics).toBeUndefined();
     expect(context.refreshMomentumRanking).toBeUndefined();
     expect(context.initializeTradingCockpit).toBeTypeOf('function');
     expect(context.validateTradingCockpit).toBeTypeOf('function');
     expect(context.getTradingConfig).toBeUndefined();
-    expect(context.configureFinvizToken).toBeTypeOf('function');
-    expect(context.getFinvizToken).toBeTypeOf('function');
-    expect(context.setFinvizToken).toBeTypeOf('function');
-    expect(context.checkFinvizAuth).toBeTypeOf('function');
-    expect(context.deleteFinvizToken).toBeTypeOf('function');
+    expect(context.configureFinvizToken).toBeUndefined();
+    expect(context.getFinvizToken).toBeUndefined();
+    expect(context.setFinvizToken).toBeUndefined();
+    expect(context.checkFinvizAuth).toBeUndefined();
+    expect(context.deleteFinvizToken).toBeUndefined();
     expect(context.runArchitecturePoc).toBeUndefined();
   });
 
-  it('bundles supported menu callbacks without retired Dashboard or Analytics actions', () => {
+  it('bundles only workbook setup menu callbacks', () => {
     const targets = [...bundleSource.matchAll(/\.addItem\(\s*"[^"]+"\s*,\s*"([^"]+)"/gs)].map(
       (match) => match[1]
     );
-    expect(targets).toHaveLength(12);
-    expect(targets).toEqual(
-      expect.arrayContaining([
-        'initializeTradingCockpit',
-        'validateTradingCockpit',
-        'refreshAllSignals',
-        'createTradePlanFromSelectedWatchlist',
-        'executeSelectedTradePlan',
-        'closeSelectedPosition',
-        'reconcileSelectedPosition',
-        'recordInitialFunding',
-        'recordDeposit',
-        'recordWithdrawal',
-        'configureFinvizToken',
-        'refreshDocumentation'
-      ])
-    );
+    expect(targets).toEqual(['initializeTradingCockpit', 'validateTradingCockpit']);
     expect(targets).not.toEqual(
       expect.arrayContaining([
         'refreshDashboard',

@@ -1,7 +1,7 @@
 import { POSITION_HEADERS } from './position-mapper';
 import { readSheetHeaders, requireColumn, requireSheetHeaders } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
-import { isSheetEffectivelyEmpty } from '../data-sheet';
+import { initializeCanonicalTableSheet, isSheetEffectivelyEmpty } from '../data-sheet';
 
 const SHEET_NAME = 'Positions';
 
@@ -10,15 +10,8 @@ export function getOrCreatePositionsSheet(): GoogleAppsScript.Spreadsheet.Sheet 
   const existing = spreadsheet.getSheetByName(SHEET_NAME);
   if (existing && !isSheetEffectivelyEmpty(existing)) return existing;
 
-  const sheet = existing ?? spreadsheet.insertSheet(SHEET_NAME);
-  sheet.clear();
-  sheet
-    .getRange(1, 1, 1, POSITION_HEADERS.length)
-    .setValues([Array.from(POSITION_HEADERS)])
-    .setFontWeight('bold');
-  sheet.setFrozenRows(1);
+  const sheet = initializeCanonicalTableSheet(SHEET_NAME, POSITION_HEADERS);
   refreshPositionValidations(sheet);
-  sheet.autoResizeColumns(1, POSITION_HEADERS.length);
   return sheet;
 }
 

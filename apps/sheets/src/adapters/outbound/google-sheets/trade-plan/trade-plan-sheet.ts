@@ -1,7 +1,7 @@
 import { TRADE_PLAN_HEADERS } from './trade-plan-mapper';
 import { readSheetHeaders, requireColumn, requireSheetHeaders } from '../sheet-headers';
 import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
-import { isSheetEffectivelyEmpty } from '../data-sheet';
+import { initializeCanonicalTableSheet, isSheetEffectivelyEmpty } from '../data-sheet';
 
 const SHEET_NAME = 'Trade Plans';
 
@@ -9,15 +9,8 @@ export function getOrCreateTradePlansSheet(): GoogleAppsScript.Spreadsheet.Sheet
   const spreadsheet = getTradingCockpitSpreadsheet();
   let sheet = spreadsheet.getSheetByName(SHEET_NAME);
   if (sheet && !isSheetEffectivelyEmpty(sheet)) return sheet;
-  sheet = sheet ?? spreadsheet.insertSheet(SHEET_NAME);
-  sheet.clear();
-  sheet
-    .getRange(1, 1, 1, TRADE_PLAN_HEADERS.length)
-    .setValues([[...TRADE_PLAN_HEADERS]])
-    .setFontWeight('bold');
-  sheet.setFrozenRows(1);
+  sheet = initializeCanonicalTableSheet(SHEET_NAME, TRADE_PLAN_HEADERS);
   refreshTradePlanValidations(sheet);
-  sheet.autoResizeColumns(1, TRADE_PLAN_HEADERS.length);
   return sheet;
 }
 

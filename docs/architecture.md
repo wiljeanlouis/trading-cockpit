@@ -9,8 +9,9 @@ authoritative in code and contracts.
 Trading Cockpit is a personal trading workflow and research application.
 
 React is the primary operational UI. The production backend is a Node.js HTTP API deployed to Cloud
-Run. Google Sheets remains the operational datastore/source of truth for the current version and
-also remains a supported Google Sheets UI/admin surface through Apps Script.
+Run. Google Sheets remains the operational datastore/source of truth for the current version.
+Apps Script is retained only for workbook setup, validation, and technical maintenance of the
+spreadsheet contract.
 
 The system follows a pragmatic ports-and-adapters architecture:
 
@@ -36,7 +37,7 @@ C4Context
     Person(trader, "Trader", "Reviews candidates, plans trades, manages positions, and reviews results")
     System(cockpit, "Trading Cockpit", "Trading workflow and research application")
     System_Ext(finviz, "Finviz", "External screener / market-signal provider")
-    System_Ext(sheets, "Google Sheets", "Current operational datastore and supported spreadsheet UI")
+    System_Ext(sheets, "Google Sheets", "Current operational datastore / workbook")
     System_Ext(googleAuth, "Google Identity", "Browser authentication and authorization signal")
     System_Ext(secretManager, "Google Secret Manager", "Finviz token storage for the API runtime")
 
@@ -55,7 +56,7 @@ C4Container
     Person(trader, "Trader")
     Container(web, "apps/web", "React + TypeScript", "Primary browser UI")
     Container(api, "apps/api", "Node.js / Cloud Run", "HTTP API, auth, composition, Google Sheets API adapters, Finviz adapter, static web hosting")
-    Container(sheetsApp, "apps/sheets", "Google Apps Script", "Spreadsheet menu/UI, setup/validation, Sheets projections")
+    Container(sheetsApp, "apps/sheets", "Google Apps Script", "Workbook setup/validation and technical maintenance menu")
     Container(core, "packages/core", "TypeScript package", "Runtime-neutral domain, application use cases, ports")
     Container(contracts, "packages/contracts", "TypeScript package", "Serializable DTOs and shared schema definitions")
     ContainerDb(workbook, "Google Sheets workbook", "Sheets", "Current source-of-truth datastore")
@@ -97,10 +98,9 @@ flowchart TB
     end
 
     subgraph Sheets["apps/sheets"]
-        Menu["Apps Script menu / inbound UI"]
+        Menu["Apps Script setup menu"]
         Setup["Workbook setup and validation"]
-        SheetComposition["Composition roots"]
-        SheetsAdapters["SpreadsheetApp adapters and projections"]
+        SheetsAdapters["SpreadsheetApp schema/setup adapters"]
     end
 
     subgraph Core["packages/core"]
@@ -116,12 +116,11 @@ flowchart TB
 
     React --> Gateway --> Http
     Http --> Auth --> ApiComposition --> UseCases
-    Menu --> SheetComposition --> UseCases
+    Menu --> Setup
     Setup --> SheetsAdapters
     UseCases --> Domain
     UseCases --> Ports
     Ports --> SheetsApi
-    Ports --> SheetsAdapters
     Ports --> FinvizApi
     FinvizApi --> Secrets
     Web --> Contracts
@@ -139,8 +138,7 @@ classes and functions.
 apps/
   api/      Node HTTP API, Cloud Run runtime, Google Sheets API adapters, Finviz adapter,
             Google identity authorization, static React hosting
-  sheets/   Google Apps Script integration, spreadsheet menu/UI, workbook setup/validation,
-            SpreadsheetApp adapters and supported Sheets projections
+  sheets/   Google Apps Script workbook setup/validation and SpreadsheetApp schema adapters
   web/      React frontend, routing, shadcn/Tailwind presentation, gateway boundary
 
 packages/
@@ -170,6 +168,28 @@ packages/contracts
 ```
 
 Applications depend inward on shared packages. Shared packages must not depend on applications.
+
+### apps/sheets adapter organization
+
+`apps/sheets` is workbook tooling, not an operational backend. Its Google Sheets adapter modules
+are organized by physical workbook table:
+
+```text
+apps/sheets/src/adapters/outbound/google-sheets/
+  <sheet>/
+    <sheet>-mapper.ts  # canonical headers and row mapping when needed
+    <sheet>-sheet.ts   # setup, validation, formatting, formulas, data validation
+    reader.ts          # only when workbook validation/maintenance still needs live reads
+```
+
+The workbook orchestrator in `trading-cockpit-workbook.ts` owns the canonical inventory and report
+assembly only. It should delegate sheet-specific headers, formatting, validation, and formulas to
+the owning `<sheet>-sheet.ts` module instead of duplicating physical table details inline.
+
+SpreadsheetApp readers/repositories for operational workflows are intentionally absent from
+`apps/sheets`; React operations use `apps/api` and Google Sheets API adapters. `apps/sheets` may keep
+runtime-specific readers only for setup/validation invariants that cannot be checked from headers
+alone, such as Strategy/Strategy Version consistency.
 
 ## 4. Domain and Application Model
 
@@ -250,23 +270,23 @@ Non-empty incompatible schemas are invalid; the system does not silently guess h
 
 Canonical workbook inventory:
 
-| Sheet             |  Classification | Contract                       | Role                                                               |
-| ----------------- | --------------: | ------------------------------ | ------------------------------------------------------------------ |
-| Watchlist         |            DATA | row 1 headers / row 2+ records | Authoritative selected candidates                                  |
-| Trade Plans       |            DATA | row 1 headers / row 2+ records | Authoritative planning workflow                                    |
-| Positions         |            DATA | row 1 headers / row 2+ records | Authoritative open/closed position records                         |
-| Journal           |            DATA | row 1 headers / row 2+ records | Authoritative closed-trade history                                 |
-| Capital Ledger    |            DATA | row 1 headers / row 2+ records | Append-only external capital history                               |
-| Signals History   |            DATA | row 1 headers / row 2+ records | Complete historical Finviz snapshots plus Trading Cockpit metadata |
-| Strategies        |          CONFIG | row 1 headers / row 2+ records | Stable strategy identity                                           |
-| Strategy Versions |          CONFIG | row 1 headers / row 2+ records | Versioned screener/provider configuration                          |
-| Accounts          |          CONFIG | row 1 headers / row 2+ records | Trading account identity and risk policy                           |
-| Finviz Signals    |       TECHNICAL | row 1 headers / row 2+ records | Current Finviz provider projection                                 |
-| Documentation     | OPTIONAL_REPORT | generated utility              | Sheets help surface                                                |
-| Dashboard         |   LEGACY_UNUSED | none                           | Retired Sheets report; React Dashboard is the supported UI         |
-| Analytics         |   LEGACY_UNUSED | none                           | Retired Sheets report; React Analytics is the supported UI         |
-| Lists             |   LEGACY_UNUSED | none                           | Not recreated by canonical setup                                   |
-| Finviz Screener   |   LEGACY_UNUSED | none                           | Not recreated by canonical setup                                   |
+| Sheet             | Classification | Contract                       | Role                                                               |
+| ----------------- | -------------: | ------------------------------ | ------------------------------------------------------------------ |
+| Watchlist         |           DATA | row 1 headers / row 2+ records | Authoritative selected candidates                                  |
+| Trade Plans       |           DATA | row 1 headers / row 2+ records | Authoritative planning workflow                                    |
+| Positions         |           DATA | row 1 headers / row 2+ records | Authoritative open/closed position records                         |
+| Journal           |           DATA | row 1 headers / row 2+ records | Authoritative closed-trade history                                 |
+| Capital Ledger    |           DATA | row 1 headers / row 2+ records | Append-only external capital history                               |
+| Signals History   |           DATA | row 1 headers / row 2+ records | Complete historical Finviz snapshots plus Trading Cockpit metadata |
+| Strategies        |         CONFIG | row 1 headers / row 2+ records | Stable strategy identity                                           |
+| Strategy Versions |         CONFIG | row 1 headers / row 2+ records | Versioned screener/provider configuration                          |
+| Accounts          |         CONFIG | row 1 headers / row 2+ records | Trading account identity and risk policy                           |
+| Finviz Signals    |      TECHNICAL | row 1 headers / row 2+ records | Current Finviz provider projection                                 |
+| Documentation     |  LEGACY_UNUSED | none                           | Retired Sheets help surface                                        |
+| Dashboard         |  LEGACY_UNUSED | none                           | Retired Sheets report; React Dashboard is the supported UI         |
+| Analytics         |  LEGACY_UNUSED | none                           | Retired Sheets report; React Analytics is the supported UI         |
+| Lists             |  LEGACY_UNUSED | none                           | Not recreated by canonical setup                                   |
+| Finviz Screener   |  LEGACY_UNUSED | none                           | Not recreated by canonical setup                                   |
 
 Physical headers are authoritative in code, especially `packages/contracts` and sheet adapter schema
 modules. This document explains the contract for humans.
@@ -316,17 +336,16 @@ Browser
   -> Google Sheets API / Finviz / Secret Manager
 ```
 
-React production hosting is not Apps Script HtmlService. Apps Script remains for the supported
-Google Sheets UI, workbook setup/validation, menu callbacks, and Sheets projections.
+React production hosting is not Apps Script HtmlService. Apps Script remains only for workbook
+setup/validation and technical maintenance menu callbacks.
 
 Apps Script flow:
 
 ```text
-Google Sheets menu
+Google Sheets setup menu
   -> generated Apps Script wrappers
-  -> apps/sheets composition
-  -> packages/core use cases/queries
-  -> SpreadsheetApp adapters
+  -> apps/sheets workbook setup/validation
+  -> SpreadsheetApp schema/setup adapters
 ```
 
 Deployment commands and runbooks belong in [operations](operations.md), not here.

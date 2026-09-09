@@ -2,12 +2,12 @@
 
 Trading Cockpit is a personal trading workflow and research application. React is the primary
 operational UI, the Node.js API runs on Cloud Run, and Google Sheets remains the current
-source-of-truth datastore plus a supported Sheets interface.
+source-of-truth datastore plus workbook setup/validation surface.
 
 The core workflow is:
 
 ```text
-Finviz discovery -> Signals History -> Momentum Ranking -> Watchlist
+Configured strategy signal refresh -> Signals History -> Discovery -> Watchlist
 -> Trade Plan -> Position -> Journal -> Analytics / Dashboard
 ```
 
@@ -17,7 +17,7 @@ Finviz discovery -> Signals History -> Momentum Ranking -> Watchlist
 trading-cockpit/
 ├── apps/
 │   ├── api/       # Node.js HTTP API and production web hosting for Cloud Run
-│   ├── sheets/    # Google Apps Script / Google Sheets integration
+│   ├── sheets/    # Google Apps Script workbook setup/validation
 │   └── web/       # React + TypeScript frontend
 ├── packages/
 │   ├── core/      # Runtime-neutral domain/application logic and ports

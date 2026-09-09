@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { selectedTradePlanRowToCommand } from '../../src/adapters/inbound/google-sheets/ui/trade-plan-selection-mapper';
 import {
   POSITION_HEADERS,
   positionFromRow,
@@ -93,20 +92,5 @@ describe('Position row mapper', () => {
 
   it('fails with the established missing-column message', () => {
     expect(() => positionFromRow([], [])).toThrow('Colonne absente : Position ID');
-  });
-});
-
-describe('selected Trade Plan row mapper', () => {
-  it('copies only the Trade Plan ID required by the application API', () => {
-    expect(
-      selectedTradePlanRowToCommand(
-        ['Ticker', 'Trade Plan ID', 'Status'],
-        ['URNB', ' TP-1 ', 'READY']
-      )
-    ).toEqual({ tradePlanId: ' TP-1 ' });
-  });
-
-  it('fails with the established missing-column message', () => {
-    expect(() => selectedTradePlanRowToCommand([], [])).toThrow('Colonne absente : Trade Plan ID');
   });
 });

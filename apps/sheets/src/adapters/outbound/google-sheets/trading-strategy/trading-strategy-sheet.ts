@@ -1,9 +1,9 @@
-import {
-  GoogleSheetsTradingStrategyReader,
-  type SheetTradingStrategy
-} from '../../../outbound/google-sheets/trading-strategy/google-sheets-trading-strategy-reader';
 import type { TradingStrategyVersion } from '@trading-cockpit/core/domain/trading-strategy';
 import { STRATEGY_HEADERS, STRATEGY_VERSION_HEADERS } from '@trading-cockpit/contracts';
+import { readSheetHeaders, requireSheetHeaders } from '../sheet-headers';
+import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
+import { GoogleSheetsTradingStrategyReader } from './google-sheets-trading-strategy-reader';
+import type { SheetTradingStrategy } from './trading-strategy-mapper';
 
 const STRATEGIES_SHEET_NAME = 'Strategies';
 const STRATEGY_VERSIONS_SHEET_NAME = 'Strategy Versions';
@@ -16,43 +16,69 @@ export const STRATEGY_TYPE_VALUES = [
   'OTHER'
 ];
 
-export function setupStrategiesInSheets(): void {
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+export function getOrCreateStrategiesSheet(): GoogleAppsScript.Spreadsheet.Sheet {
+  const spreadsheet = getTradingCockpitSpreadsheet();
   const sheet =
     spreadsheet.getSheetByName(STRATEGIES_SHEET_NAME) ??
     spreadsheet.insertSheet(STRATEGIES_SHEET_NAME);
   sheet.getRange(1, 1, 1, STRATEGY_HEADERS.length).setValues([[...STRATEGY_HEADERS]]);
-  insertCheckboxesForExistingRows(sheet, 4);
+  refreshStrategyValidations(sheet);
+  sheet.setFrozenRows(1);
+  [190, 180, 150, 90, 350].forEach((width, index) => sheet.setColumnWidth(index + 1, width));
+  return sheet;
+}
+
+export function getOrCreateStrategyVersionsSheet(): GoogleAppsScript.Spreadsheet.Sheet {
+  const spreadsheet = getTradingCockpitSpreadsheet();
+  const sheet =
+    spreadsheet.getSheetByName(STRATEGY_VERSIONS_SHEET_NAME) ??
+    spreadsheet.insertSheet(STRATEGY_VERSIONS_SHEET_NAME);
+  sheet
+    .getRange(1, 1, 1, STRATEGY_VERSION_HEADERS.length)
+    .setValues([[...STRATEGY_VERSION_HEADERS]]);
+  refreshStrategyVersionValidations(sheet);
+  sheet.setFrozenRows(1);
+  [190, 90, 90, 190, 120, 640].forEach((width, index) => sheet.setColumnWidth(index + 1, width));
+  return sheet;
+}
+
+export function setupStrategiesInSheets(): void {
+  getOrCreateStrategiesSheet();
+  getOrCreateStrategyVersionsSheet();
+  getTradingCockpitSpreadsheet().toast('Strategies configuré.', 'Trading Cockpit', 5);
+}
+
+export function validateStrategiesHeaders(headers: readonly unknown[]): true {
+  return requireSheetHeaders(headers, STRATEGY_HEADERS, STRATEGIES_SHEET_NAME);
+}
+
+export function validateStrategyVersionsHeaders(headers: readonly unknown[]): true {
+  return requireSheetHeaders(headers, STRATEGY_VERSION_HEADERS, STRATEGY_VERSIONS_SHEET_NAME);
+}
+
+export function validateStrategiesSchema(sheet: GoogleAppsScript.Spreadsheet.Sheet): true {
+  return validateStrategiesHeaders(readSheetHeaders(sheet));
+}
+
+export function validateStrategyVersionsSchema(sheet: GoogleAppsScript.Spreadsheet.Sheet): true {
+  return validateStrategyVersionsHeaders(readSheetHeaders(sheet));
+}
+
+export function refreshStrategyValidations(sheet: GoogleAppsScript.Spreadsheet.Sheet): void {
   const typeRule = SpreadsheetApp.newDataValidation()
     .requireValueInList(STRATEGY_TYPE_VALUES, true)
     .setAllowInvalid(false)
     .build();
   sheet.getRange('C2:C').setDataValidation(typeRule);
-  sheet.setFrozenRows(1);
-  [190, 180, 150, 90, 350].forEach((width, index) => sheet.setColumnWidth(index + 1, width));
-
-  const versionsSheet =
-    spreadsheet.getSheetByName(STRATEGY_VERSIONS_SHEET_NAME) ??
-    spreadsheet.insertSheet(STRATEGY_VERSIONS_SHEET_NAME);
-  versionsSheet
-    .getRange(1, 1, 1, STRATEGY_VERSION_HEADERS.length)
-    .setValues([[...STRATEGY_VERSION_HEADERS]]);
-  insertCheckboxesForExistingRows(versionsSheet, 3);
-  versionsSheet.setFrozenRows(1);
-  [190, 90, 90, 190, 120, 640].forEach((width, index) =>
-    versionsSheet.setColumnWidth(index + 1, width)
-  );
-  spreadsheet.toast('Strategies configuré.', 'Trading Cockpit', 5);
 }
 
-function insertCheckboxesForExistingRows(
-  sheet: GoogleAppsScript.Spreadsheet.Sheet,
-  column: number
-): void {
-  const recordCount = sheet.getLastRow() - 1;
-  if (recordCount <= 0) return;
-  sheet.getRange(2, column, recordCount, 1).insertCheckboxes();
-}
+/**
+ * Strategy Version booleans intentionally remain plain cells instead of checkbox-formatted columns
+ * so blank rows stay truly blank and appends target the expected next record row.
+ */
+export function refreshStrategyVersionValidations(
+  _sheet: GoogleAppsScript.Spreadsheet.Sheet
+): void {}
 
 export function validateEnabledStrategies(strategies: SheetTradingStrategy[]): true {
   const ids = new Set<string>();
