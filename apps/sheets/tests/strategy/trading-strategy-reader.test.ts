@@ -232,14 +232,12 @@ describe('strategy validation characterization', () => {
     expect(validateEnabledStrategies([strategy()])).toBe(true);
   });
 
-  it('validates one active version per strategy and parent enablement', () => {
+  it('validates one active version per enabled strategy and ignores disabled parents', () => {
     expect(validateStrategyVersions([strategy()], [version()])).toBe(true);
     expect(() =>
       validateStrategyVersions([strategy()], [version(), version({ version: 'V2' })])
     ).toThrow('Plusieurs versions actives pour MOMENTUM_BREAKOUT');
-    expect(() => validateStrategyVersions([strategy({ enabled: false })], [version()])).toThrow(
-      'Strategy parent désactivée : MOMENTUM_BREAKOUT'
-    );
+    expect(validateStrategyVersions([strategy({ enabled: false })], [version()])).toBe(true);
     expect(validateStrategyVersions([strategy()], [version({ enabled: false })])).toBe(true);
   });
 

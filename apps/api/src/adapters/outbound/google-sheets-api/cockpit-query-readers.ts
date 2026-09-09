@@ -394,7 +394,7 @@ export async function validateStrategies(sheets: RequestScopedSheets): Promise<t
     ids.add(strategy.id);
   }
   const versionKeys = new Set<string>();
-  const activeVersionByStrategy = new Set<string>();
+  const activeVersionByEnabledStrategy = new Set<string>();
   for (const version of versions) {
     if (!ids.has(version.strategyId)) throw new Error(`Strategy inconnue : ${version.strategyId}`);
     const key = `${version.strategyId}|${version.version}`;
@@ -402,11 +402,11 @@ export async function validateStrategies(sheets: RequestScopedSheets): Promise<t
     versionKeys.add(key);
     if (!version.enabled) continue;
     const parent = strategies.find((strategy) => strategy.id === version.strategyId);
-    if (!parent?.enabled) throw new Error(`Strategy parent désactivée : ${version.strategyId}`);
-    if (activeVersionByStrategy.has(version.strategyId)) {
+    if (!parent?.enabled) continue;
+    if (activeVersionByEnabledStrategy.has(version.strategyId)) {
       throw new Error(`Plusieurs versions actives pour ${version.strategyId}`);
     }
-    activeVersionByStrategy.add(version.strategyId);
+    activeVersionByEnabledStrategy.add(version.strategyId);
   }
   return true;
 }

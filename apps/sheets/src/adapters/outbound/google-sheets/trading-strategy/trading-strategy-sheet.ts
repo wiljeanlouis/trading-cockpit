@@ -100,7 +100,7 @@ export function validateStrategyVersions(
     strategies.filter((strategy) => strategy.enabled).map((strategy) => strategy.id)
   );
   const versionKeys = new Set<string>();
-  const activeVersionByStrategy = new Set<string>();
+  const activeVersionByEnabledStrategy = new Set<string>();
   versions.forEach((version) => {
     if (!strategyIds.has(version.strategyId))
       throw new Error(`Strategy inconnue : ${version.strategyId}`);
@@ -108,13 +108,11 @@ export function validateStrategyVersions(
     if (versionKeys.has(key)) throw new Error(`Strategy Version dupliquée : ${key}`);
     versionKeys.add(key);
     if (!version.enabled) return;
-    if (!enabledStrategies.has(version.strategyId)) {
-      throw new Error(`Strategy parent désactivée : ${version.strategyId}`);
-    }
-    if (activeVersionByStrategy.has(version.strategyId)) {
+    if (!enabledStrategies.has(version.strategyId)) return;
+    if (activeVersionByEnabledStrategy.has(version.strategyId)) {
       throw new Error(`Plusieurs versions actives pour ${version.strategyId}`);
     }
-    activeVersionByStrategy.add(version.strategyId);
+    activeVersionByEnabledStrategy.add(version.strategyId);
   });
   return true;
 }

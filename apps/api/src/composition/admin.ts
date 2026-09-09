@@ -286,7 +286,8 @@ export async function createStrategyForCloudRun({
 }
 
 /**
- * Updates mutable Strategy metadata and prevents disabling a parent while active versions remain.
+ * Updates mutable Strategy metadata. Disabling a parent Strategy is allowed and makes its versions
+ * ineligible for new refresh/workflow operations without rewriting historical version rows.
  */
 export async function updateStrategyForCloudRun({
   mutationContext,
@@ -305,12 +306,6 @@ export async function updateStrategyForCloudRun({
     enabled: booleanValue(request.enabled),
     description: String(request.description ?? '')
   });
-  if (
-    !strategy.enabled &&
-    versions.some((version) => version.strategyId === strategy.id && version.enabled)
-  ) {
-    throw new ValidationError(`Désactive d’abord les versions actives de ${strategy.id}.`);
-  }
   mutationContext.writer.update(`'Strategies'!A${index + 2}:E${index + 2}`, [
     strategyToRow(strategy)
   ]);

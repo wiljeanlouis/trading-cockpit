@@ -10,6 +10,7 @@ import {
   readStrategyIds,
   readTradePlans,
   readTradingAccounts,
+  validateStrategies,
   readWatchlistEntries,
   SHEET_DEFINITIONS,
   WATCHLIST_HEADERS
@@ -351,6 +352,95 @@ describe('Cloud Run Google Sheets API query readers', () => {
         screenerUrl: 'https://elite.finviz.com/export/screener?v=151'
       }
     ]);
+  });
+
+  it('validates enabled versions only when their parent Strategy is enabled', async () => {
+    const strategyHeaders = SHEET_DEFINITIONS.strategies.requiredHeaders;
+    const strategyVersionHeaders = SHEET_DEFINITIONS.strategyVersions.requiredHeaders;
+
+    await expect(
+      validateStrategies(
+        sheets({
+          [SHEET_DEFINITIONS.strategies.range]: [
+            [...strategyHeaders],
+            rowFor(strategyHeaders, {
+              'Strategy ID': 'MOMENTUM_BREAKOUT',
+              Name: 'Momentum Breakout',
+              Type: 'MOMENTUM',
+              Enabled: false,
+              Description: ''
+            }),
+            rowFor(strategyHeaders, {
+              'Strategy ID': 'QUALITY_DIP',
+              Name: 'Quality Dip',
+              Type: 'QUALITY',
+              Enabled: true,
+              Description: ''
+            })
+          ],
+          [SHEET_DEFINITIONS.strategyVersions.range]: [
+            [...strategyVersionHeaders],
+            rowFor(strategyVersionHeaders, {
+              'Strategy ID': 'MOMENTUM_BREAKOUT',
+              Version: 'V1',
+              Enabled: true,
+              'Screener Code': 'MOMENTUM_BREAKOUT_V1',
+              Screener: 'FINVIZ',
+              'Finviz URL': 'https://elite.finviz.com/export/screener?v=151'
+            }),
+            rowFor(strategyVersionHeaders, {
+              'Strategy ID': 'QUALITY_DIP',
+              Version: 'V1',
+              Enabled: true,
+              'Screener Code': 'QUALITY_DIP_V1',
+              Screener: 'FINVIZ',
+              'Finviz URL': 'https://elite.finviz.com/export/screener?v=151&f=quality'
+            })
+          ]
+        })
+      )
+    ).resolves.toBe(true);
+  });
+
+  it('still rejects multiple active versions for an enabled parent Strategy', async () => {
+    const strategyHeaders = SHEET_DEFINITIONS.strategies.requiredHeaders;
+    const strategyVersionHeaders = SHEET_DEFINITIONS.strategyVersions.requiredHeaders;
+
+    await expect(
+      validateStrategies(
+        sheets({
+          [SHEET_DEFINITIONS.strategies.range]: [
+            [...strategyHeaders],
+            rowFor(strategyHeaders, {
+              'Strategy ID': 'MOMENTUM_BREAKOUT',
+              Name: 'Momentum Breakout',
+              Type: 'MOMENTUM',
+              Enabled: true,
+              Description: ''
+            })
+          ],
+          [SHEET_DEFINITIONS.strategyVersions.range]: [
+            [...strategyVersionHeaders],
+            rowFor(strategyVersionHeaders, {
+              'Strategy ID': 'MOMENTUM_BREAKOUT',
+              Version: 'V1',
+              Enabled: true,
+              'Screener Code': 'MOMENTUM_BREAKOUT_V1',
+              Screener: 'FINVIZ',
+              'Finviz URL': 'https://elite.finviz.com/export/screener?v=151'
+            }),
+            rowFor(strategyVersionHeaders, {
+              'Strategy ID': 'MOMENTUM_BREAKOUT',
+              Version: 'V2',
+              Enabled: true,
+              'Screener Code': 'MOMENTUM_BREAKOUT_V2',
+              Screener: 'FINVIZ',
+              'Finviz URL': 'https://elite.finviz.com/export/screener?v=151&f=v2'
+            })
+          ]
+        })
+      )
+    ).rejects.toThrow('Plusieurs versions actives pour MOMENTUM_BREAKOUT');
   });
 
   it('maps Signals History when batch-loaded with Watchlist using Google-canonical ranges', async () => {

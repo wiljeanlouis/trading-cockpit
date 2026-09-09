@@ -80,6 +80,17 @@ describe('Discovery signal refresh composition', () => {
     ]);
   });
 
+  it('ignores enabled versions when their parent Strategy is disabled during refresh all', () => {
+    expect(
+      buildFinvizFeeds({
+        strategies: strategies.map((strategy) =>
+          strategy.id === 'QUALITY_DIP' ? { ...strategy, enabled: false } : strategy
+        ),
+        versions
+      }).map((feed) => feed.id)
+    ).toEqual(['MOMENTUM_BREAKOUT_V1']);
+  });
+
   it('rejects an unknown selected strategy', () => {
     expect(() => buildFinvizFeeds({ strategies, versions, strategyId: 'UNKNOWN' })).toThrow(
       'Stratégie inconnue : UNKNOWN'

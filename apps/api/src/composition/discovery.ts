@@ -159,13 +159,25 @@ export function buildFinvizFeeds({
     }
   }
 
+  const enabledStrategyIds = new Set(
+    strategies.filter((strategy) => strategy.enabled).map((strategy) => strategy.id)
+  );
+  const activeVersionByEnabledStrategy = new Set<string>();
   const feeds = versions
-    .filter((version) => version.enabled && version.screener === 'FINVIZ')
-    .filter((version) => !normalizedStrategyId || version.strategyId === normalizedStrategyId)
+    .filter(
+      (version) =>
+        version.enabled &&
+        version.screener === 'FINVIZ' &&
+        enabledStrategyIds.has(version.strategyId) &&
+        (!normalizedStrategyId || version.strategyId === normalizedStrategyId)
+    )
     .map((version) => {
       const strategy = strategies.find((candidate) => candidate.id === version.strategyId);
       if (!strategy) throw new Error(`Stratégie inconnue : ${version.strategyId}`);
-      if (!strategy.enabled) return null;
+      if (activeVersionByEnabledStrategy.has(version.strategyId)) {
+        throw new Error(`Plusieurs versions actives pour ${version.strategyId}`);
+      }
+      activeVersionByEnabledStrategy.add(version.strategyId);
       return {
         id: version.screenerCode,
         strategyName: strategy.name,
@@ -173,8 +185,7 @@ export function buildFinvizFeeds({
         strategyId: version.strategyId,
         query: version.screenerUrl
       };
-    })
-    .filter((feed): feed is NonNullable<typeof feed> => Boolean(feed));
+    });
 
   if (normalizedStrategyId && feeds.length === 0) {
     throw new Error(`Aucun feed Finviz actif configuré pour ${normalizedStrategyId}.`);

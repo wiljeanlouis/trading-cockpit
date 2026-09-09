@@ -1072,6 +1072,44 @@ describe('Cloud Run Trading Cockpit API', () => {
     });
   });
 
+  it('disables a Strategy parent without requiring historical versions to be disabled', async () => {
+    const client = mutableSheetsClientByRange(queryFixtureByRange());
+
+    const response = await handleCloudRunRequest({
+      method: 'PATCH',
+      url: '/api/admin/strategies/MOMENTUM_BREAKOUT',
+      headers: authorizationHeaders(),
+      body: JSON.stringify({
+        strategyId: 'MOMENTUM_BREAKOUT',
+        name: 'Momentum Breakout',
+        type: 'MOMENTUM',
+        enabled: false,
+        description: 'Momentum breakout near 52-week high'
+      }),
+      spreadsheetId: 'spreadsheet-id',
+      auth: testAuthConfig(),
+      cors: testCorsConfig(),
+      sheetsClientFactory: async () => client,
+      tokenVerifier: authorizedTokenVerifier()
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(client.updateValues).toHaveBeenCalledWith(
+      expect.objectContaining({
+        range: "'Strategies'!A2:E2",
+        values: [
+          [
+            'MOMENTUM_BREAKOUT',
+            'Momentum Breakout',
+            'MOMENTUM',
+            false,
+            'Momentum breakout near 52-week high'
+          ]
+        ]
+      })
+    );
+  });
+
   it('creates an inactive Strategy Version without mutating historical versions', async () => {
     const client = mutableSheetsClientByRange(queryFixtureByRange());
 
