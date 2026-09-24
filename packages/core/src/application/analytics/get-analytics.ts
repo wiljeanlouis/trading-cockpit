@@ -2,7 +2,6 @@ import type {
   AnalyticsAccountRowDto,
   AnalyticsDto,
   AnalyticsStrategyRowDto,
-  AnalyticsStrategyVersionRowDto,
   PortfolioScopeDto
 } from '@trading-cockpit/contracts';
 import type { JournalEntry } from '../../domain/journal-entry';
@@ -14,7 +13,6 @@ interface AnalyticsTrade {
   accountId: string;
   strategyId: string;
   strategy: string;
-  version: string;
   pnl: number;
   r: number;
 }
@@ -28,7 +26,6 @@ export interface GetAnalyticsDependencies {
 export interface GetAnalyticsQuery {
   scope?: PortfolioScopeDto;
   strategyId?: string;
-  strategyVersion?: string;
 }
 
 function emptyAnalytics(
@@ -62,7 +59,6 @@ function emptyAnalytics(
       bestR: 0
     },
     byStrategy: [],
-    byStrategyVersion: [],
     byAccount: []
   };
 }
@@ -94,7 +90,6 @@ function tradeFromEntry(entry: JournalEntry): AnalyticsTrade | null {
       .trim()
       .toUpperCase(),
     strategy: String(entry.strategyName || 'UNKNOWN').trim(),
-    version: String(entry.strategyVersion || '').trim(),
     pnl: legacyNumberOrZero(entry.realizedPnl),
     r: legacyNumberOrZero(entry.rMultiple)
   };
@@ -159,45 +154,6 @@ function calculateByStrategy(trades: readonly AnalyticsTrade[]): AnalyticsStrate
 }
 
 /**
- * Groups by Strategy ID + Version, which is the historical strategy identity in Journal rows.
- *
- * Disabled historical versions remain analyzable because Journal rows represent immutable trade
- * history rather than current strategy configuration.
- */
-function calculateByStrategyVersion(
-  trades: readonly AnalyticsTrade[]
-): AnalyticsStrategyVersionRowDto[] {
-  const groups = new Map<
-    string,
-    { strategyId: string; strategy: string; version: string; trades: AnalyticsTrade[] }
-  >();
-  for (const trade of trades) {
-    const key = `${trade.strategyId}|${trade.version}`;
-    const current = groups.get(key) ?? {
-      strategyId: trade.strategyId,
-      strategy: trade.strategy,
-      version: trade.version,
-      trades: []
-    };
-    current.trades.push(trade);
-    groups.set(key, current);
-  }
-
-  return Array.from(groups.values())
-    .map((group) => ({
-      strategyId: group.strategyId,
-      strategy: group.strategy,
-      version: group.version,
-      ...groupMetrics(group.trades)
-    }))
-    .sort((left, right) =>
-      left.strategyId === right.strategyId
-        ? String(left.version).localeCompare(String(right.version))
-        : left.strategyId.localeCompare(right.strategyId)
-    );
-}
-
-/**
  * Builds account comparison rows from the same scoped trade set used by the summary.
  *
  * React only renders these backend-calculated rows and must not recalculate ratios itself.
@@ -255,11 +211,9 @@ function filterTrades(
   const strategyId = String(query.strategyId || '')
     .trim()
     .toUpperCase();
-  const strategyVersion = String(query.strategyVersion || '').trim();
   return trades.filter((trade) => {
     if (scope.type === 'ACCOUNT' && trade.accountId !== scope.accountId) return false;
     if (strategyId && trade.strategyId !== strategyId) return false;
-    if (strategyVersion && trade.version !== strategyVersion) return false;
     return true;
   });
 }
@@ -319,7 +273,6 @@ export function calculateAnalyticsFromJournalEntries(
       bestR: Math.max(...scopedTrades.map((trade) => trade.r))
     },
     byStrategy: calculateByStrategy(scopedTrades),
-    byStrategyVersion: calculateByStrategyVersion(scopedTrades),
     byAccount: calculateByAccount(scopedTrades, accounts)
   };
 }

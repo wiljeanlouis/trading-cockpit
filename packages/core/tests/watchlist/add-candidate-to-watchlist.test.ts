@@ -11,7 +11,6 @@ import type { WatchlistRepository } from '@trading-cockpit/core/ports/outbound/w
 const command: AddCandidateToWatchlistCommand = {
   strategyId: ' momentum_breakout ',
   strategyName: ' Momentum Breakout ',
-  strategyVersion: ' V1 ',
   signalDate: '2026-08-27',
   ticker: ' urnb ',
   company: 'Urban Outfitters',
@@ -42,8 +41,7 @@ function createDependencies(existing: WatchlistEntry | null = null) {
     existsById: () => {
       calls.push('strategy.exists');
       return true;
-    },
-    existsVersion: () => true
+    }
   };
   const runtime: RuntimePort = {
     now: () => {
@@ -83,14 +81,12 @@ describe('add candidate to Watchlist', () => {
     ]);
     expect(dependencies.searchedIdentity()).toEqual({
       strategyId: 'MOMENTUM_BREAKOUT',
-      strategyVersion: 'V1',
       ticker: 'URNB'
     });
     expect(dependencies.savedEntry()).toMatchObject({
       id: 'watchlist-id',
       strategyId: 'MOMENTUM_BREAKOUT',
       strategyName: 'Momentum Breakout',
-      strategyVersion: 'V1',
       ticker: 'URNB',
       status: 'WATCHING'
     });
@@ -101,7 +97,6 @@ describe('add candidate to Watchlist', () => {
       id: 'existing-id',
       strategyId: 'MOMENTUM_BREAKOUT',
       strategyName: 'Momentum Breakout',
-      strategyVersion: 'V1',
       signalDate: '2026-08-20',
       ticker: 'URNB',
       company: '',
@@ -127,7 +122,6 @@ describe('add candidate to Watchlist', () => {
       kind: 'duplicate',
       identity: {
         strategyId: 'MOMENTUM_BREAKOUT',
-        strategyVersion: 'V1',
         ticker: 'URNB'
       },
       existing
@@ -143,18 +137,6 @@ describe('add candidate to Watchlist', () => {
 
     expect(() => addCandidate(command)).toThrow('Stratégie inconnue : MOMENTUM_BREAKOUT');
     expect(dependencies.calls).toEqual([]);
-    expect(dependencies.savedEntry()).toBeNull();
-  });
-
-  it('rejects an unknown historical Strategy Version before opening the Watchlist', () => {
-    const dependencies = createDependencies();
-    dependencies.strategyRepository.existsVersion = () => false;
-    const addCandidate = createAddCandidateToWatchlist(dependencies);
-
-    expect(() => addCandidate(command)).toThrow(
-      'Version de stratégie inconnue : MOMENTUM_BREAKOUT V1'
-    );
-    expect(dependencies.calls).toEqual(['strategy.exists']);
     expect(dependencies.savedEntry()).toBeNull();
   });
 

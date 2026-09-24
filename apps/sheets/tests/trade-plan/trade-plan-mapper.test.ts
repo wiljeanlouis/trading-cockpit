@@ -13,7 +13,6 @@ const tradePlan: TradePlan = {
   watchlistId: 'WL-1',
   strategyId: 'MOMENTUM_BREAKOUT',
   strategyName: 'Momentum Breakout',
-  strategyVersion: 'V1',
   signalDate: '2026-08-27',
   signalPrice: 54.25,
   ticker: 'URNB',
@@ -40,13 +39,12 @@ const tradePlan: TradePlan = {
 };
 
 describe('Trade Plan row mapper', () => {
-  it('appends Account ID after the exact 29-column generic workflow row', () => {
+  it('appends Account ID after the exact 27-column generic workflow row', () => {
     expect(tradePlanToRow(tradePlan)).toEqual([
       'TP-1',
       'WL-1',
       'MOMENTUM_BREAKOUT',
       'Momentum Breakout',
-      'V1',
       '2026-08-27',
       54.25,
       'URNB',
@@ -76,14 +74,14 @@ describe('Trade Plan row mapper', () => {
 
   it('reads all values and calculated formula results explicitly by header', () => {
     const row = tradePlanToRow(tradePlan);
-    row[15] = 57;
-    row[17] = 67;
-    row[18] = 5;
-    row[19] = 10;
-    row[20] = 2;
-    row[23] = 50;
-    row[24] = 10;
-    row[25] = 570;
+    row[14] = 57;
+    row[16] = 67;
+    row[17] = 5;
+    row[18] = 10;
+    row[19] = 2;
+    row[22] = 50;
+    row[23] = 10;
+    row[24] = 570;
 
     expect(tradePlanFromRow([...TRADE_PLAN_HEADERS], row)).toEqual({
       ...tradePlan,

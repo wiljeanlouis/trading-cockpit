@@ -39,7 +39,6 @@ const REQUIRED_TEXT_FIELDS: Array<[keyof Position, string]> = [
   ['watchlistId', 'Watchlist ID'],
   ['strategyId', 'Strategy ID'],
   ['strategyName', 'Strategy'],
-  ['strategyVersion', 'Strategy Version'],
   ['ticker', 'Ticker']
 ];
 

@@ -26,7 +26,6 @@ function normalizeIdentity(request: AddDiscoveryCandidateToWatchlistRequest) {
     strategyId: String(request.strategyId || '')
       .trim()
       .toUpperCase(),
-    strategyVersion: String(request.strategyVersion || '').trim(),
     signalDate: String(request.signalDate || '').trim(),
     ticker: String(request.ticker || '')
       .trim()
@@ -46,7 +45,6 @@ function findCandidate(
     snapshots.find(
       (snapshot) =>
         snapshot.strategyId.toUpperCase() === identity.strategyId &&
-        snapshot.strategyVersion === identity.strategyVersion &&
         snapshot.signalDate === identity.signalDate &&
         snapshot.ticker.toUpperCase() === identity.ticker
     ) ?? null
@@ -66,21 +64,19 @@ export function createAddDiscoveryCandidateToWatchlist({
   ): AddDiscoveryCandidateToWatchlistResponse => {
     const identity = normalizeIdentity(request);
     if (!identity.strategyId) throw new Error('Strategy ID absent.');
-    if (!identity.strategyVersion) throw new Error('Strategy Version absent.');
     if (!identity.signalDate) throw new Error('Signal Date absente.');
     if (!identity.ticker) throw new Error('Ticker absent.');
 
     const candidate = findCandidate(signalReader.findAllSignals(), identity);
     if (!candidate) {
       throw new Error(
-        `Candidat Discovery introuvable : ${identity.strategyId} ${identity.strategyVersion} ${identity.signalDate} ${identity.ticker}`
+        `Candidat Discovery introuvable : ${identity.strategyId} ${identity.signalDate} ${identity.ticker}`
       );
     }
 
     const result = addCandidateToWatchlist({
       strategyId: candidate.strategyId,
       strategyName: candidate.strategyName,
-      strategyVersion: candidate.strategyVersion,
       signalDate: candidate.signalDate,
       ticker: candidate.ticker,
       company: toWatchlistSnapshotValue(candidate.attributes.Company),

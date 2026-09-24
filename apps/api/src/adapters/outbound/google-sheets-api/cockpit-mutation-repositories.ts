@@ -18,10 +18,7 @@ import type {
   TradingAccountRecord
 } from '@trading-cockpit/core/domain/trading-account';
 import type { TradingAccountRiskPolicy } from '@trading-cockpit/core/domain/trading-account-risk-policy';
-import type {
-  TradingStrategy,
-  TradingStrategyVersion
-} from '@trading-cockpit/core/domain/trading-strategy';
+import type { TradingStrategy } from '@trading-cockpit/core/domain/trading-strategy';
 import type { RuntimePort } from '@trading-cockpit/core/ports/outbound/runtime-port';
 import type { StrategyRepository } from '@trading-cockpit/core/ports/outbound/strategy-repository';
 import type { WatchlistRepository } from '@trading-cockpit/core/ports/outbound/watchlist-repository';
@@ -49,7 +46,6 @@ import {
   readJournalEntries,
   readPositions,
   readStrategyRecords,
-  readStrategyVersionRecords,
   readTradingAccounts,
   readTradePlans,
   readWatchlistEntries,
@@ -289,7 +285,7 @@ export class CloudRunTradePlanRepository implements TradePlanRepository {
     const rowNumber = this.requireRowNumberById(tradePlan.id);
     const updates = [
       {
-        range: rowRange(SHEET_DEFINITIONS.tradePlans.sheetName, rowNumber, 16, 26),
+        range: rowRange(SHEET_DEFINITIONS.tradePlans.sheetName, rowNumber, 15, 25),
         values: [
           tradePlanPlanningCells(tradePlan, rowNumber, Boolean(options?.positionSizeOverridden))
         ]
@@ -301,7 +297,7 @@ export class CloudRunTradePlanRepository implements TradePlanRepository {
 
   updateStatus(id: string, status: string): void {
     const rowNumber = this.requireRowNumberById(id);
-    this.context.writer.update(cellRange(SHEET_DEFINITIONS.tradePlans.sheetName, rowNumber, 27), [
+    this.context.writer.update(cellRange(SHEET_DEFINITIONS.tradePlans.sheetName, rowNumber, 26), [
       [status]
     ]);
     this.plans = this.loaded().map((plan) => (plan.id === id ? { ...plan, status } : plan));
@@ -477,20 +473,10 @@ export class CloudRunCapitalTransactionRepository implements CapitalTransactionR
 }
 
 export class LoadedStrategyRepository implements StrategyRepository {
-  constructor(
-    private readonly strategies: readonly TradingStrategy[],
-    private readonly versions: readonly TradingStrategyVersion[]
-  ) {}
+  constructor(private readonly strategies: readonly TradingStrategy[]) {}
   existsById(strategyId: string): boolean {
     const expected = textValue(strategyId).toUpperCase();
     return this.strategies.some((strategy) => strategy.id === expected);
-  }
-  existsVersion(strategyId: string, version: string): boolean {
-    const expectedId = textValue(strategyId).toUpperCase();
-    const expectedVersion = textValue(version);
-    return this.versions.some(
-      (candidate) => candidate.strategyId === expectedId && candidate.version === expectedVersion
-    );
   }
 }
 
@@ -685,11 +671,10 @@ export class CloudRunMarketSignalProjection implements MarketSignalProjection {
   constructor(private readonly context: MutationContext) {}
   replace(batch: MarketSignalBatch, refreshedAt: Date): void {
     this.context.writer.update("'Finviz Signals'!A1:Z", [
-      ['Strategy ID', 'Strategy', 'Strategy Version', 'Refreshed At', ...batch.attributeNames],
+      ['Strategy ID', 'Strategy', 'Refreshed At', ...batch.attributeNames],
       ...batch.signals.map((signal) => [
         batch.feed.strategyId,
         batch.feed.strategyName,
-        batch.feed.strategyVersion,
         formatDateTime(refreshedAt),
         ...batch.attributeNames.map((name) => signal.attributes[name] ?? '')
       ])
@@ -698,22 +683,23 @@ export class CloudRunMarketSignalProjection implements MarketSignalProjection {
 }
 
 /**
- * Request-loaded strategy catalog that resolves the single active version for a Strategy ID.
+ * Request-loaded strategy catalog used by signal refresh without exposing sheet infrastructure to
+ * core.
  */
 export class LoadedTradingStrategyCatalog implements TradingStrategyCatalog {
-  constructor(
-    private readonly strategies: readonly TradingStrategy[],
-    private readonly versions: readonly TradingStrategyVersion[]
-  ) {}
+  constructor(private readonly strategies: readonly TradingStrategy[]) {}
   getById(strategyId: string) {
     const expected = textValue(strategyId).toUpperCase();
     const strategy = this.strategies.find((candidate) => candidate.id === expected);
     if (!strategy) throw new Error(`Stratégie inconnue : ${expected}`);
-    const version = this.versions.find(
-      (candidate) => candidate.strategyId === expected && candidate.enabled
-    );
-    if (!version) throw new Error(`Aucune version active pour ${expected}.`);
-    return { id: strategy.id, version: version.version, enabled: strategy.enabled };
+    return strategy;
+  }
+  findById(strategyId: string): TradingStrategy | null {
+    const expected = textValue(strategyId).toUpperCase();
+    return this.strategies.find((candidate) => candidate.id === expected) ?? null;
+  }
+  findAll(): TradingStrategy[] {
+    return [...this.strategies];
   }
 }
 
@@ -728,12 +714,10 @@ export async function loadMutationRepositories(context: MutationContext) {
     SHEET_DEFINITIONS.positions,
     SHEET_DEFINITIONS.journal,
     SHEET_DEFINITIONS.accounts,
-    SHEET_DEFINITIONS.strategies,
-    SHEET_DEFINITIONS.strategyVersions
+    SHEET_DEFINITIONS.strategies
   ]);
   const accounts = await readTradingAccounts(context.sheets);
   const strategies = await readStrategyRecords(context.sheets);
-  const strategyVersions = await readStrategyVersionsForMutations(context.sheets);
   const policies = await readRiskPolicies(context.sheets);
   return {
     watchlistRepository: await new CloudRunWatchlistRepository(context).load(),
@@ -743,7 +727,7 @@ export async function loadMutationRepositories(context: MutationContext) {
     capitalTransactionRepository: await new CloudRunCapitalTransactionRepository(context).load(),
     tradingAccountRepository: new LoadedTradingAccountRepository(accounts),
     tradingAccountRiskPolicyRepository: new LoadedTradingAccountRiskPolicyRepository(policies),
-    strategyRepository: new LoadedStrategyRepository(strategies, strategyVersions)
+    strategyRepository: new LoadedStrategyRepository(strategies)
   };
 }
 
@@ -757,30 +741,23 @@ async function readRiskPolicies(context: RequestScopedSheets): Promise<TradingAc
     }));
 }
 
-async function readStrategyVersionsForMutations(
-  context: RequestScopedSheets
-): Promise<TradingStrategyVersion[]> {
-  return readStrategyVersionRecords(context);
-}
-
 function watchlistEntryToRow(entry: WatchlistEntry, rowNumber: number): unknown[] {
   return [
     entry.id,
     entry.strategyId,
     entry.strategyName,
-    entry.strategyVersion,
     entry.signalDate,
     entry.ticker,
     entry.company,
     entry.sector,
     entry.addedAt,
     entry.signalPrice,
-    `=IFERROR(GOOGLEFINANCE(F${rowNumber},"price"),"")`,
-    `=IF(OR(J${rowNumber}="",K${rowNumber}=""),"",K${rowNumber}/J${rowNumber}-1)`,
+    `=IFERROR(GOOGLEFINANCE(E${rowNumber},"price"),"")`,
+    `=IF(OR(I${rowNumber}="",J${rowNumber}=""),"",J${rowNumber}/I${rowNumber}-1)`,
     entry.status,
     entry.setupStatus,
     entry.triggerLevel,
-    `=IF(OR(K${rowNumber}="",O${rowNumber}=""),"",K${rowNumber}/O${rowNumber}-1)`,
+    `=IF(OR(J${rowNumber}="",N${rowNumber}=""),"",J${rowNumber}/N${rowNumber}-1)`,
     entry.invalidationLevel,
     entry.earningsDate,
     entry.eventRisk,
@@ -795,7 +772,6 @@ function tradePlanToRow(tradePlan: TradePlan, rowNumber: number): unknown[] {
     tradePlan.watchlistId,
     tradePlan.strategyId,
     tradePlan.strategyName,
-    tradePlan.strategyVersion,
     tradePlan.signalDate,
     tradePlan.signalPrice,
     tradePlan.ticker,
@@ -809,14 +785,14 @@ function tradePlanToRow(tradePlan: TradePlan, rowNumber: number): unknown[] {
     tradePlan.entryPrice,
     tradePlan.stopPrice,
     tradePlan.targetPrice,
-    `=IF(OR(P${rowNumber}="",Q${rowNumber}=""),"",P${rowNumber}-Q${rowNumber})`,
-    `=IF(OR(P${rowNumber}="",R${rowNumber}=""),"",R${rowNumber}-P${rowNumber})`,
-    `=IF(OR(S${rowNumber}="",S${rowNumber}<=0,T${rowNumber}=""),"",T${rowNumber}/S${rowNumber})`,
+    `=IF(OR(O${rowNumber}="",P${rowNumber}=""),"",O${rowNumber}-P${rowNumber})`,
+    `=IF(OR(O${rowNumber}="",Q${rowNumber}=""),"",Q${rowNumber}-O${rowNumber})`,
+    `=IF(OR(R${rowNumber}="",R${rowNumber}<=0,S${rowNumber}=""),"",S${rowNumber}/R${rowNumber})`,
     tradePlan.accountEquity,
     tradePlan.riskPercent,
-    `=IF(OR(V${rowNumber}="",W${rowNumber}=""),"",V${rowNumber}*W${rowNumber})`,
-    `=IF(OR(X${rowNumber}="",S${rowNumber}="",S${rowNumber}<=0),"",FLOOR(X${rowNumber}/S${rowNumber},1))`,
-    `=IF(OR(Y${rowNumber}="",P${rowNumber}=""),"",Y${rowNumber}*P${rowNumber})`,
+    `=IF(OR(U${rowNumber}="",V${rowNumber}=""),"",U${rowNumber}*V${rowNumber})`,
+    `=IF(OR(W${rowNumber}="",R${rowNumber}="",R${rowNumber}<=0),"",FLOOR(W${rowNumber}/R${rowNumber},1))`,
+    `=IF(OR(X${rowNumber}="",O${rowNumber}=""),"",X${rowNumber}*O${rowNumber})`,
     tradePlan.status,
     tradePlan.notes,
     tradePlan.accountId
@@ -832,18 +808,18 @@ function tradePlanPlanningCells(
     tradePlan.entryPrice,
     tradePlan.stopPrice,
     tradePlan.targetPrice,
-    `=IF(OR(P${rowNumber}="",Q${rowNumber}=""),"",P${rowNumber}-Q${rowNumber})`,
-    `=IF(OR(P${rowNumber}="",R${rowNumber}=""),"",R${rowNumber}-P${rowNumber})`,
-    `=IF(OR(S${rowNumber}="",S${rowNumber}<=0,T${rowNumber}=""),"",T${rowNumber}/S${rowNumber})`,
+    `=IF(OR(O${rowNumber}="",P${rowNumber}=""),"",O${rowNumber}-P${rowNumber})`,
+    `=IF(OR(O${rowNumber}="",Q${rowNumber}=""),"",Q${rowNumber}-O${rowNumber})`,
+    `=IF(OR(R${rowNumber}="",R${rowNumber}<=0,S${rowNumber}=""),"",S${rowNumber}/R${rowNumber})`,
     tradePlan.accountEquity,
     tradePlan.riskPercent,
-    `=IF(OR(V${rowNumber}="",W${rowNumber}=""),"",V${rowNumber}*W${rowNumber})`,
+    `=IF(OR(U${rowNumber}="",V${rowNumber}=""),"",U${rowNumber}*V${rowNumber})`,
     positionSizeOverridden
       ? tradePlan.positionSize
-      : `=IF(OR(X${rowNumber}="",S${rowNumber}="",S${rowNumber}<=0),"",FLOOR(X${rowNumber}/S${rowNumber},1))`,
+      : `=IF(OR(W${rowNumber}="",R${rowNumber}="",R${rowNumber}<=0),"",FLOOR(W${rowNumber}/R${rowNumber},1))`,
     positionSizeOverridden
       ? tradePlan.positionValue
-      : `=IF(OR(Y${rowNumber}="",P${rowNumber}=""),"",Y${rowNumber}*P${rowNumber})`
+      : `=IF(OR(X${rowNumber}="",O${rowNumber}=""),"",X${rowNumber}*O${rowNumber})`
   ];
 }
 
@@ -854,7 +830,6 @@ function positionToRow(position: Position, rowNumber: number): unknown[] {
     position.watchlistId,
     position.strategyId,
     position.strategyName,
-    position.strategyVersion,
     position.ticker,
     position.openedAt,
     position.plannedEntry,
@@ -866,9 +841,9 @@ function positionToRow(position: Position, rowNumber: number): unknown[] {
     position.target,
     position.plannedMaxRisk,
     position.plannedRiskReward,
-    `=IFERROR(GOOGLEFINANCE(G${rowNumber},"price"),"")`,
-    `=IF(OR(R${rowNumber}="",J${rowNumber}="",L${rowNumber}=""),"",(R${rowNumber}-J${rowNumber})*L${rowNumber})`,
-    `=IF(OR(R${rowNumber}="",J${rowNumber}=""),"",R${rowNumber}/J${rowNumber}-1)`,
+    `=IFERROR(GOOGLEFINANCE(F${rowNumber},"price"),"")`,
+    `=IF(OR(Q${rowNumber}="",I${rowNumber}="",K${rowNumber}=""),"",(Q${rowNumber}-I${rowNumber})*K${rowNumber})`,
+    `=IF(OR(Q${rowNumber}="",I${rowNumber}=""),"",Q${rowNumber}/I${rowNumber}-1)`,
     position.status,
     position.closedAt,
     position.exitPrice,
@@ -886,7 +861,6 @@ function journalEntryToRow(entry: JournalEntry, rowNumber: number): unknown[] {
     entry.watchlistId,
     entry.strategyId,
     entry.strategyName,
-    entry.strategyVersion,
     entry.ticker,
     entry.openedAt,
     entry.closedAt,
@@ -899,9 +873,9 @@ function journalEntryToRow(entry: JournalEntry, rowNumber: number): unknown[] {
     entry.plannedMaxRisk,
     entry.plannedRiskReward,
     entry.realizedPnl,
-    `=IF(OR(L${rowNumber}="",M${rowNumber}=""),"",M${rowNumber}/L${rowNumber}-1)`,
-    `=IF(OR(Q${rowNumber}="",Q${rowNumber}<=0,S${rowNumber}=""),"",S${rowNumber}/Q${rowNumber})`,
-    `=IF(S${rowNumber}="","",IF(S${rowNumber}>0,"WIN",IF(S${rowNumber}<0,"LOSS","BREAKEVEN")))`,
+    `=IF(OR(K${rowNumber}="",L${rowNumber}=""),"",L${rowNumber}/K${rowNumber}-1)`,
+    `=IF(OR(P${rowNumber}="",P${rowNumber}<=0,R${rowNumber}=""),"",R${rowNumber}/P${rowNumber})`,
+    `=IF(R${rowNumber}="","",IF(R${rowNumber}>0,"WIN",IF(R${rowNumber}<0,"LOSS","BREAKEVEN")))`,
     entry.exitReason,
     entry.executionNotes,
     entry.lessonsLearned,
@@ -927,7 +901,6 @@ function signalSnapshotToRow(snapshot: SignalSnapshot): unknown[] {
     snapshot.detectedAt,
     snapshot.strategyId,
     snapshot.strategyName,
-    snapshot.strategyVersion,
     snapshot.ticker,
     ...MOMENTUM_BREAKOUT_SIGNAL_ATTRIBUTE_HEADERS.map((header) =>
       signalAttributeValue(snapshot, header)

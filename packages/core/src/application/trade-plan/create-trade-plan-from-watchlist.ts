@@ -157,14 +157,6 @@ export function createCreateTradePlanFromWatchlist({
     if (!strategyRepository.existsById(source.strategyId)) {
       throw new Error(`Stratégie inconnue : ${source.strategyId}`);
     }
-    if (
-      strategyRepository.existsVersion &&
-      !strategyRepository.existsVersion(source.strategyId, source.strategyVersion)
-    ) {
-      throw new Error(
-        `Version de stratégie inconnue : ${source.strategyId} ${source.strategyVersion}`
-      );
-    }
 
     requireTradePlanSetupLevels(source);
 

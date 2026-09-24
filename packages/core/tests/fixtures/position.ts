@@ -7,7 +7,6 @@ export const openPosition: Position = {
   watchlistId: 'WL-1',
   strategyId: 'S-1',
   strategyName: 'Momentum',
-  strategyVersion: 'V1',
   ticker: 'URNB',
   openedAt: new Date('2026-08-27T13:00:00Z'),
   plannedEntry: 10,

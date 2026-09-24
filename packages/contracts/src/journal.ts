@@ -8,7 +8,6 @@ export interface JournalItemDto {
   watchlistId: string;
   strategyId: string;
   strategyName: string;
-  strategyVersion: string;
   ticker: string;
   openedAt: string | null;
   closedAt: string | null;

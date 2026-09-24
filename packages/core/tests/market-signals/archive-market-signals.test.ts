@@ -6,8 +6,7 @@ const batch: MarketSignalBatch = {
   feed: {
     id: 'MOMENTUM_V1',
     strategyId: 'MOMENTUM_BREAKOUT',
-    strategyName: 'Momentum Breakout',
-    strategyVersion: 'V1'
+    strategyName: 'Momentum Breakout'
   },
   attributeNames: ['Ticker', 'Price'],
   signals: [
@@ -36,7 +35,6 @@ describe('archive market signals', () => {
       detectedAt: new Date('2026-08-28T12:00:00Z'),
       strategyId: 'MOMENTUM_BREAKOUT',
       strategyName: 'Momentum Breakout',
-      strategyVersion: 'V1',
       ticker: 'BOX',
       attributes: { Ticker: 'BOX', Price: 30 }
     });
@@ -45,8 +43,7 @@ describe('archive market signals', () => {
   it('keeps existing key and same-batch deduplication', () => {
     const repository = {
       ensureReady: vi.fn(),
-      loadExistingKeys: () =>
-        new Set([buildSignalKey('2026-08-28', 'MOMENTUM_BREAKOUT', 'V1', 'BOX')]),
+      loadExistingKeys: () => new Set([buildSignalKey('2026-08-28', 'MOMENTUM_BREAKOUT', 'BOX')]),
       append: vi.fn()
     };
     const archive = createArchiveMarketSignals({

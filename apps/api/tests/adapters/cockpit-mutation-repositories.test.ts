@@ -67,7 +67,6 @@ function tradePlanRows(overrides: Record<string, unknown> = {}) {
       'Watchlist ID': 'W1',
       'Strategy ID': 'MOMENTUM_BREAKOUT',
       Strategy: 'Momentum Breakout',
-      'Strategy Version': 'V1',
       'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
       Ticker: 'BOX',
       'Entry Price': 34,
@@ -98,7 +97,6 @@ function positionRows(overrides: Record<string, unknown> = {}) {
       'Watchlist ID': 'W1',
       'Strategy ID': 'MOMENTUM_BREAKOUT',
       Strategy: 'Momentum Breakout',
-      'Strategy Version': 'V1',
       Ticker: 'BOX',
       'Opened At': sheetsSerialDate('2026-08-28T14:30:00.000Z'),
       'Planned Entry': 34,
@@ -124,14 +122,12 @@ describe('Cloud Run Google Sheets API mutation repositories', () => {
       spreadsheetId: 'spreadsheet-id'
     });
 
-    writer.append("'Journal'!A:AA", [
-      ['J1', new Date('2026-08-28T16:04:00.000Z'), null, undefined]
-    ]);
+    writer.append("'Journal'!A:Z", [['J1', new Date('2026-08-28T16:04:00.000Z'), null, undefined]]);
     await writer.flush();
 
     expect(client.appendValues).toHaveBeenCalledWith({
       spreadsheetId: 'spreadsheet-id',
-      range: "'Journal'!A:AA",
+      range: "'Journal'!A:Z",
       values: [['J1', '2026-08-28 16:04:00', '', '']],
       valueInputOption: 'USER_ENTERED',
       insertDataOption: 'INSERT_ROWS'
@@ -146,7 +142,6 @@ describe('Cloud Run Google Sheets API mutation repositories', () => {
           'Watchlist ID': 'W1',
           'Strategy ID': 'MOMENTUM_BREAKOUT',
           Strategy: 'Momentum Breakout',
-          'Strategy Version': 'V1',
           Ticker: 'BOX',
           Status: 'WATCHING'
         })
@@ -197,20 +192,20 @@ describe('Cloud Run Google Sheets API mutation repositories', () => {
       spreadsheetId: 'spreadsheet-id',
       data: [
         {
-          range: "'Trade Plans'!P2:Z2",
+          range: "'Trade Plans'!O2:Y2",
           values: [
             [
               34,
               30,
               42,
-              '=IF(OR(P2="",Q2=""),"",P2-Q2)',
-              '=IF(OR(P2="",R2=""),"",R2-P2)',
-              '=IF(OR(S2="",S2<=0,T2=""),"",T2/S2)',
+              '=IF(OR(O2="",P2=""),"",O2-P2)',
+              '=IF(OR(O2="",Q2=""),"",Q2-O2)',
+              '=IF(OR(R2="",R2<=0,S2=""),"",S2/R2)',
               20_000,
               0.005,
-              '=IF(OR(V2="",W2=""),"",V2*W2)',
-              '=IF(OR(X2="",S2="",S2<=0),"",FLOOR(X2/S2,1))',
-              '=IF(OR(Y2="",P2=""),"",Y2*P2)'
+              '=IF(OR(U2="",V2=""),"",U2*V2)',
+              '=IF(OR(W2="",R2="",R2<=0),"",FLOOR(W2/R2,1))',
+              '=IF(OR(X2="",O2=""),"",X2*O2)'
             ]
           ]
         }
@@ -238,7 +233,7 @@ describe('Cloud Run Google Sheets API mutation repositories', () => {
       expect.objectContaining({
         data: [
           expect.objectContaining({
-            range: "'Trade Plans'!P2:Z2",
+            range: "'Trade Plans'!O2:Y2",
             values: [expect.arrayContaining([12, 408])]
           })
         ]
@@ -291,7 +286,6 @@ describe('Cloud Run Google Sheets API mutation repositories', () => {
       accountId: 'A1',
       strategyId: 'MOMENTUM_BREAKOUT',
       strategyName: 'Momentum Breakout',
-      strategyVersion: 'V1',
       ticker: 'BOX',
       openedAt: new Date('2026-08-28T14:30:00.000Z'),
       closedAt: new Date('2026-08-29T14:30:00.000Z'),
@@ -316,7 +310,7 @@ describe('Cloud Run Google Sheets API mutation repositories', () => {
 
     expect(client.appendValues).toHaveBeenCalledWith(
       expect.objectContaining({
-        range: "'Journal'!A:AA",
+        range: "'Journal'!A:Z",
         values: [
           expect.arrayContaining([
             'J-1',
@@ -325,7 +319,6 @@ describe('Cloud Run Google Sheets API mutation repositories', () => {
             'W1',
             'MOMENTUM_BREAKOUT',
             'Momentum Breakout',
-            'V1',
             'BOX',
             '2026-08-28 14:30:00',
             '2026-08-29 14:30:00',
@@ -338,9 +331,9 @@ describe('Cloud Run Google Sheets API mutation repositories', () => {
             100,
             2,
             50,
-            '=IF(OR(L2="",M2=""),"",M2/L2-1)',
-            '=IF(OR(Q2="",Q2<=0,S2=""),"",S2/Q2)',
-            '=IF(S2="","",IF(S2>0,"WIN",IF(S2<0,"LOSS","BREAKEVEN")))'
+            '=IF(OR(K2="",L2=""),"",L2/K2-1)',
+            '=IF(OR(P2="",P2<=0,R2=""),"",R2/P2)',
+            '=IF(R2="","",IF(R2>0,"WIN",IF(R2<0,"LOSS","BREAKEVEN")))'
           ])
         ],
         valueInputOption: 'USER_ENTERED'
@@ -357,8 +350,7 @@ describe('Cloud Run Google Sheets API mutation repositories', () => {
         feed: {
           id: 'MOMENTUM_BREAKOUT_V1',
           strategyId: 'MOMENTUM_BREAKOUT',
-          strategyName: 'Momentum Breakout',
-          strategyVersion: 'V1'
+          strategyName: 'Momentum Breakout'
         },
         attributeNames: ['Ticker', 'Company', 'Price'],
         signals: [
@@ -380,24 +372,8 @@ describe('Cloud Run Google Sheets API mutation repositories', () => {
       spreadsheetId: 'spreadsheet-id',
       range: "'Finviz Signals'!A1:Z",
       values: [
-        [
-          'Strategy ID',
-          'Strategy',
-          'Strategy Version',
-          'Refreshed At',
-          'Ticker',
-          'Company',
-          'Price'
-        ],
-        [
-          'MOMENTUM_BREAKOUT',
-          'Momentum Breakout',
-          'V1',
-          '2026-08-28 16:04:00',
-          'BOX',
-          'Box Inc',
-          34.98
-        ]
+        ['Strategy ID', 'Strategy', 'Refreshed At', 'Ticker', 'Company', 'Price'],
+        ['MOMENTUM_BREAKOUT', 'Momentum Breakout', '2026-08-28 16:04:00', 'BOX', 'Box Inc', 34.98]
       ],
       valueInputOption: 'USER_ENTERED'
     });
@@ -413,7 +389,6 @@ describe('Cloud Run Google Sheets API mutation repositories', () => {
         detectedAt: new Date('2026-08-28T16:04:00.000Z'),
         strategyId: 'MOMENTUM_BREAKOUT',
         strategyName: 'Momentum Breakout',
-        strategyVersion: 'V1',
         ticker: 'BOX',
         attributes: Object.fromEntries(
           FINVIZ_MOMENTUM_EXPORT_HEADERS.map((header) => [

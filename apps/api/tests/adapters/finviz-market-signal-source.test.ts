@@ -15,14 +15,12 @@ describe('CloudRunFinvizMarketSignalSource', () => {
           id: 'MOMENTUM_BREAKOUT_V1',
           strategyId: 'MOMENTUM_BREAKOUT',
           strategyName: 'Momentum Breakout',
-          strategyVersion: 'V1',
           query: 'v=151&f=momentum'
         },
         {
           id: 'QUALITY_DIP_V1',
           strategyId: 'QUALITY_DIP',
           strategyName: 'Quality Dip',
-          strategyVersion: 'V1',
           query: 'v=151&f=quality'
         }
       ],

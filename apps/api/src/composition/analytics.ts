@@ -17,7 +17,6 @@ export async function getAnalyticsForCloudRun(dependencies: {
   const accounts = await readTradingAccounts(dependencies.sheets);
   const accountId = accountScopeFromQuery(dependencies.context.query);
   const strategyId = stringQueryValue(dependencies.context.query, 'strategyId')?.toUpperCase();
-  const strategyVersion = stringQueryValue(dependencies.context.query, 'strategyVersion');
   if (accountId && !accounts.some((account) => account.id === accountId)) {
     throw new Error(`Trading Account introuvable : ${accountId}`);
   }
@@ -27,8 +26,7 @@ export async function getAnalyticsForCloudRun(dependencies: {
     accounts
   })({
     scope: accountId ? { type: 'ACCOUNT', accountId } : { type: 'ALL' },
-    strategyId: strategyId ?? undefined,
-    strategyVersion: strategyVersion ?? undefined
+    strategyId: strategyId ?? undefined
   });
 }
 

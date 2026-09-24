@@ -5,7 +5,6 @@ export interface WatchlistItemDto {
   sector: string | null;
   strategyId: string;
   strategyName: string;
-  strategyVersion: string;
   signalDate: string | null;
   signalPrice: number | null;
   currentPrice: number | null;

@@ -8,7 +8,6 @@ const plan: TradePlan = {
   watchlistId: 'WL-1',
   strategyId: 'TRIGGER',
   strategyName: 'Breakout',
-  strategyVersion: 'V1',
   signalDate: new Date('2026-08-27T04:00:00.000Z'),
   signalPrice: 33,
   ticker: 'BOX',
@@ -52,7 +51,6 @@ describe('get Trade Plans', () => {
           ticker: 'BOX',
           strategyId: 'TRIGGER',
           strategyName: 'Breakout',
-          strategyVersion: 'V1',
           signalDate: '2026-08-27T04:00:00.000Z',
           signalPrice: 33,
           referencePrice: 34,
@@ -143,23 +141,6 @@ describe('get Trade Plans', () => {
       { eligible: true, code: 'ELIGIBLE', message: null, reason: null, details: null },
       { eligible: true, code: 'ELIGIBLE', message: null, reason: null, details: null }
     ]);
-  });
-
-  it('marks execution ineligible when the historical Strategy Version is not configured', () => {
-    const result = createGetTradePlans({
-      reader: { findAll: () => [plan] },
-      strategyIds: () => ['TRIGGER'],
-      strategyVersions: () => [{ strategyId: 'TRIGGER', version: 'V2' }],
-      now: () => new Date('2026-08-28T16:00:00.000Z')
-    })();
-
-    expect(result.items[0].executionEligibility).toEqual({
-      eligible: false,
-      code: 'ACCOUNT_UNAVAILABLE',
-      message: 'Version de stratégie inconnue : TRIGGER V1',
-      details: null,
-      reason: 'Version de stratégie inconnue : TRIGGER V1'
-    });
   });
 
   it('preserves Strategy lookup failures as execution eligibility reasons', () => {

@@ -112,9 +112,7 @@ function PositionRow({ position, onOpen }: { position: PositionItemDto; onOpen: 
       <TableCell>{position.accountId || '—'}</TableCell>
       <TableCell>
         <span>{position.strategyName}</span>
-        <span className={tableDetailClassName}>
-          {position.strategyId} · v{position.strategyVersion}
-        </span>
+        <span className={tableDetailClassName}>{position.strategyId}</span>
       </TableCell>
       <TableCell>{displayDate(position.openedAt)}</TableCell>
       <TableCell className={numericCellClassName}>

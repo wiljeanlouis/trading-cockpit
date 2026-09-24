@@ -20,7 +20,6 @@ const watchlistEntry: WatchlistEntry = {
   id: ' WL-1 ',
   strategyId: ' momentum_breakout ',
   strategyName: ' Momentum Breakout ',
-  strategyVersion: ' V1 ',
   signalDate: '2026-08-27',
   ticker: ' urnb ',
   company: 'Urban Outfitters',
@@ -133,7 +132,6 @@ describe('Trade Plan domain', () => {
       watchlistId: 'WL-1',
       strategyId: 'MOMENTUM_BREAKOUT',
       strategyName: 'Momentum Breakout',
-      strategyVersion: 'V1',
       ticker: 'URNB',
       referencePrice: 56.5,
       createdAt,
@@ -158,7 +156,6 @@ describe('Trade Plan domain', () => {
     ['id', '', 'Watchlist ID absent.'],
     ['strategyId', '', 'Strategy ID absent.'],
     ['strategyName', '', 'Strategy absente.'],
-    ['strategyVersion', '', 'Strategy Version absente.'],
     ['ticker', '', 'Ticker absent.']
   ] as const)('rejects missing %s with the legacy message', (field, value, message) => {
     expect(() => normalizeTradePlanSource({ ...watchlistEntry, [field]: value })).toThrow(message);

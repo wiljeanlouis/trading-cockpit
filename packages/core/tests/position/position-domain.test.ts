@@ -16,7 +16,6 @@ const tradePlan: TradePlan = {
   watchlistId: ' WL-1 ',
   strategyId: ' momentum_breakout ',
   strategyName: ' Momentum Breakout ',
-  strategyVersion: ' V1 ',
   signalDate: '2026-08-27',
   signalPrice: 54.25,
   ticker: ' urnb ',
@@ -88,7 +87,6 @@ describe('Position domain', () => {
       watchlistId: 'WL-1',
       strategyId: 'MOMENTUM_BREAKOUT',
       strategyName: 'Momentum Breakout',
-      strategyVersion: 'V1',
       ticker: 'URNB',
       openedAt,
       plannedEntry: 57,
@@ -116,7 +114,6 @@ describe('Position domain', () => {
     ['watchlistId', '', 'Watchlist ID absent.'],
     ['strategyId', '', 'Strategy ID absent.'],
     ['strategyName', '', 'Strategy absente.'],
-    ['strategyVersion', '', 'Strategy Version absente.'],
     ['ticker', '', 'Ticker absent.']
   ] as const)('rejects missing %s with the legacy message', (field, value, message) => {
     expect(() => normalizePositionSource({ ...tradePlan, [field]: value })).toThrow(message);

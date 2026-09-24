@@ -1,7 +1,3 @@
-import {
-  normalizeTradingStrategyVersion,
-  type TradingStrategyVersion
-} from '@trading-cockpit/core/domain/trading-strategy';
 import { requireColumn } from '../sheet-headers';
 
 export interface SheetTradingStrategy {
@@ -28,26 +24,6 @@ export function mapTradingStrategyRow(
     enabled: requiredBoolean(row[enabledColumn], 'Enabled'),
     description: String(row[descriptionColumn] || '').trim()
   };
-}
-
-export function mapTradingStrategyVersionRow(
-  headers: readonly unknown[],
-  row: readonly unknown[]
-): TradingStrategyVersion {
-  const strategyIdColumn = requireColumn(headers, 'Strategy ID');
-  const versionColumn = requireColumn(headers, 'Version');
-  const enabledColumn = requireColumn(headers, 'Enabled');
-  const screenerCodeColumn = requireColumn(headers, 'Screener Code');
-  const screenerColumn = requireColumn(headers, 'Screener');
-  const screenerUrlColumn = requireColumn(headers, 'Finviz URL');
-  return normalizeTradingStrategyVersion({
-    strategyId: String(row[strategyIdColumn] || '').trim(),
-    version: String(row[versionColumn] || '').trim(),
-    enabled: requiredBoolean(row[enabledColumn], 'Enabled'),
-    screenerCode: String(row[screenerCodeColumn] || '').trim(),
-    screener: String(row[screenerColumn] || '').trim(),
-    screenerUrl: String(row[screenerUrlColumn] || '').trim()
-  });
 }
 
 export function hasMeaningfulStrategyTableRow(row: readonly unknown[]): boolean {

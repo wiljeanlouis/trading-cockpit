@@ -52,7 +52,6 @@ export interface NormalizedTradePlanSource {
   watchlistId: string;
   strategyId: string;
   strategyName: string;
-  strategyVersion: string;
   signalDate: TradePlanSnapshotValue;
   signalPrice: TradePlanSnapshotValue;
   ticker: string;
@@ -69,7 +68,6 @@ export interface TradePlan {
   watchlistId: string;
   strategyId: string;
   strategyName: string;
-  strategyVersion: string;
   signalDate: TradePlanSnapshotValue;
   signalPrice: TradePlanSnapshotValue;
   ticker: string;
@@ -309,14 +307,12 @@ export function evaluateExecutionEligibility(tradePlan: TradePlan): ExecutionEli
 /**
  * Extracts immutable workflow identity from a Watchlist candidate for Trade Plan creation.
  *
- * React may collect planning inputs later, but it must not rewrite Strategy ID/Version/Ticker
- * lineage.
+ * React may collect planning inputs later, but it must not rewrite Strategy ID/Ticker lineage.
  */
 export function normalizeTradePlanSource(source: WatchlistEntry): NormalizedTradePlanSource {
   const watchlistId = String(source.id || '').trim();
   const strategyId = normalizeStrategyId(source.strategyId);
   const strategyName = String(source.strategyName || '').trim();
-  const strategyVersion = String(source.strategyVersion || '').trim();
   const ticker = normalizeTicker(source.ticker);
 
   if (!watchlistId) {
@@ -331,10 +327,6 @@ export function normalizeTradePlanSource(source: WatchlistEntry): NormalizedTrad
     throw new Error('Strategy absente.');
   }
 
-  if (!strategyVersion) {
-    throw new Error('Strategy Version absente.');
-  }
-
   if (!source.ticker) {
     throw new Error('Ticker absent.');
   }
@@ -343,7 +335,6 @@ export function normalizeTradePlanSource(source: WatchlistEntry): NormalizedTrad
     watchlistId,
     strategyId,
     strategyName,
-    strategyVersion,
     signalDate: source.signalDate,
     signalPrice: source.signalPrice,
     ticker,
@@ -399,7 +390,6 @@ export function createTradePlan(
     watchlistId: source.watchlistId,
     strategyId: source.strategyId,
     strategyName: source.strategyName,
-    strategyVersion: source.strategyVersion,
     signalDate: source.signalDate,
     signalPrice: source.signalPrice,
     ticker: source.ticker,

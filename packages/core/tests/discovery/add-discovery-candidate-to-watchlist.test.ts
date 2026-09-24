@@ -8,7 +8,6 @@ const signal: SignalSnapshot = {
   detectedAt: new Date('2026-08-28T14:30:00.000Z'),
   strategyId: 'MOMENTUM_BREAKOUT',
   strategyName: 'Momentum Breakout',
-  strategyVersion: 'V1',
   ticker: 'BOX',
   attributes: {
     Company: 'Box Inc',
@@ -39,15 +38,13 @@ describe('add Discovery candidate to Watchlist', () => {
     const addDiscoveryCandidate = createAddDiscoveryCandidateToWatchlist({
       signalReader: {
         findAllSignals: () => [signal],
-        findAllStrategies: () => [],
-        findAllStrategyVersions: () => []
+        findAllStrategies: () => []
       },
       addCandidateToWatchlist
     });
 
     const result = addDiscoveryCandidate({
       strategyId: 'MOMENTUM_BREAKOUT',
-      strategyVersion: 'V1',
       signalDate: '2026-08-28',
       ticker: 'BOX'
     });
@@ -55,7 +52,6 @@ describe('add Discovery candidate to Watchlist', () => {
     expect(addCandidateToWatchlist).toHaveBeenCalledWith({
       strategyId: 'MOMENTUM_BREAKOUT',
       strategyName: 'Momentum Breakout',
-      strategyVersion: 'V1',
       signalDate: '2026-08-28',
       ticker: 'BOX',
       company: 'Box Inc',
@@ -74,8 +70,7 @@ describe('add Discovery candidate to Watchlist', () => {
     const addDiscoveryCandidate = createAddDiscoveryCandidateToWatchlist({
       signalReader: {
         findAllSignals: () => [],
-        findAllStrategies: () => [],
-        findAllStrategyVersions: () => []
+        findAllStrategies: () => []
       },
       addCandidateToWatchlist: vi.fn()
     });
@@ -83,7 +78,6 @@ describe('add Discovery candidate to Watchlist', () => {
     expect(() =>
       addDiscoveryCandidate({
         strategyId: 'MOMENTUM_BREAKOUT',
-        strategyVersion: 'V1',
         signalDate: '2026-08-28',
         ticker: 'BOX'
       })

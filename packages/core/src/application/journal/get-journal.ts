@@ -31,7 +31,6 @@ function toItem(entry: JournalEntry): JournalItemDto {
     watchlistId: entry.watchlistId,
     strategyId: entry.strategyId,
     strategyName: entry.strategyName,
-    strategyVersion: entry.strategyVersion,
     ticker: entry.ticker,
     openedAt: serializedDate(entry.openedAt),
     closedAt: serializedDate(entry.closedAt),

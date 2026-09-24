@@ -189,7 +189,7 @@ the owning `<sheet>-sheet.ts` module instead of duplicating physical table detai
 SpreadsheetApp readers/repositories for operational workflows are intentionally absent from
 `apps/sheets`; React operations use `apps/api` and Google Sheets API adapters. `apps/sheets` may keep
 runtime-specific readers only for setup/validation invariants that cannot be checked from headers
-alone, such as Strategy/Strategy Version consistency.
+alone, such as explicit Strategy enabled-state validation.
 
 ## 4. Domain and Application Model
 
@@ -198,16 +198,13 @@ alone, such as Strategy/Strategy Version consistency.
 Strategies are Trading Cockpit business concepts. Finviz is only the current market-signal provider.
 Momentum Breakout is the currently implemented discovery strategy.
 
-Strategy identity and strategy version configuration are separated:
+Strategies own stable strategy identity only:
 
-- `Strategies` owns stable strategy identity: Strategy ID, Name, Type, Enabled, Description.
-- `Strategy Versions` owns versioned discovery/screener configuration: Strategy ID, Version,
-  Enabled, Screener Code, Screener, Finviz URL.
+- `Strategies`: Strategy ID, Name, Type, Enabled, Description.
 
-`Strategy ID + Version` is the immutable historical configuration identity once it is persisted or
-referenced by Signals History, Watchlist, Trade Plans, Positions, or Journal.
-Only one Strategy Version may be enabled for a given Strategy ID, and a version may only be enabled
-when its parent Strategy is enabled.
+Finviz URL is not Strategy configuration. It is supplied explicitly when the user runs Discovery for
+one selected Strategy. Historical workflow records propagate Strategy ID and Strategy name, not a
+separate version concept.
 
 ### Accounts
 
@@ -217,7 +214,7 @@ future portfolio/query scope. New Trade Plans, Positions, and Journal entries ca
 ### Watchlist
 
 Watchlist contains human-selected actionable candidates. Active duplicate detection uses Strategy
-ID + Strategy Version + Ticker. Closed/rejected entries are terminal for duplicate purposes.
+ID + Ticker. Closed/rejected entries are terminal for duplicate purposes.
 Generic Watchlist/setup vocabulary is strategy-neutral: candidates carry signal context, setup,
 trigger level, invalidation level, event risk, and notes. Strategy-specific analysis terms such as
 “breakout” or strategy-specific scores must stay inside the strategy/provider capability that
@@ -249,9 +246,10 @@ plus Journal realized P&L.
 
 ### Discovery
 
-Discovery reads the latest strategy-version snapshots from Signals History for human selection
-before adding candidates to Watchlist. Provider refresh is explicit: normal manual usage refreshes
-the selected Strategy's active version, while `Refresh All` refreshes every eligible active feed.
+Discovery reads the latest Strategy snapshots from Signals History for human selection before adding
+candidates to Watchlist. Provider refresh is explicit and on-demand: the user selects one enabled
+Strategy, provides the Finviz export URL for that run, and runs Discovery. Navigation/filtering does
+not call Finviz automatically.
 
 ## 5. Google Sheets Data Contract V1
 
@@ -270,23 +268,22 @@ Non-empty incompatible schemas are invalid; the system does not silently guess h
 
 Canonical workbook inventory:
 
-| Sheet             | Classification | Contract                       | Role                                                               |
-| ----------------- | -------------: | ------------------------------ | ------------------------------------------------------------------ |
-| Watchlist         |           DATA | row 1 headers / row 2+ records | Authoritative selected candidates                                  |
-| Trade Plans       |           DATA | row 1 headers / row 2+ records | Authoritative planning workflow                                    |
-| Positions         |           DATA | row 1 headers / row 2+ records | Authoritative open/closed position records                         |
-| Journal           |           DATA | row 1 headers / row 2+ records | Authoritative closed-trade history                                 |
-| Capital Ledger    |           DATA | row 1 headers / row 2+ records | Append-only external capital history                               |
-| Signals History   |           DATA | row 1 headers / row 2+ records | Complete historical Finviz snapshots plus Trading Cockpit metadata |
-| Strategies        |         CONFIG | row 1 headers / row 2+ records | Stable strategy identity                                           |
-| Strategy Versions |         CONFIG | row 1 headers / row 2+ records | Versioned screener/provider configuration                          |
-| Accounts          |         CONFIG | row 1 headers / row 2+ records | Trading account identity and risk policy                           |
-| Finviz Signals    |      TECHNICAL | row 1 headers / row 2+ records | Current Finviz provider projection                                 |
-| Documentation     |  LEGACY_UNUSED | none                           | Retired Sheets help surface                                        |
-| Dashboard         |  LEGACY_UNUSED | none                           | Retired Sheets report; React Dashboard is the supported UI         |
-| Analytics         |  LEGACY_UNUSED | none                           | Retired Sheets report; React Analytics is the supported UI         |
-| Lists             |  LEGACY_UNUSED | none                           | Not recreated by canonical setup                                   |
-| Finviz Screener   |  LEGACY_UNUSED | none                           | Not recreated by canonical setup                                   |
+| Sheet           | Classification | Contract                       | Role                                                               |
+| --------------- | -------------: | ------------------------------ | ------------------------------------------------------------------ |
+| Watchlist       |           DATA | row 1 headers / row 2+ records | Authoritative selected candidates                                  |
+| Trade Plans     |           DATA | row 1 headers / row 2+ records | Authoritative planning workflow                                    |
+| Positions       |           DATA | row 1 headers / row 2+ records | Authoritative open/closed position records                         |
+| Journal         |           DATA | row 1 headers / row 2+ records | Authoritative closed-trade history                                 |
+| Capital Ledger  |           DATA | row 1 headers / row 2+ records | Append-only external capital history                               |
+| Signals History |           DATA | row 1 headers / row 2+ records | Complete historical Finviz snapshots plus Trading Cockpit metadata |
+| Strategies      |         CONFIG | row 1 headers / row 2+ records | Stable strategy identity                                           |
+| Accounts        |         CONFIG | row 1 headers / row 2+ records | Trading account identity and risk policy                           |
+| Finviz Signals  |      TECHNICAL | row 1 headers / row 2+ records | Current Finviz provider projection                                 |
+| Documentation   |  LEGACY_UNUSED | none                           | Retired Sheets help surface                                        |
+| Dashboard       |  LEGACY_UNUSED | none                           | Retired Sheets report; React Dashboard is the supported UI         |
+| Analytics       |  LEGACY_UNUSED | none                           | Retired Sheets report; React Analytics is the supported UI         |
+| Lists           |  LEGACY_UNUSED | none                           | Not recreated by canonical setup                                   |
+| Finviz Screener |  LEGACY_UNUSED | none                           | Not recreated by canonical setup                                   |
 
 Physical headers are authoritative in code, especially `packages/contracts` and sheet adapter schema
 modules. This document explains the contract for humans.
@@ -312,16 +309,16 @@ the current Finviz CSV export configured and consumed by Trading Cockpit, plus e
 Cockpit metadata:
 
 ```text
-Signal Date, Detected At, Strategy ID, Strategy, Strategy Version, Ticker
+Signal Date, Detected At, Strategy ID, Strategy, Ticker
 ```
 
 The business `Ticker` identifies the Trading Cockpit signal. The provider CSV field `Ticker` is
 archived as `Finviz Ticker` to avoid duplicate headers.
 
 Discovery is the operational candidate review workspace. It reads the latest archived signals by
-active Strategy Version from Signals History. Strategy-specific scoring can still exist behind a
-strategy capability, but a separate Momentum Ranking sheet is no longer part of the canonical
-workbook contract.
+enabled Strategy from Signals History. Strategy-specific scoring can still exist behind a strategy
+capability, but a separate Momentum Ranking sheet is no longer part of the canonical workbook
+contract.
 
 ## 7. Runtime and Deployment Architecture
 

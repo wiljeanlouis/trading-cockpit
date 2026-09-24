@@ -208,9 +208,7 @@ export function WatchlistDetail({
                 <div>
                   <dt>Strategy</dt>
                   <dd>{candidate.strategyName}</dd>
-                  <small>
-                    {candidate.strategyId} · v{candidate.strategyVersion}
-                  </small>
+                  <small>{candidate.strategyId}</small>
                 </div>
                 <div>
                   <dt>Watchlist status</dt>

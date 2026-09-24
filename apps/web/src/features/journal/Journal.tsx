@@ -106,9 +106,7 @@ function JournalRow({ entry, onOpen }: { entry: JournalItemDto; onOpen: () => vo
       <TableCell>{entry.accountId || '—'}</TableCell>
       <TableCell>
         <span>{entry.strategyName}</span>
-        <span className={tableDetailClassName}>
-          {entry.strategyId} · v{entry.strategyVersion}
-        </span>
+        <span className={tableDetailClassName}>{entry.strategyId}</span>
       </TableCell>
       <TableCell>{displayDate(entry.openedAt)}</TableCell>
       <TableCell>{displayDate(entry.closedAt)}</TableCell>

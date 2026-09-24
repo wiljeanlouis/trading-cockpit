@@ -14,7 +14,6 @@ const data: WatchlistDto = {
       sector: 'Technology',
       strategyId: 'MOMENTUM_BREAKOUT',
       strategyName: 'Momentum Breakout',
-      strategyVersion: '1.0',
       signalDate: '2026-08-27T04:00:00.000Z',
       signalPrice: 33.4,
       currentPrice: 34.82,

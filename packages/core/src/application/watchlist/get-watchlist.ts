@@ -34,7 +34,6 @@ export function createGetWatchlist({ reader, now }: GetWatchlistDependencies): G
       sector: nullableText(entry.sector),
       strategyId: entry.strategyId,
       strategyName: entry.strategyName,
-      strategyVersion: entry.strategyVersion,
       signalDate: serializedDate(entry.signalDate),
       signalPrice: nullableNumber(entry.signalPrice),
       currentPrice: nullableNumber(entry.currentPrice),

@@ -94,9 +94,7 @@ function WatchlistRow({ item, onOpen }: { item: WatchlistItemDto; onOpen: () => 
       </TableCell>
       <TableCell>
         <span>{item.strategyName}</span>
-        <span className={tableDetailClassName}>
-          {item.strategyId} · v{item.strategyVersion}
-        </span>
+        <span className={tableDetailClassName}>{item.strategyId}</span>
       </TableCell>
       <TableCell>{formattedDate(item.signalDate)}</TableCell>
       <TableCell>{item.sector ?? '—'}</TableCell>

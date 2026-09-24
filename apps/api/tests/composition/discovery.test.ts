@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildFinvizFeeds } from '../../src/composition/discovery';
+import { buildFinvizFeed } from '../../src/composition/discovery';
 
 const strategies = [
   {
@@ -25,91 +25,39 @@ const strategies = [
   }
 ] as const;
 
-const versions = [
-  {
-    strategyId: 'MOMENTUM_BREAKOUT',
-    version: 'V1',
-    enabled: true,
-    screenerCode: 'MOMENTUM_BREAKOUT_V1',
-    screener: 'FINVIZ',
-    screenerUrl: 'v=151&f=momentum'
-  },
-  {
-    strategyId: 'QUALITY_DIP',
-    version: 'V1',
-    enabled: true,
-    screenerCode: 'QUALITY_DIP_V1',
-    screener: 'FINVIZ',
-    screenerUrl: 'v=151&f=quality'
-  },
-  {
-    strategyId: 'QUALITY_DIP',
-    version: 'V0',
-    enabled: false,
-    screenerCode: 'QUALITY_DIP_V0',
-    screener: 'FINVIZ',
-    screenerUrl: 'v=151&f=old'
-  },
-  {
-    strategyId: 'DISABLED_STRATEGY',
-    version: 'V1',
-    enabled: true,
-    screenerCode: 'DISABLED_STRATEGY_V1',
-    screener: 'FINVIZ',
-    screenerUrl: 'v=151&f=disabled'
-  }
-] as const;
-
 describe('Discovery signal refresh composition', () => {
-  it('builds only the selected strategy Finviz feed', () => {
-    expect(buildFinvizFeeds({ strategies, versions, strategyId: 'quality_dip' })).toEqual([
-      {
-        id: 'QUALITY_DIP_V1',
-        strategyId: 'QUALITY_DIP',
-        strategyName: 'Quality Dip',
-        strategyVersion: 'V1',
-        query: 'v=151&f=quality'
-      }
-    ]);
-  });
-
-  it('builds all enabled Finviz feeds without disabled parent strategies', () => {
-    expect(buildFinvizFeeds({ strategies, versions }).map((feed) => feed.id)).toEqual([
-      'MOMENTUM_BREAKOUT_V1',
-      'QUALITY_DIP_V1'
-    ]);
-  });
-
-  it('ignores enabled versions when their parent Strategy is disabled during refresh all', () => {
+  it('builds one Finviz feed from the selected Strategy and runtime URL', () => {
     expect(
-      buildFinvizFeeds({
-        strategies: strategies.map((strategy) =>
-          strategy.id === 'QUALITY_DIP' ? { ...strategy, enabled: false } : strategy
-        ),
-        versions
-      }).map((feed) => feed.id)
-    ).toEqual(['MOMENTUM_BREAKOUT_V1']);
+      buildFinvizFeed({
+        strategies,
+        strategyId: 'quality_dip',
+        finvizUrl: 'https://elite.finviz.com/export/screener?v=151&f=quality'
+      })
+    ).toEqual({
+      id: 'DISCOVERY_QUALITY_DIP',
+      strategyId: 'QUALITY_DIP',
+      strategyName: 'Quality Dip',
+      query: 'https://elite.finviz.com/export/screener?v=151&f=quality'
+    });
   });
 
   it('rejects an unknown selected strategy', () => {
-    expect(() => buildFinvizFeeds({ strategies, versions, strategyId: 'UNKNOWN' })).toThrow(
-      'Stratégie inconnue : UNKNOWN'
-    );
+    expect(() =>
+      buildFinvizFeed({
+        strategies,
+        strategyId: 'UNKNOWN',
+        finvizUrl: 'https://elite.finviz.com/export/screener?v=151'
+      })
+    ).toThrow('Stratégie inconnue : UNKNOWN');
   });
 
   it('rejects a disabled selected strategy before provider calls are configured', () => {
     expect(() =>
-      buildFinvizFeeds({ strategies, versions, strategyId: 'DISABLED_STRATEGY' })
-    ).toThrow('La stratégie DISABLED_STRATEGY est désactivée.');
-  });
-
-  it('rejects a selected strategy without an active version', () => {
-    expect(() =>
-      buildFinvizFeeds({
+      buildFinvizFeed({
         strategies,
-        versions: versions.filter((version) => version.strategyId !== 'QUALITY_DIP'),
-        strategyId: 'QUALITY_DIP'
+        strategyId: 'DISABLED_STRATEGY',
+        finvizUrl: 'https://elite.finviz.com/export/screener?v=151'
       })
-    ).toThrow('Aucune version active pour QUALITY_DIP.');
+    ).toThrow('La stratégie DISABLED_STRATEGY est désactivée.');
   });
 });

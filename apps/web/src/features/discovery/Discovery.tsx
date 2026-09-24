@@ -141,22 +141,15 @@ function statusTone(status: string | null): 'positive' | 'muted' | 'planned' | '
 }
 
 function candidateKey(candidate: DiscoveryCandidateDto): string {
-  return [
-    candidate.strategyId,
-    candidate.strategyVersion,
-    candidate.signalDate ?? '',
-    candidate.ticker
-  ].join('::');
+  return [candidate.strategyId, candidate.signalDate ?? '', candidate.ticker].join('::');
 }
 
-function strategyKey(candidate: Pick<DiscoveryCandidateDto, 'strategyId' | 'strategyVersion'>) {
-  return `${candidate.strategyId}::${candidate.strategyVersion}`;
+function strategyKey(candidate: Pick<DiscoveryCandidateDto, 'strategyId'>) {
+  return candidate.strategyId;
 }
 
-function strategyLabel(
-  candidate: Pick<DiscoveryCandidateDto, 'strategyName' | 'strategyVersion'>
-): string {
-  return `${candidate.strategyName} ${candidate.strategyVersion}`.trim();
+function strategyLabel(candidate: Pick<DiscoveryCandidateDto, 'strategyName'>): string {
+  return candidate.strategyName;
 }
 
 function resultMessage(result: AddDiscoveryCandidateToWatchlistResponse): string {
@@ -188,9 +181,7 @@ function DiscoveryRow({
       </TableCell>
       <TableCell>
         <span>{candidate.strategyName}</span>
-        <span className={tableDetailClassName}>
-          {candidate.strategyId} · {candidate.strategyVersion}
-        </span>
+        <span className={tableDetailClassName}>{candidate.strategyId}</span>
       </TableCell>
       <TableCell>{displayDate(candidate.signalDate)}</TableCell>
       <TableCell>{candidate.sector ?? '—'}</TableCell>
@@ -292,16 +283,14 @@ function DiscoveryCandidateDetail({
                 <span aria-hidden="true">01</span>
                 <div>
                   <h3>Candidate</h3>
-                  <p>Latest archived screener snapshot for the selected Strategy Version</p>
+                  <p>Latest archived screener snapshot for the selected Strategy</p>
                 </div>
               </header>
               <FactGrid columns={2}>
                 <div>
                   <dt>Strategy</dt>
                   <dd>{candidate.strategyName}</dd>
-                  <small>
-                    {candidate.strategyId} · {candidate.strategyVersion}
-                  </small>
+                  <small>{candidate.strategyId}</small>
                 </div>
                 <div>
                   <dt>Watchlist state</dt>
@@ -418,8 +407,9 @@ export function Discovery({ gateway }: DiscoveryProps) {
     error: null
   });
   const [selectedStrategy, setSelectedStrategy] = useState<string>('ALL');
+  const [finvizUrl, setFinvizUrl] = useState('');
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [refreshingSignals, setRefreshingSignals] = useState(false);
+  const [runningDiscovery, setRunningDiscovery] = useState(false);
   const [addingKey, setAddingKey] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -448,7 +438,7 @@ export function Discovery({ gateway }: DiscoveryProps) {
     return items.filter((candidate) => strategyKey(candidate) === selectedStrategy);
   }, [selectedStrategy, state.data?.items]);
 
-  const selectedStrategyId = selectedStrategy === 'ALL' ? null : selectedStrategy.split('::')[0];
+  const selectedStrategyId = selectedStrategy === 'ALL' ? null : selectedStrategy;
 
   const sorters = useMemo<Record<DiscoverySortKey, typeof DISCOVERY_SORTERS.ticker>>(
     () => DISCOVERY_SORTERS,
@@ -471,44 +461,23 @@ export function Discovery({ gateway }: DiscoveryProps) {
     state.data?.items.find((candidate) => candidateKey(candidate) === selectedKey) ?? null;
 
   /**
-   * Refreshes only the currently selected Strategy ID; backend resolves the active version/feed.
+   * Runs Discovery for the selected Strategy using the Finviz URL supplied for this run.
    */
-  async function refreshSignals() {
-    if (refreshingSignals || !selectedStrategyId) return;
-    setRefreshingSignals(true);
+  async function runDiscovery() {
+    if (runningDiscovery || !selectedStrategyId) return;
+    setRunningDiscovery(true);
     setFeedback(null);
     setActionError(null);
     try {
-      const result = await gateway.refreshSignals({ strategyId: selectedStrategyId });
+      const result = await gateway.runDiscovery({ strategyId: selectedStrategyId, finvizUrl });
       setFeedback(
-        `${result.archived} signal(s) refreshed for ${selectedStrategyId}. Discovery now reads the latest snapshot.`
+        `${result.archived} signal(s) archived for ${result.strategyId}. Discovery now reads the latest snapshot.`
       );
       await load();
     } catch (error) {
       setActionError(error instanceof Error ? error.message : String(error));
     } finally {
-      setRefreshingSignals(false);
-    }
-  }
-
-  /**
-   * Runs the explicit global refresh path for all eligible active strategies.
-   */
-  async function refreshAllSignals() {
-    if (refreshingSignals) return;
-    setRefreshingSignals(true);
-    setFeedback(null);
-    setActionError(null);
-    try {
-      const result = await gateway.refreshAllSignals();
-      setFeedback(
-        `${result.archived} signal(s) refreshed across all active strategies. Discovery now reads the latest snapshots.`
-      );
-      await load();
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : String(error));
-    } finally {
-      setRefreshingSignals(false);
+      setRunningDiscovery(false);
     }
   }
 
@@ -525,7 +494,6 @@ export function Discovery({ gateway }: DiscoveryProps) {
     try {
       const result = await gateway.addDiscoveryCandidateToWatchlist({
         strategyId: candidate.strategyId,
-        strategyVersion: candidate.strategyVersion,
         signalDate: candidate.signalDate,
         ticker: candidate.ticker
       });
@@ -552,24 +520,16 @@ export function Discovery({ gateway }: DiscoveryProps) {
         <PageActions>
           {state.data && <UpdatedAt>Updated {displayTimestamp(state.data.generatedAt)}</UpdatedAt>}
           <Button
-            onClick={() => void refreshSignals()}
-            disabled={state.loading || refreshingSignals || !selectedStrategyId}
+            onClick={() => void runDiscovery()}
+            disabled={state.loading || runningDiscovery || !selectedStrategyId || !finvizUrl.trim()}
             title={
               selectedStrategyId
-                ? 'Refresh the selected strategy signals'
-                : 'Select one strategy to refresh its signals'
+                ? 'Run Discovery for the selected strategy'
+                : 'Select one strategy before running Discovery'
             }
           >
             <span aria-hidden="true">↻</span>
-            {refreshingSignals ? 'Refreshing signals' : 'Refresh Signals'}
-          </Button>
-          <Button
-            variant="retry"
-            onClick={() => void refreshAllSignals()}
-            disabled={state.loading || refreshingSignals}
-          >
-            <span aria-hidden="true">↻</span>
-            {refreshingSignals ? 'Refreshing all' : 'Refresh All'}
+            {runningDiscovery ? 'Running Discovery' : 'Run Discovery'}
           </Button>
         </PageActions>
       </PageHeader>
@@ -590,14 +550,24 @@ export function Discovery({ gateway }: DiscoveryProps) {
           >
             <option value="ALL">All active strategies</option>
             {(state.data?.strategies ?? []).map((strategy) => (
-              <option
-                key={`${strategy.strategyId}::${strategy.strategyVersion}`}
-                value={`${strategy.strategyId}::${strategy.strategyVersion}`}
-              >
-                {strategy.strategyName} · {strategy.strategyVersion}
+              <option key={strategy.strategyId} value={strategy.strategyId}>
+                {strategy.strategyName}
               </option>
             ))}
           </select>
+          <label
+            htmlFor="discovery-finviz-url"
+            className="text-[10px] font-extrabold tracking-[0.14em] text-[#64758d] uppercase"
+          >
+            Finviz URL
+          </label>
+          <input
+            id="discovery-finviz-url"
+            value={finvizUrl}
+            onChange={(event) => setFinvizUrl(event.target.value)}
+            placeholder="https://elite.finviz.com/export/screener?..."
+            className="min-w-[360px] flex-1 rounded-[10px] border border-[#244059] bg-[#071421] px-3 py-2 text-sm text-[#d6e5f4] outline-none placeholder:text-[#64758d] focus:border-[#4ee1a0] focus:ring-2 focus:ring-[rgba(78,225,160,0.15)]"
+          />
         </div>
       </DataPanel>
 

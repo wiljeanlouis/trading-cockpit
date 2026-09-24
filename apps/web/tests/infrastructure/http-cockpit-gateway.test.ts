@@ -31,19 +31,20 @@ describe('HttpCockpitGateway', () => {
     ['getTradingAccounts', 'GET', '/api/admin/trading-accounts', undefined],
     ['validateStrategies', 'GET', '/api/admin/strategies/validation', undefined],
     [
-      'refreshSignals',
+      'runDiscovery',
       'POST',
-      '/api/discovery/signals/refresh',
-      { strategyId: 'MOMENTUM_BREAKOUT' }
+      '/api/discovery/run',
+      {
+        strategyId: 'MOMENTUM_BREAKOUT',
+        finvizUrl: 'https://elite.finviz.com/export/screener?v=151'
+      }
     ],
-    ['refreshAllSignals', 'POST', '/api/discovery/signals/refresh-all', undefined],
     [
       'addDiscoveryCandidateToWatchlist',
       'POST',
       '/api/discovery/candidates/watchlist',
       {
         strategyId: 'MOMENTUM_BREAKOUT',
-        strategyVersion: 'V1',
         signalDate: '2026-08-28',
         ticker: 'BOX'
       }
@@ -71,29 +72,6 @@ describe('HttpCockpitGateway', () => {
         type: 'MEAN_REVERSION',
         enabled: true,
         description: 'Quality pullback setup'
-      }
-    ],
-    [
-      'createStrategyVersion',
-      'POST',
-      '/api/admin/strategy-versions',
-      {
-        strategyId: 'QUALITY_DIP',
-        version: 'V1',
-        enabled: false,
-        screenerCode: 'QUALITY_DIP_V1',
-        screener: 'FINVIZ',
-        finvizUrl: 'https://elite.finviz.com/export/screener?v=151'
-      }
-    ],
-    [
-      'updateStrategyVersion',
-      'PATCH',
-      '/api/admin/strategies/QUALITY_DIP/versions/V1',
-      {
-        strategyId: 'QUALITY_DIP',
-        version: 'V1',
-        enabled: true
       }
     ],
     ['setupTradingAccounts', 'POST', '/api/admin/trading-accounts/setup', undefined],
@@ -146,7 +124,7 @@ describe('HttpCockpitGateway', () => {
     async (operation, method, path, argument) => {
       const fetchImpl = vi.fn(async () =>
         jsonResponse(
-          operation === 'refreshSignals' || operation === 'refreshAllSignals'
+          operation === 'runDiscovery'
             ? { archived: 12 }
             : operation === 'checkFinvizAuth'
               ? { configured: true }

@@ -8,8 +8,7 @@ import {
 import {
   FINVIZ_MOMENTUM_EXPORT_HEADERS,
   SIGNALS_HISTORY_HEADERS,
-  STRATEGY_HEADERS,
-  STRATEGY_VERSION_HEADERS
+  STRATEGY_HEADERS
 } from '@trading-cockpit/contracts';
 import { TRADE_PLAN_HEADERS } from '../../src/adapters/outbound/google-sheets/trade-plan/trade-plan-mapper';
 
@@ -220,7 +219,6 @@ describe('Trading Cockpit workbook setup and validation', () => {
     expect(spreadsheet.getSheetByName('Finviz Signals')?.values[0]).toEqual([
       'Strategy ID',
       'Strategy',
-      'Strategy Version',
       'Refreshed At',
       ...FINVIZ_MOMENTUM_EXPORT_HEADERS
     ]);
@@ -232,7 +230,7 @@ describe('Trading Cockpit workbook setup and validation', () => {
     expect(SIGNALS_HISTORY_HEADERS).toContain('Performance (Week)');
     expect(SIGNALS_HISTORY_HEADERS).toContain('Earnings Date');
     expect(SIGNALS_HISTORY_HEADERS).not.toContain('Sales');
-    expect(SIGNALS_HISTORY_HEADERS.length).toBe(6 + FINVIZ_MOMENTUM_EXPORT_HEADERS.length);
+    expect(SIGNALS_HISTORY_HEADERS.length).toBe(5 + FINVIZ_MOMENTUM_EXPORT_HEADERS.length);
     expect(spreadsheet.getSheetByName('Signals History')?.values[1]).toBeUndefined();
     expect(spreadsheet.getSheetByName('Dashboard')).toBeNull();
     expect(spreadsheet.getSheetByName('Analytics')).toBeNull();
@@ -240,12 +238,9 @@ describe('Trading Cockpit workbook setup and validation', () => {
       ['Account ID', 'Name', 'Base Currency', 'Risk % Per Trade']
     ]);
     expect(spreadsheet.getSheetByName('Strategies')?.values).toEqual([[...STRATEGY_HEADERS]]);
-    expect(spreadsheet.getSheetByName('Strategy Versions')?.values).toEqual([
-      [...STRATEGY_VERSION_HEADERS]
-    ]);
+    expect(spreadsheet.getSheetByName('Strategy Versions')).toBeNull();
     expect(spreadsheet.getSheetByName(REMOVED_MOMENTUM_SCORING_REFERENCE_SHEET)).toBeNull();
     expect(spreadsheet.getSheetByName('Strategies')?.checkboxRanges).toEqual([]);
-    expect(spreadsheet.getSheetByName('Strategy Versions')?.checkboxRanges).toEqual([]);
     expect(initialization.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ sheetName: 'Accounts', status: 'MANUAL_CONFIGURATION' }),
@@ -322,7 +317,7 @@ describe('Trading Cockpit workbook setup and validation', () => {
 
   it('rejects Signals History when canonical signal attribute headers are missing', () => {
     const signalsHistory = new FakeSheet('Signals History', [
-      ['Signal Date', 'Detected At', 'Strategy ID', 'Strategy', 'Strategy Version', 'Ticker']
+      ['Signal Date', 'Detected At', 'Strategy ID', 'Strategy', 'Ticker']
     ]);
     const tradePlans = new FakeSheet('Trade Plans', [[...TRADE_PLAN_HEADERS, 'Unexpected']]);
     const spreadsheet = new FakeSpreadsheet([signalsHistory, tradePlans]);

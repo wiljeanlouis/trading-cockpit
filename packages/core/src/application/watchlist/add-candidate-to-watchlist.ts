@@ -34,7 +34,7 @@ export type AddCandidateToWatchlist = (
 ) => AddCandidateToWatchlistResult;
 
 /**
- * Adds a strategy signal to the active Watchlist once per Strategy ID + Version + Ticker. The
+ * Adds a strategy signal to the active Watchlist once per Strategy ID + Ticker. The
  * repository remains responsible for persistence, while the use case owns identity validation and
  * idempotent duplicate handling.
  */
@@ -48,14 +48,6 @@ export function createAddCandidateToWatchlist({
 
     if (!strategyRepository.existsById(candidate.strategyId)) {
       throw new Error(`Stratégie inconnue : ${candidate.strategyId}`);
-    }
-    if (
-      strategyRepository.existsVersion &&
-      !strategyRepository.existsVersion(candidate.strategyId, candidate.strategyVersion)
-    ) {
-      throw new Error(
-        `Version de stratégie inconnue : ${candidate.strategyId} ${candidate.strategyVersion}`
-      );
     }
 
     const identity = watchlistIdentityOf(candidate);

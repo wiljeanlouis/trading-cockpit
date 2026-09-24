@@ -7,7 +7,6 @@ import type {
   ClosePositionResponse,
   CreateFundedTradingAccountRequest,
   CreateStrategyRequest,
-  CreateStrategyVersionRequest,
   CreateTradingAccountRequest,
   CreateTradePlanRequest,
   CreateTradePlanResponse,
@@ -17,8 +16,8 @@ import type {
   ExecuteTradePlanResponse,
   JournalDto,
   DiscoveryDto,
-  RefreshSignalsRequest,
-  RefreshSignalsResponse,
+  RunDiscoveryRequest,
+  RunDiscoveryResponse,
   OpenPositionsDto,
   RecordCapitalTransactionRequest,
   RecordCapitalTransactionResponse,
@@ -26,7 +25,6 @@ import type {
   TradingAccountsDto,
   TradingAccountMutationResponse,
   UpdateStrategyRequest,
-  UpdateStrategyVersionRequest,
   UpdateTradingAccountRequest,
   UpdateTradePlanPlanningRequest,
   UpdateTradePlanPlanningResponse,
@@ -84,12 +82,8 @@ export class HttpCockpitGateway implements CockpitGateway {
     return this.get('/api/discovery/candidates');
   }
 
-  refreshSignals(request: RefreshSignalsRequest): Promise<RefreshSignalsResponse> {
-    return this.post('/api/discovery/signals/refresh', request);
-  }
-
-  refreshAllSignals(): Promise<RefreshSignalsResponse> {
-    return this.post('/api/discovery/signals/refresh-all');
+  runDiscovery(request: RunDiscoveryRequest): Promise<RunDiscoveryResponse> {
+    return this.post('/api/discovery/run', request);
   }
 
   addDiscoveryCandidateToWatchlist(
@@ -124,17 +118,6 @@ export class HttpCockpitGateway implements CockpitGateway {
 
   async updateStrategy(request: UpdateStrategyRequest): Promise<void> {
     await this.patch(`/api/admin/strategies/${encodeURIComponent(request.strategyId)}`, request);
-  }
-
-  async createStrategyVersion(request: CreateStrategyVersionRequest): Promise<void> {
-    await this.post('/api/admin/strategy-versions', request);
-  }
-
-  async updateStrategyVersion(request: UpdateStrategyVersionRequest): Promise<void> {
-    await this.patch(
-      `/api/admin/strategies/${encodeURIComponent(request.strategyId)}/versions/${encodeURIComponent(request.version)}`,
-      request
-    );
   }
 
   async setupTradingAccounts(): Promise<void> {

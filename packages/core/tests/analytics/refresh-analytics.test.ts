@@ -38,19 +38,6 @@ function analyticsDto(): AnalyticsDto {
         averageR: 1.5,
         totalR: 1.5
       }
-    ],
-    byStrategyVersion: [
-      {
-        strategyId: 'MOMENTUM_BREAKOUT',
-        strategy: 'Momentum Breakout',
-        version: 'V1',
-        trades: 1,
-        wins: 1,
-        winRate: 1,
-        totalPnl: 150,
-        averageR: 1.5,
-        totalR: 1.5
-      }
     ]
   };
 }

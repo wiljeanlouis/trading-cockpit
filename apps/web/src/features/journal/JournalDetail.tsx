@@ -134,9 +134,7 @@ export function JournalDetail({ entry, onClose }: JournalDetailProps) {
               <div>
                 <dt>Strategy</dt>
                 <dd>{entry.strategyName}</dd>
-                <small>
-                  {entry.strategyId} · v{entry.strategyVersion}
-                </small>
+                <small>{entry.strategyId}</small>
               </div>
               <div>
                 <dt>Account</dt>

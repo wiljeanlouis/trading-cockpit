@@ -11,7 +11,6 @@ import {
   LoadedWatchlistReader,
   readSignalSnapshots,
   readStrategyRecords,
-  readStrategyVersionRecords,
   readWatchlistEntries,
   SHEET_DEFINITIONS
 } from '../adapters/outbound/google-sheets-api/cockpit-query-readers';
@@ -43,23 +42,19 @@ export async function addDiscoveryCandidateToWatchlistForCloudRun({
   await mutationContext.sheets.batchLoad([
     SHEET_DEFINITIONS.signalsHistory,
     SHEET_DEFINITIONS.watchlist,
-    SHEET_DEFINITIONS.strategies,
-    SHEET_DEFINITIONS.strategyVersions
+    SHEET_DEFINITIONS.strategies
   ]);
   const watchlistRepository = await new CloudRunWatchlistRepository(mutationContext).load();
+  const strategies = await readStrategyRecords(mutationContext.sheets);
   const addCandidate = createAddCandidateToWatchlist({
     watchlistRepository,
-    strategyRepository: new LoadedStrategyRepository(
-      await readStrategyRecords(mutationContext.sheets),
-      await readStrategyVersionRecords(mutationContext.sheets)
-    ),
+    strategyRepository: new LoadedStrategyRepository(strategies),
     runtime: new NodeRuntime(mutationContext.now)
   });
   const addDiscoveryCandidate = createAddDiscoveryCandidateToWatchlist({
     signalReader: new LoadedDiscoverySignalReader(
       await readSignalSnapshots(mutationContext.sheets),
-      await readStrategyRecords(mutationContext.sheets),
-      await readStrategyVersionRecords(mutationContext.sheets)
+      strategies
     ),
     addCandidateToWatchlist: addCandidate
   });

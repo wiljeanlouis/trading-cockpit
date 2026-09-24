@@ -12,17 +12,7 @@ const overview: AdminOverviewDto = {
       name: 'Momentum Breakout',
       type: 'MOMENTUM',
       enabled: true,
-      description: 'Momentum breakout near 52-week high',
-      versions: [
-        {
-          strategyId: 'MOMENTUM_BREAKOUT',
-          version: 'V1',
-          enabled: true,
-          screenerCode: 'MOMENTUM_BREAKOUT_V1',
-          screener: 'FINVIZ',
-          finvizUrl: 'https://elite.finviz.com/export/screener?v=151'
-        }
-      ]
+      description: 'Momentum breakout near 52-week high'
     }
   ],
   accounts: [

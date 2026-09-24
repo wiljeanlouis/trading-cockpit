@@ -159,7 +159,6 @@ describe('reconcile CLOSED Position', () => {
     ['watchlistId', ''],
     ['strategyId', ''],
     ['strategyName', ''],
-    ['strategyVersion', ''],
     ['ticker', ''],
     ['closedAt', ''],
     ['actualEntry', ''],

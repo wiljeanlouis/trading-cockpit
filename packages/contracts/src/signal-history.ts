@@ -3,7 +3,6 @@ export const SIGNAL_HISTORY_BASE_HEADERS = [
   'Detected At',
   'Strategy ID',
   'Strategy',
-  'Strategy Version',
   'Ticker'
 ] as const;
 

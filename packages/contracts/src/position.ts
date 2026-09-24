@@ -6,7 +6,6 @@ export interface PositionItemDto {
   ticker: string;
   strategyId: string;
   strategyName: string;
-  strategyVersion: string;
   openedAt: string | null;
   plannedEntry: number | null;
   actualEntry: number | null;

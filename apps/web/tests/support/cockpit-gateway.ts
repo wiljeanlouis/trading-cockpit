@@ -5,8 +5,8 @@ import type {
   AnalyticsDto,
   CreateFundedTradingAccountRequest,
   DashboardDto,
-  RefreshSignalsRequest,
-  RefreshSignalsResponse,
+  RunDiscoveryRequest,
+  RunDiscoveryResponse,
   RecordCapitalTransactionRequest,
   RecordCapitalTransactionResponse,
   CreateTradingAccountRequest,
@@ -40,7 +40,6 @@ const EMPTY_ANALYTICS: AnalyticsDto = {
     bestR: 0
   },
   byStrategy: [],
-  byStrategyVersion: [],
   byAccount: []
 };
 
@@ -122,17 +121,10 @@ export function createGatewayStub(overrides: Partial<CockpitGateway> = {}): Cock
       strategies: [],
       items: []
     })),
-    refreshSignals: vi.fn(
-      async (_request: RefreshSignalsRequest): Promise<RefreshSignalsResponse> => ({
-        scope: 'STRATEGY',
-        archived: 0,
-        refreshed: []
-      })
-    ),
-    refreshAllSignals: vi.fn(async (): Promise<RefreshSignalsResponse> => ({
-      scope: 'ALL',
+    runDiscovery: vi.fn(async (_request: RunDiscoveryRequest): Promise<RunDiscoveryResponse> => ({
+      strategyId: '',
       archived: 0,
-      refreshed: []
+      signalCount: 0
     })),
     addDiscoveryCandidateToWatchlist: vi.fn(
       async (_request: AddDiscoveryCandidateToWatchlistRequest) => ({
@@ -149,8 +141,6 @@ export function createGatewayStub(overrides: Partial<CockpitGateway> = {}): Cock
     validateStrategies: vi.fn(async () => true),
     createStrategy: vi.fn(async () => {}),
     updateStrategy: vi.fn(async () => {}),
-    createStrategyVersion: vi.fn(async () => {}),
-    updateStrategyVersion: vi.fn(async () => {}),
     setupTradingAccounts: vi.fn(async () => {}),
     createTradingAccount: vi.fn(
       async (request: CreateTradingAccountRequest): Promise<TradingAccountMutationResponse> => ({

@@ -42,7 +42,6 @@ export interface TradePlanItemDto {
   ticker: string;
   strategyId: string;
   strategyName: string;
-  strategyVersion: string;
   signalDate: string | null;
   signalPrice: number | null;
   referencePrice: number | null;

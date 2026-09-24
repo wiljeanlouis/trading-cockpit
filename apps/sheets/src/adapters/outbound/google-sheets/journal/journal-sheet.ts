@@ -44,23 +44,23 @@ export function refreshJournalValidations(sheet: GoogleAppsScript.Spreadsheet.Sh
 }
 
 export function addJournalFormulas(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number): void {
-  sheet.getRange(row, 20).setFormula(`=IF(OR(L${row}="",M${row}=""),"",M${row}/L${row}-1)`);
+  sheet.getRange(row, 19).setFormula(`=IF(OR(K${row}="",L${row}=""),"",L${row}/K${row}-1)`);
+  sheet
+    .getRange(row, 20)
+    .setFormula(`=IF(OR(P${row}="",P${row}<=0,R${row}=""),"",R${row}/P${row})`);
   sheet
     .getRange(row, 21)
-    .setFormula(`=IF(OR(Q${row}="",Q${row}<=0,S${row}=""),"",S${row}/Q${row})`);
-  sheet
-    .getRange(row, 22)
-    .setFormula(`=IF(S${row}="","",IF(S${row}>0,"WIN",IF(S${row}<0,"LOSS","BREAKEVEN")))`);
+    .setFormula(`=IF(R${row}="","",IF(R${row}>0,"WIN",IF(R${row}<0,"LOSS","BREAKEVEN")))`);
 }
 
 export function formatJournalRow(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number): void {
-  sheet.getRange(row, 9, 1, 2).setNumberFormat('yyyy-mm-dd hh:mm:ss');
-  sheet.getRange(row, 11, 1, 3).setNumberFormat('$0.00');
-  sheet.getRange(row, 14).setNumberFormat('0');
-  sheet.getRange(row, 15, 1, 2).setNumberFormat('$0.00');
-  sheet.getRange(row, 17).setNumberFormat('$0.00');
-  sheet.getRange(row, 18).setNumberFormat('0.00');
-  sheet.getRange(row, 19).setNumberFormat('$0.00');
-  sheet.getRange(row, 20).setNumberFormat('0.00%');
-  sheet.getRange(row, 21).setNumberFormat('0.00');
+  sheet.getRange(row, 8, 1, 2).setNumberFormat('yyyy-mm-dd hh:mm:ss');
+  sheet.getRange(row, 10, 1, 3).setNumberFormat('$0.00');
+  sheet.getRange(row, 13).setNumberFormat('0');
+  sheet.getRange(row, 14, 1, 2).setNumberFormat('$0.00');
+  sheet.getRange(row, 16).setNumberFormat('$0.00');
+  sheet.getRange(row, 17).setNumberFormat('0.00');
+  sheet.getRange(row, 18).setNumberFormat('$0.00');
+  sheet.getRange(row, 19).setNumberFormat('0.00%');
+  sheet.getRange(row, 20).setNumberFormat('0.00');
 }

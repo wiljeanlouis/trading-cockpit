@@ -12,7 +12,6 @@ const win: JournalItemDto = {
   watchlistId: 'WL-1',
   strategyId: 'BREAKOUT',
   strategyName: 'Breakout',
-  strategyVersion: 'V1',
   ticker: 'BOX',
   openedAt: '2026-08-20T14:00:00.000Z',
   closedAt: '2026-08-27T15:00:00.000Z',

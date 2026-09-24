@@ -34,7 +34,6 @@ function toItem(position: Position): PositionItemDto {
     ticker: position.ticker,
     strategyId: position.strategyId,
     strategyName: position.strategyName,
-    strategyVersion: position.strategyVersion,
     openedAt: serializedDate(position.openedAt),
     plannedEntry: nullableNumber(position.plannedEntry),
     actualEntry: nullableNumber(position.actualEntry),

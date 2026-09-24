@@ -104,9 +104,7 @@ function TradePlanRow({ plan, onOpen }: { plan: TradePlanItemDto; onOpen: () => 
       <TableCell>{plan.accountId || '—'}</TableCell>
       <TableCell>
         <span>{plan.strategyName}</span>
-        <span className={tableDetailClassName}>
-          {plan.strategyId} · v{plan.strategyVersion}
-        </span>
+        <span className={tableDetailClassName}>{plan.strategyId}</span>
       </TableCell>
       <TableCell>{displayDate(plan.createdAt)}</TableCell>
       <TableCell className={numericCellClassName}>{displayNumber(plan.entryPrice)}</TableCell>

@@ -2,11 +2,8 @@ import { createArchiveMarketSignals } from '@trading-cockpit/core/application/ma
 import { createRefreshMarketSignals } from '@trading-cockpit/core/application/market-signals/refresh-market-signals';
 import { createGetDiscovery } from '@trading-cockpit/core/application/discovery/get-discovery';
 import { buildSignalKey } from '@trading-cockpit/core/domain/market-signal';
-import type {
-  TradingStrategy,
-  TradingStrategyVersion
-} from '@trading-cockpit/core/domain/trading-strategy';
-import type { DiscoveryDto, RefreshSignalsResponse } from '@trading-cockpit/contracts';
+import type { TradingStrategy } from '@trading-cockpit/core/domain/trading-strategy';
+import type { DiscoveryDto, RunDiscoveryResponse } from '@trading-cockpit/contracts';
 import {
   CloudRunMarketSignalProjection,
   CloudRunSignalHistoryRepository,
@@ -18,7 +15,6 @@ import {
   LoadedWatchlistReader,
   readSignalSnapshots,
   readStrategyRecords,
-  readStrategyVersionRecords,
   readWatchlistEntries,
   SHEET_DEFINITIONS,
   validateStrategies
@@ -39,14 +35,13 @@ export async function getDiscoveryForCloudRun(dependencies: {
   await dependencies.sheets.batchLoad([
     SHEET_DEFINITIONS.signalsHistory,
     SHEET_DEFINITIONS.strategies,
-    SHEET_DEFINITIONS.strategyVersions,
     SHEET_DEFINITIONS.watchlist
   ]);
+  const strategies = await readStrategyRecords(dependencies.sheets);
   return createGetDiscovery({
     signalReader: new LoadedDiscoverySignalReader(
       await readSignalSnapshots(dependencies.sheets),
-      await readStrategyRecords(dependencies.sheets),
-      await readStrategyVersionRecords(dependencies.sheets)
+      strategies
     ),
     watchlistReader: new LoadedWatchlistReader(await readWatchlistEntries(dependencies.sheets)),
     now: dependencies.now
@@ -54,29 +49,15 @@ export async function getDiscoveryForCloudRun(dependencies: {
 }
 
 /**
- * Refreshes signals for one selected Strategy ID.
- *
- * The caller does not provide a version: Cloud Run resolves the currently active Strategy
- * Version from canonical workbook configuration before any provider request is made.
+ * Runs Discovery for one selected Strategy and one user-supplied Finviz URL.
  */
-export async function refreshSignalsForCloudRun({
+export async function runDiscoveryForCloudRun({
   mutationContext,
   body
-}: MutationDependencies): Promise<RefreshSignalsResponse> {
+}: MutationDependencies): Promise<RunDiscoveryResponse> {
   const strategyId = requiredText(body.strategyId, 'strategyId').toUpperCase();
-  return refreshFinvizFeedsForCloudRun({ mutationContext, strategyId });
-}
-
-/**
- * Explicitly refreshes every active Finviz-backed strategy version.
- *
- * Discovery reads are intentionally separate from provider refreshes so navigation/filtering
- * cannot accidentally consume Finviz request quota.
- */
-export async function refreshAllSignalsForCloudRun({
-  mutationContext
-}: MutationDependencies): Promise<RefreshSignalsResponse> {
-  return refreshFinvizFeedsForCloudRun({ mutationContext });
+  const finvizUrl = validateFinvizUrl(requiredText(body.finvizUrl, 'finvizUrl'));
+  return refreshFinvizFeedForCloudRun({ mutationContext, strategyId, finvizUrl });
 }
 
 /**
@@ -85,32 +66,30 @@ export async function refreshAllSignalsForCloudRun({
  * This function batches strategy configuration reads, creates the Finviz adapter, preloads
  * provider data with adapter-level pacing, then delegates projection/archive semantics to Core.
  */
-async function refreshFinvizFeedsForCloudRun({
+async function refreshFinvizFeedForCloudRun({
   mutationContext,
-  strategyId
+  strategyId,
+  finvizUrl
 }: {
   mutationContext: MutationContext;
-  strategyId?: string;
-}): Promise<RefreshSignalsResponse> {
-  await mutationContext.sheets.batchLoad([
-    SHEET_DEFINITIONS.strategies,
-    SHEET_DEFINITIONS.strategyVersions
-  ]);
+  strategyId: string;
+  finvizUrl: string;
+}): Promise<RunDiscoveryResponse> {
+  await mutationContext.sheets.batchLoad([SHEET_DEFINITIONS.strategies]);
   await validateStrategies(mutationContext.sheets);
   const strategies = await readStrategyRecords(mutationContext.sheets);
-  const versions = await readStrategyVersionRecords(mutationContext.sheets);
-  const feeds = buildFinvizFeeds({ strategies, versions, strategyId });
+  const feed = buildFinvizFeed({ strategies, strategyId, finvizUrl });
   const tokenService = new AsyncFinvizTokenService(new SecretManagerFinvizTokenStorage());
   const source = new CloudRunFinvizMarketSignalSource(
     '',
-    feeds,
+    [feed],
     tokenService,
     new NodeFinvizTransport()
   );
   await source.preload();
   await ensureSheets(mutationContext, ['Signals History', 'Finviz Signals']);
   const existingSignalKeys = await readExistingSignalKeys(mutationContext);
-  const strategyCatalog = new LoadedTradingStrategyCatalog(strategies, versions);
+  const strategyCatalog = new LoadedTradingStrategyCatalog(strategies);
   const archiveSignals = createArchiveMarketSignals({
     repository: new CloudRunSignalHistoryRepository(mutationContext, existingSignalKeys),
     now: mutationContext.now,
@@ -123,77 +102,39 @@ async function refreshFinvizFeedsForCloudRun({
     archiveSignals,
     now: mutationContext.now
   });
-  const result = refresh(strategyId ? { strategyId } : undefined);
+  const result = refresh({ strategyId });
+  const refreshed = result.refreshed[0];
   return {
-    scope: strategyId ? 'STRATEGY' : 'ALL',
+    strategyId,
     archived: result.archived,
-    refreshed: result.refreshed
+    signalCount: refreshed?.signalCount ?? 0
   };
 }
 
 /**
- * Converts enabled Strategy Version rows into concrete Finviz feed configurations.
+ * Converts a user-selected Strategy plus runtime Finviz URL into one concrete provider feed.
  *
- * Scoped refreshes fail fast when the requested strategy is missing, disabled or lacks an
- * active Finviz version; they never silently fall back to another strategy.
+ * The URL is intentionally not read from Strategy configuration; Discovery runtime input owns it.
  */
-export function buildFinvizFeeds({
+export function buildFinvizFeed({
   strategies,
-  versions,
-  strategyId
+  strategyId,
+  finvizUrl
 }: {
   strategies: readonly TradingStrategy[];
-  versions: readonly TradingStrategyVersion[];
-  strategyId?: string;
+  strategyId: string;
+  finvizUrl: string;
 }) {
-  const normalizedStrategyId = strategyId ? textValue(strategyId).toUpperCase() : null;
-  if (normalizedStrategyId) {
-    const strategy = strategies.find((candidate) => candidate.id === normalizedStrategyId);
-    if (!strategy) throw new Error(`Stratégie inconnue : ${normalizedStrategyId}`);
-    if (!strategy.enabled) throw new Error(`La stratégie ${normalizedStrategyId} est désactivée.`);
-    const activeVersions = versions.filter(
-      (version) => version.strategyId === normalizedStrategyId && version.enabled
-    );
-    if (activeVersions.length === 0) {
-      throw new Error(`Aucune version active pour ${normalizedStrategyId}.`);
-    }
-  }
-
-  const enabledStrategyIds = new Set(
-    strategies.filter((strategy) => strategy.enabled).map((strategy) => strategy.id)
-  );
-  const activeVersionByEnabledStrategy = new Set<string>();
-  const feeds = versions
-    .filter(
-      (version) =>
-        version.enabled &&
-        version.screener === 'FINVIZ' &&
-        enabledStrategyIds.has(version.strategyId) &&
-        (!normalizedStrategyId || version.strategyId === normalizedStrategyId)
-    )
-    .map((version) => {
-      const strategy = strategies.find((candidate) => candidate.id === version.strategyId);
-      if (!strategy) throw new Error(`Stratégie inconnue : ${version.strategyId}`);
-      if (activeVersionByEnabledStrategy.has(version.strategyId)) {
-        throw new Error(`Plusieurs versions actives pour ${version.strategyId}`);
-      }
-      activeVersionByEnabledStrategy.add(version.strategyId);
-      return {
-        id: version.screenerCode,
-        strategyName: strategy.name,
-        strategyVersion: version.version,
-        strategyId: version.strategyId,
-        query: version.screenerUrl
-      };
-    });
-
-  if (normalizedStrategyId && feeds.length === 0) {
-    throw new Error(`Aucun feed Finviz actif configuré pour ${normalizedStrategyId}.`);
-  }
-  if (!normalizedStrategyId && feeds.length === 0) {
-    throw new Error('Aucune stratégie Finviz active configurée.');
-  }
-  return feeds;
+  const normalizedStrategyId = textValue(strategyId).toUpperCase();
+  const strategy = strategies.find((candidate) => candidate.id === normalizedStrategyId);
+  if (!strategy) throw new Error(`Stratégie inconnue : ${normalizedStrategyId}`);
+  if (!strategy.enabled) throw new Error(`La stratégie ${normalizedStrategyId} est désactivée.`);
+  return {
+    id: `DISCOVERY_${normalizedStrategyId}`,
+    strategyName: strategy.name,
+    strategyId: strategy.id,
+    query: finvizUrl
+  };
 }
 
 /**
@@ -228,12 +169,29 @@ async function readExistingSignalKeys(context: MutationContext): Promise<Set<str
   for (const row of table.rows) {
     const signalDate = normalizeSignalDate(valueByHeader(table.headers, row, 'Signal Date'));
     const strategyId = textValue(valueByHeader(table.headers, row, 'Strategy ID')).toUpperCase();
-    const strategyVersion = textValue(valueByHeader(table.headers, row, 'Strategy Version'));
     const ticker = textValue(valueByHeader(table.headers, row, 'Ticker')).toUpperCase();
     if (!signalDate || !strategyId || !ticker) continue;
-    keys.add(buildSignalKey(signalDate, strategyId, strategyVersion, ticker));
+    keys.add(buildSignalKey(signalDate, strategyId, ticker));
   }
   return keys;
+}
+
+function validateFinvizUrl(value: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error('Finviz URL invalide.');
+  }
+  if (parsed.protocol !== 'https:') throw new Error('Finviz URL doit utiliser HTTPS.');
+  if (parsed.username || parsed.password) {
+    throw new Error('Finviz URL ne doit pas contenir d’identifiants.');
+  }
+  const host = parsed.hostname.toLowerCase();
+  if (host !== 'finviz.com' && host !== 'www.finviz.com' && host !== 'elite.finviz.com') {
+    throw new Error('Finviz URL doit cibler un domaine Finviz supporté.');
+  }
+  return parsed.toString();
 }
 
 function normalizeSignalDate(value: unknown): string {

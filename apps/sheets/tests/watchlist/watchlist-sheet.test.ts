@@ -25,12 +25,11 @@ describe('Watchlist physical sheet contract', () => {
     expect(sheet.getRange).not.toHaveBeenCalled();
   });
 
-  it('validates the exact 21-column generic workflow schema', () => {
+  it('validates the exact 20-column generic workflow schema', () => {
     const headers = [
       'Watchlist ID',
       'Strategy ID',
       'Strategy',
-      'Strategy Version',
       'Signal Date',
       'Ticker',
       'Company',
@@ -54,7 +53,7 @@ describe('Watchlist physical sheet contract', () => {
       getRange: () => ({ getValues: () => [headers] })
     };
     expect(validateWatchlistSchema(sheet as never)).toBe(true);
-    headers.splice(4, 1);
+    headers.splice(3, 1);
     expect(() => validateWatchlistSchema(sheet as never)).toThrow(
       'Watchlist utilise un ancien schéma. Colonne absente : Signal Date'
     );
@@ -72,21 +71,21 @@ describe('Watchlist physical sheet contract', () => {
     addWatchlistFormulas(sheet as never, 7);
     formatWatchlistRow(sheet as never, 7);
     expect(Object.fromEntries(formulas)).toEqual({
-      11: '=IFERROR(GOOGLEFINANCE(F7,"price"),"")',
-      12: '=IF(OR(J7="",K7=""),"",K7/J7-1)',
-      16: '=IF(OR(K7="",O7=""),"",K7/O7-1)'
+      10: '=IFERROR(GOOGLEFINANCE(E7,"price"),"")',
+      11: '=IF(OR(I7="",J7=""),"",J7/I7-1)',
+      15: '=IF(OR(J7="",N7=""),"",J7/N7-1)'
     });
     expect(formats).toEqual([
-      [[7, 5], 'yyyy-mm-dd'],
-      [[7, 9], 'yyyy-mm-dd hh:mm:ss'],
+      [[7, 4], 'yyyy-mm-dd'],
+      [[7, 8], 'yyyy-mm-dd hh:mm:ss'],
+      [[7, 9], '$0.00'],
       [[7, 10], '$0.00'],
-      [[7, 11], '$0.00'],
-      [[7, 12], '0.00%'],
-      [[7, 15], '$0.00'],
-      [[7, 16], '0.00%'],
-      [[7, 17], '$0.00'],
-      [[7, 18], 'yyyy-mm-dd'],
-      [[7, 21], 'yyyy-mm-dd hh:mm:ss']
+      [[7, 11], '0.00%'],
+      [[7, 14], '$0.00'],
+      [[7, 15], '0.00%'],
+      [[7, 16], '$0.00'],
+      [[7, 17], 'yyyy-mm-dd'],
+      [[7, 20], 'yyyy-mm-dd hh:mm:ss']
     ]);
   });
 
@@ -97,7 +96,6 @@ describe('Watchlist physical sheet contract', () => {
       'Watchlist ID',
       'Strategy ID',
       'Strategy',
-      'Strategy Version',
       'Signal Date',
       'Ticker',
       'Company',
@@ -175,9 +173,9 @@ describe('Watchlist physical sheet contract', () => {
       'OTHER'
     ]);
     expect(validationRanges).toEqual([
+      [2, 12, 99, 1],
       [2, 13, 99, 1],
-      [2, 14, 99, 1],
-      [2, 19, 99, 1]
+      [2, 18, 99, 1]
     ]);
     expect(rules).toHaveLength(3);
     expect(toast).toHaveBeenCalledWith(

@@ -14,7 +14,6 @@ const data: TradePlansDto = {
       ticker: 'BOX',
       strategyId: 'BREAKOUT',
       strategyName: 'Breakout',
-      strategyVersion: 'V1',
       signalDate: '2026-08-27T04:00:00.000Z',
       signalPrice: 33,
       referencePrice: 34,
@@ -54,6 +53,7 @@ describe('Trade Plans', () => {
     render(<TradePlans gateway={createGatewayStub({ getTradePlans: load })} />);
 
     expect(screen.getByText('Loading Trade Plans…')).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: 'READY' }));
     const row = await screen.findByRole('row', { name: /BOX/ });
     const cells = within(row).getAllByRole('cell');
     expect(cells[0]).toHaveTextContent('BOX');

@@ -16,7 +16,6 @@ export type {
   AnalyticsDto,
   AnalyticsAccountRowDto,
   AnalyticsStrategyRowDto,
-  AnalyticsStrategyVersionRowDto,
   AnalyticsSummaryDto,
   PortfolioScopeDto
 } from './analytics';
@@ -26,7 +25,6 @@ export type {
   CapitalTransactionDto,
   CapitalTransactionType,
   CreateStrategyRequest,
-  CreateStrategyVersionRequest,
   CreateFundedTradingAccountRequest,
   CreateTradingAccountRequest,
   RecordCapitalTransactionRequest,
@@ -34,21 +32,19 @@ export type {
   AccountFinancialSummaryDto,
   StrategyDto,
   StrategyScreenerProvider,
-  StrategyVersionDto,
   TradingAccountMutationResponse,
   UpdateStrategyRequest,
-  UpdateStrategyVersionRequest,
   UpdateTradingAccountRequest
 } from './admin';
-export { STRATEGY_HEADERS, STRATEGY_VERSION_HEADERS } from './admin';
+export { STRATEGY_HEADERS } from './admin';
 export type {
   AddDiscoveryCandidateToWatchlistRequest,
   AddDiscoveryCandidateToWatchlistResponse,
   DiscoveryCandidateDto,
   DiscoveryDto,
   DiscoveryStrategyDto,
-  RefreshSignalsRequest,
-  RefreshSignalsResponse
+  RunDiscoveryRequest,
+  RunDiscoveryResponse
 } from './discovery';
 export {
   FINVIZ_MOMENTUM_EXPORT_HEADERS,

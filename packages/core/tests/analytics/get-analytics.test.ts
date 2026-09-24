@@ -11,7 +11,6 @@ function journalEntry(overrides: Partial<JournalEntry> = {}): JournalEntry {
     watchlistId: 'WL-1',
     strategyId: 'MOMENTUM_BREAKOUT',
     strategyName: 'Momentum Breakout',
-    strategyVersion: 'V1',
     ticker: 'BOX',
     openedAt: new Date('2026-08-20T14:00:00.000Z'),
     closedAt: new Date('2026-08-27T15:00:00.000Z'),
@@ -44,7 +43,6 @@ describe('get Analytics', () => {
           journalEntry({
             id: 'J-2',
             positionId: 'P-2',
-            strategyVersion: 'V2',
             realizedPnl: -50,
             plannedMaxRisk: 100,
             rMultiple: -0.5,
@@ -55,7 +53,6 @@ describe('get Analytics', () => {
             positionId: 'P-3',
             strategyId: 'QUALITY_DIP',
             strategyName: 'Quality Dip',
-            strategyVersion: 'V1',
             realizedPnl: 0,
             plannedMaxRisk: 100,
             rMultiple: 0,
@@ -95,11 +92,6 @@ describe('get Analytics', () => {
       'QUALITY_DIP'
     ]);
     expect(result.byStrategy[0]).toMatchObject({ trades: 2, wins: 1, totalPnl: 100, totalR: 1 });
-    expect(result.byStrategyVersion.map((row) => `${row.strategyId}/${row.version}`)).toEqual([
-      'MOMENTUM_BREAKOUT/V1',
-      'MOMENTUM_BREAKOUT/V2',
-      'QUALITY_DIP/V1'
-    ]);
     expect(result.byAccount).toEqual([
       expect.objectContaining({
         accountId: 'A1',
@@ -163,7 +155,7 @@ describe('get Analytics', () => {
     ]);
   });
 
-  it('filters Analytics by account, strategy and strategy version', () => {
+  it('filters Analytics by account and strategy', () => {
     const result = createGetAnalytics({
       journalReader: {
         findAll: () => [
@@ -171,7 +163,6 @@ describe('get Analytics', () => {
             id: 'J1',
             positionId: 'P1',
             accountId: 'A1',
-            strategyVersion: 'V1',
             realizedPnl: 100,
             rMultiple: 1
           }),
@@ -179,7 +170,6 @@ describe('get Analytics', () => {
             id: 'J2',
             positionId: 'P2',
             accountId: 'A1',
-            strategyVersion: 'V2',
             realizedPnl: 200,
             rMultiple: 2
           }),
@@ -189,7 +179,6 @@ describe('get Analytics', () => {
             accountId: 'A1',
             strategyId: 'QUALITY_DIP',
             strategyName: 'Quality Dip',
-            strategyVersion: 'V1',
             realizedPnl: 300,
             rMultiple: 3
           }),
@@ -197,7 +186,6 @@ describe('get Analytics', () => {
             id: 'J4',
             positionId: 'P4',
             accountId: 'A2',
-            strategyVersion: 'V1',
             realizedPnl: 400,
             rMultiple: 4
           })
@@ -206,17 +194,16 @@ describe('get Analytics', () => {
       now: () => new Date('2026-08-28T16:00:00.000Z')
     })({
       scope: { type: 'ACCOUNT', accountId: 'A1' },
-      strategyId: 'MOMENTUM_BREAKOUT',
-      strategyVersion: 'V2'
+      strategyId: 'MOMENTUM_BREAKOUT'
     });
 
     expect(result.summary).toMatchObject({
-      trades: 1,
-      totalPnl: 200,
-      totalR: 2
+      trades: 2,
+      totalPnl: 300,
+      totalR: 3
     });
-    expect(result.byStrategyVersion).toEqual([
-      expect.objectContaining({ strategyId: 'MOMENTUM_BREAKOUT', version: 'V2', trades: 1 })
+    expect(result.byStrategy).toEqual([
+      expect.objectContaining({ strategyId: 'MOMENTUM_BREAKOUT', trades: 2 })
     ]);
   });
 

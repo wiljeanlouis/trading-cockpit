@@ -29,7 +29,6 @@ const analytics: AnalyticsDto = {
     bestR: 2
   },
   byStrategy: [],
-  byStrategyVersion: [],
   byAccount: []
 };
 

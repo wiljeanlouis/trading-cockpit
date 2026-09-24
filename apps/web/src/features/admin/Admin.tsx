@@ -5,10 +5,8 @@ import type {
   CapitalTransactionType,
   CreateFundedTradingAccountRequest,
   CreateStrategyRequest,
-  CreateStrategyVersionRequest,
   RecordCapitalTransactionRequest,
-  StrategyDto,
-  StrategyVersionDto
+  StrategyDto
 } from '@trading-cockpit/contracts';
 import { toast } from 'sonner';
 import type { CockpitGateway } from '../../infrastructure/cockpit-gateway';
@@ -85,15 +83,6 @@ interface StrategyFormState {
   description: string;
 }
 
-interface StrategyVersionFormState {
-  strategyId: string;
-  version: string;
-  enabled: boolean;
-  screenerCode: string;
-  screener: 'FINVIZ';
-  finvizUrl: string;
-}
-
 const EMPTY_CREATE_ACCOUNT_FORM: CreateAccountFormState = {
   accountId: '',
   name: '',
@@ -114,15 +103,6 @@ const EMPTY_STRATEGY_FORM: StrategyFormState = {
   type: 'MOMENTUM',
   enabled: true,
   description: ''
-};
-
-const EMPTY_STRATEGY_VERSION_FORM: StrategyVersionFormState = {
-  strategyId: '',
-  version: '',
-  enabled: true,
-  screenerCode: '',
-  screener: 'FINVIZ',
-  finvizUrl: ''
 };
 
 function formatBooleanBadgeTone(configured: boolean | null): 'positive' | 'muted' | 'watching' {
@@ -199,9 +179,6 @@ export function Admin({ gateway }: AdminProps) {
     useState<StrategyFormState>(EMPTY_STRATEGY_FORM);
   const [managedStrategyId, setManagedStrategyId] = useState<string | null>(null);
   const [strategyForm, setStrategyForm] = useState<StrategyFormState>(EMPTY_STRATEGY_FORM);
-  const [versionForm, setVersionForm] = useState<StrategyVersionFormState>(
-    EMPTY_STRATEGY_VERSION_FORM
-  );
 
   const load = useCallback(async () => {
     setState((current) => ({ ...current, loading: true, error: null }));
@@ -296,11 +273,6 @@ export function Admin({ gateway }: AdminProps) {
       enabled: strategy.enabled,
       description: strategy.description
     });
-    setVersionForm({
-      ...EMPTY_STRATEGY_VERSION_FORM,
-      strategyId: strategy.strategyId,
-      screenerCode: `${strategy.strategyId}_V${strategy.versions.length + 1}`
-    });
   }
 
   /**
@@ -384,7 +356,7 @@ export function Admin({ gateway }: AdminProps) {
   }
 
   /**
-   * Creates the stable Strategy identity; versioned screener configuration is added separately.
+   * Creates the stable Strategy identity used by Discovery and historical workflow records.
    */
   async function handleCreateStrategySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -404,47 +376,6 @@ export function Admin({ gateway }: AdminProps) {
       `update-strategy-${managedStrategy.strategyId}`,
       () => gateway.updateStrategy({ ...strategyForm, strategyId: managedStrategy.strategyId }),
       'Strategy updated.'
-    );
-  }
-
-  /**
-   * Adds a Strategy Version configuration while preserving Strategy ID + Version as historical
-   * identity once signals and workflow records reference it.
-   */
-  async function handleCreateVersionSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!managedStrategy) return;
-    const request: CreateStrategyVersionRequest = {
-      ...versionForm,
-      strategyId: managedStrategy.strategyId
-    };
-    const created = await runAction(
-      `create-version-${managedStrategy.strategyId}`,
-      () => gateway.createStrategyVersion(request),
-      'Strategy version created.'
-    );
-    if (created) {
-      setVersionForm({
-        ...EMPTY_STRATEGY_VERSION_FORM,
-        strategyId: managedStrategy.strategyId
-      });
-    }
-  }
-
-  /**
-   * Toggles one Strategy Version and relies on backend rules to enforce at most one active version
-   * per Strategy ID and parent-strategy eligibility.
-   */
-  async function toggleStrategyVersion(version: StrategyVersionDto) {
-    await runAction(
-      `toggle-version-${version.strategyId}-${version.version}`,
-      () =>
-        gateway.updateStrategyVersion({
-          strategyId: version.strategyId,
-          version: version.version,
-          enabled: !version.enabled
-        }),
-      `Strategy version ${!version.enabled ? 'enabled' : 'disabled'}.`
     );
   }
 
@@ -489,7 +420,7 @@ export function Admin({ gateway }: AdminProps) {
                   Market data provider and authentication.
                 </p>
               </div>
-              <div className="grid gap-3 min-[760px]:grid-cols-[minmax(220px,1fr)_auto_auto_auto] min-[760px]:items-end">
+              <div className="grid gap-3 min-[760px]:grid-cols-[minmax(220px,1fr)_auto_auto] min-[760px]:items-end">
                 <label className="grid gap-2">
                   <span className={formLabelClassName}>Token</span>
                   <input
@@ -518,18 +449,6 @@ export function Admin({ gateway }: AdminProps) {
                 >
                   Delete token
                 </Button>
-                <Button
-                  onClick={() =>
-                    void runAction(
-                      'refresh-signals',
-                      () => gateway.refreshAllSignals(),
-                      'Signals refreshed.'
-                    )
-                  }
-                  disabled={busyAction !== null}
-                >
-                  Refresh All Signals
-                </Button>
               </div>
             </div>
           </DataPanel>
@@ -544,50 +463,43 @@ export function Admin({ gateway }: AdminProps) {
             <div className="grid gap-5 p-5">
               {strategies.length === 0 ? (
                 <EmptyState icon="◇" title="No strategies">
-                  Create a Strategy and an enabled Strategy Version before refreshing Discovery.
+                  Create an enabled Strategy before running Discovery.
                 </EmptyState>
               ) : (
                 <TableScroll>
-                  <Table className="min-w-[980px] border-collapse tabular-nums">
+                  <Table className="min-w-[760px] border-collapse tabular-nums">
                     <TableHeader>
                       <TableRow>
                         <TableHead>Strategy</TableHead>
                         <TableHead>Type</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Active Version</TableHead>
-                        <TableHead>Screener</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {strategies.map((strategy) => {
-                        const activeVersion = strategy.versions.find((version) => version.enabled);
-                        return (
-                          <TableRow key={strategy.strategyId}>
-                            <TableCell>
-                              <strong>{strategy.name}</strong>
-                              <div className="text-xs text-[#64758d]">{strategy.strategyId}</div>
-                            </TableCell>
-                            <TableCell>{strategy.type}</TableCell>
-                            <TableCell>
-                              <Badge tone={strategy.enabled ? 'positive' : 'muted'}>
-                                {strategy.enabled ? 'ENABLED' : 'DISABLED'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{activeVersion?.version ?? '—'}</TableCell>
-                            <TableCell>{activeVersion?.screener ?? '—'}</TableCell>
-                            <TableCell>
-                              <Button
-                                className="px-3 py-2 text-xs"
-                                onClick={() => openManageStrategy(strategy)}
-                                disabled={busyAction !== null}
-                              >
-                                Manage
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
+                      {strategies.map((strategy) => (
+                        <TableRow key={strategy.strategyId}>
+                          <TableCell>
+                            <strong>{strategy.name}</strong>
+                            <div className="text-xs text-[#64758d]">{strategy.strategyId}</div>
+                          </TableCell>
+                          <TableCell>{strategy.type}</TableCell>
+                          <TableCell>
+                            <Badge tone={strategy.enabled ? 'positive' : 'muted'}>
+                              {strategy.enabled ? 'ENABLED' : 'DISABLED'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              className="px-3 py-2 text-xs"
+                              onClick={() => openManageStrategy(strategy)}
+                              disabled={busyAction !== null}
+                            >
+                              Manage
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                     </TableBody>
                   </Table>
                 </TableScroll>
@@ -662,7 +574,7 @@ export function Admin({ gateway }: AdminProps) {
             <DetailHeader>
               <div>
                 <h2 id="create-strategy-title">Add Strategy</h2>
-                <p>Create stable strategy identity. Versions hold screener configuration.</p>
+                <p>Create stable strategy identity. Discovery URLs are provided at run time.</p>
               </div>
               <Button
                 type="button"
@@ -799,93 +711,6 @@ export function Admin({ gateway }: AdminProps) {
                     Save Strategy
                   </Button>
                 </form>
-              </FactSection>
-
-              <FactSection tone="price">
-                <header>
-                  <span>VER</span>
-                  <div>
-                    <h3>Strategy versions</h3>
-                    <p>Only one version can be active for a Strategy ID in V2.9.</p>
-                  </div>
-                </header>
-                <div className="grid gap-4 p-4">
-                  <form
-                    className="grid gap-4 rounded-2xl border border-[#285043] bg-[rgba(8,38,32,0.52)] p-4"
-                    onSubmit={(event) => void handleCreateVersionSubmit(event)}
-                  >
-                    <div className="grid gap-4 min-[760px]:grid-cols-2">
-                      <AccountInput
-                        label="Version"
-                        value={versionForm.version}
-                        onChange={(version) =>
-                          setVersionForm((current) => ({ ...current, version }))
-                        }
-                        placeholder="V2"
-                      />
-                      <AccountInput
-                        label="Screener Code"
-                        value={versionForm.screenerCode}
-                        onChange={(screenerCode) =>
-                          setVersionForm((current) => ({ ...current, screenerCode }))
-                        }
-                        placeholder="MOMENTUM_BREAKOUT_V2"
-                      />
-                      <ReadOnlyField label="Screener" value="FINVIZ" />
-                      <BooleanField
-                        label="Enabled"
-                        checked={versionForm.enabled}
-                        onChange={(enabled) =>
-                          setVersionForm((current) => ({ ...current, enabled }))
-                        }
-                      />
-                    </div>
-                    <TextAreaField
-                      label="Finviz URL"
-                      value={versionForm.finvizUrl}
-                      onChange={(finvizUrl) =>
-                        setVersionForm((current) => ({ ...current, finvizUrl }))
-                      }
-                    />
-                    <Button type="submit" disabled={busyAction !== null}>
-                      Add Strategy Version
-                    </Button>
-                  </form>
-                  <div className="border-t border-[#1d3348] pt-4">
-                    {managedStrategy.versions.length === 0 ? (
-                      <p className="m-0 text-sm text-[#8ba0b7]">No versions configured.</p>
-                    ) : (
-                      <div className="grid gap-3">
-                        {managedStrategy.versions.map((version) => (
-                          <div
-                            key={`${version.strategyId}-${version.version}`}
-                            className="rounded-2xl border border-[#1d3348] bg-[rgba(10,20,33,0.72)] p-4"
-                          >
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                              <div>
-                                <strong>{version.version}</strong>
-                                <div className="text-xs text-[#64758d]">
-                                  {version.screenerCode} · {version.screener}
-                                </div>
-                              </div>
-                              <Button
-                                type="button"
-                                className="px-3 py-2 text-xs"
-                                onClick={() => void toggleStrategyVersion(version)}
-                                disabled={busyAction !== null}
-                              >
-                                {version.enabled ? 'Disable' : 'Enable'}
-                              </Button>
-                            </div>
-                            <p className="mt-3 break-all text-xs text-[#8ba0b7]">
-                              {version.finvizUrl}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
               </FactSection>
             </DetailGrid>
           </DetailPanel>

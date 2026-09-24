@@ -17,9 +17,7 @@ import {
 import type { WatchlistEntry } from '@trading-cockpit/core/domain/watchlist';
 import {
   normalizeTradingStrategy,
-  normalizeTradingStrategyVersion,
-  type TradingStrategy,
-  type TradingStrategyVersion
+  type TradingStrategy
 } from '@trading-cockpit/core/domain/trading-strategy';
 import type { DashboardRepositorySnapshot } from '@trading-cockpit/core/ports/outbound/dashboard-repository';
 import type { DiscoverySignalReader } from '@trading-cockpit/core/ports/outbound/discovery-signal-reader';
@@ -28,11 +26,7 @@ import type { PositionReader } from '@trading-cockpit/core/ports/outbound/positi
 import type { TradePlanReader } from '@trading-cockpit/core/ports/outbound/trade-plan-reader';
 import type { TradingAccountRepository } from '@trading-cockpit/core/ports/outbound/trading-account-repository';
 import type { WatchlistReader } from '@trading-cockpit/core/ports/outbound/watchlist-reader';
-import {
-  SIGNALS_HISTORY_HEADERS,
-  STRATEGY_HEADERS,
-  STRATEGY_VERSION_HEADERS
-} from '@trading-cockpit/contracts';
+import { SIGNALS_HISTORY_HEADERS, STRATEGY_HEADERS } from '@trading-cockpit/contracts';
 import {
   nullableText,
   numberOrNull,
@@ -48,7 +42,6 @@ export const WATCHLIST_HEADERS = [
   'Watchlist ID',
   'Strategy ID',
   'Strategy',
-  'Strategy Version',
   'Signal Date',
   'Ticker',
   'Company',
@@ -73,7 +66,6 @@ const TRADE_PLAN_HEADERS = [
   'Watchlist ID',
   'Strategy ID',
   'Strategy',
-  'Strategy Version',
   'Signal Date',
   'Signal Price',
   'Ticker',
@@ -106,7 +98,6 @@ const POSITION_HEADERS = [
   'Watchlist ID',
   'Strategy ID',
   'Strategy',
-  'Strategy Version',
   'Ticker',
   'Opened At',
   'Planned Entry',
@@ -136,7 +127,6 @@ const JOURNAL_HEADERS = [
   'Watchlist ID',
   'Strategy ID',
   'Strategy',
-  'Strategy Version',
   'Ticker',
   'Opened At',
   'Closed At',
@@ -172,28 +162,28 @@ export const SHEET_DEFINITIONS = {
   watchlist: {
     key: 'watchlist',
     sheetName: 'Watchlist',
-    range: "'Watchlist'!A:U",
+    range: "'Watchlist'!A:T",
     requiredHeaders: WATCHLIST_HEADERS,
     dateHeaders: ['Signal Date', 'Added At', 'Earnings Date', 'Closed At']
   },
   tradePlans: {
     key: 'tradePlans',
     sheetName: 'Trade Plans',
-    range: "'Trade Plans'!A:AC",
+    range: "'Trade Plans'!A:AB",
     requiredHeaders: TRADE_PLAN_HEADERS,
     dateHeaders: ['Signal Date', 'Created At']
   },
   positions: {
     key: 'positions',
     sheetName: 'Positions',
-    range: "'Positions'!A:Z",
+    range: "'Positions'!A:Y",
     requiredHeaders: POSITION_HEADERS,
     dateHeaders: ['Opened At', 'Closed At']
   },
   journal: {
     key: 'journal',
     sheetName: 'Journal',
-    range: "'Journal'!A:AA",
+    range: "'Journal'!A:Z",
     requiredHeaders: JOURNAL_HEADERS,
     dateHeaders: ['Opened At', 'Closed At']
   },
@@ -215,12 +205,6 @@ export const SHEET_DEFINITIONS = {
     sheetName: 'Strategies',
     range: "'Strategies'!A:E",
     requiredHeaders: STRATEGY_HEADERS
-  },
-  strategyVersions: {
-    key: 'strategyVersions',
-    sheetName: 'Strategy Versions',
-    range: "'Strategy Versions'!A:F",
-    requiredHeaders: STRATEGY_VERSION_HEADERS
   },
   signalsHistory: {
     key: 'signalsHistory',
@@ -266,8 +250,7 @@ export class LoadedJournalReader implements JournalReader {
 export class LoadedDiscoverySignalReader implements DiscoverySignalReader {
   constructor(
     private readonly signals: readonly SignalSnapshot[],
-    private readonly strategies: readonly TradingStrategy[],
-    private readonly versions: readonly TradingStrategyVersion[]
+    private readonly strategies: readonly TradingStrategy[]
   ) {}
 
   findAllSignals(): SignalSnapshot[] {
@@ -276,10 +259,6 @@ export class LoadedDiscoverySignalReader implements DiscoverySignalReader {
 
   findAllStrategies(): TradingStrategy[] {
     return [...this.strategies];
-  }
-
-  findAllStrategyVersions(): TradingStrategyVersion[] {
-    return [...this.versions];
   }
 }
 
@@ -378,13 +357,11 @@ export async function readStrategyIds(sheets: RequestScopedSheets): Promise<stri
 }
 
 /**
- * Validates the two-sheet Strategy model: stable parent strategies, immutable version identities
- * and at most one active version per enabled Strategy ID.
+ * Validates the canonical Strategy model used by Discovery and Admin.
  */
 export async function validateStrategies(sheets: RequestScopedSheets): Promise<true> {
-  await sheets.batchLoad([SHEET_DEFINITIONS.strategies, SHEET_DEFINITIONS.strategyVersions]);
+  await sheets.batchLoad([SHEET_DEFINITIONS.strategies]);
   const strategies = await readStrategyRecords(sheets);
-  const versions = await readStrategyVersionRecords(sheets);
   const enabled = strategies.filter((strategy) => strategy.enabled);
   if (enabled.length === 0) throw new Error('Au moins une stratégie doit être active.');
   const ids = new Set<string>();
@@ -392,21 +369,6 @@ export async function validateStrategies(sheets: RequestScopedSheets): Promise<t
     if (!strategy.id) throw new Error('Strategy ID obligatoire.');
     if (ids.has(strategy.id)) throw new Error(`Strategy ID dupliqué : ${strategy.id}`);
     ids.add(strategy.id);
-  }
-  const versionKeys = new Set<string>();
-  const activeVersionByEnabledStrategy = new Set<string>();
-  for (const version of versions) {
-    if (!ids.has(version.strategyId)) throw new Error(`Strategy inconnue : ${version.strategyId}`);
-    const key = `${version.strategyId}|${version.version}`;
-    if (versionKeys.has(key)) throw new Error(`Strategy Version dupliquée : ${key}`);
-    versionKeys.add(key);
-    if (!version.enabled) continue;
-    const parent = strategies.find((strategy) => strategy.id === version.strategyId);
-    if (!parent?.enabled) continue;
-    if (activeVersionByEnabledStrategy.has(version.strategyId)) {
-      throw new Error(`Plusieurs versions actives pour ${version.strategyId}`);
-    }
-    activeVersionByEnabledStrategy.add(version.strategyId);
   }
   return true;
 }
@@ -420,10 +382,7 @@ export async function readSignalSnapshots(sheets: RequestScopedSheets): Promise<
   return table.rows
     .filter((row) => row.some((value) => textValue(value)))
     .map((row) => signalSnapshotFromRow(table.headers, row))
-    .filter(
-      (snapshot) =>
-        snapshot.signalDate && snapshot.strategyId && snapshot.strategyVersion && snapshot.ticker
-    );
+    .filter((snapshot) => snapshot.signalDate && snapshot.strategyId && snapshot.ticker);
 }
 
 /**
@@ -508,7 +467,6 @@ function watchlistEntryFromRow(headers: string[], row: unknown[]): WatchlistEntr
     id: textValue(valueByHeader(headers, row, 'Watchlist ID')),
     strategyId: textValue(valueByHeader(headers, row, 'Strategy ID')),
     strategyName: textValue(valueByHeader(headers, row, 'Strategy')),
-    strategyVersion: textValue(valueByHeader(headers, row, 'Strategy Version')),
     signalDate: snapshotValue(valueByHeader(headers, row, 'Signal Date')),
     ticker: textValue(valueByHeader(headers, row, 'Ticker')),
     company: snapshotValue(valueByHeader(headers, row, 'Company')),
@@ -534,7 +492,6 @@ function tradePlanFromRow(headers: string[], row: unknown[]): TradePlan {
     watchlistId: textValue(valueByHeader(headers, row, 'Watchlist ID')),
     strategyId: textValue(valueByHeader(headers, row, 'Strategy ID')),
     strategyName: textValue(valueByHeader(headers, row, 'Strategy')),
-    strategyVersion: textValue(valueByHeader(headers, row, 'Strategy Version')),
     signalDate: snapshotValue(valueByHeader(headers, row, 'Signal Date')),
     signalPrice: snapshotValue(valueByHeader(headers, row, 'Signal Price')),
     ticker: textValue(valueByHeader(headers, row, 'Ticker')),
@@ -569,7 +526,6 @@ function positionFromRow(headers: string[], row: unknown[]): Position {
     watchlistId: textValue(valueByHeader(headers, row, 'Watchlist ID')),
     strategyId: textValue(valueByHeader(headers, row, 'Strategy ID')),
     strategyName: textValue(valueByHeader(headers, row, 'Strategy')),
-    strategyVersion: textValue(valueByHeader(headers, row, 'Strategy Version')),
     ticker: textValue(valueByHeader(headers, row, 'Ticker')),
     openedAt: snapshotValue(valueByHeader(headers, row, 'Opened At')),
     plannedEntry: snapshotValue(valueByHeader(headers, row, 'Planned Entry')),
@@ -602,7 +558,6 @@ function journalEntryFromRow(headers: string[], row: unknown[]): JournalEntry {
     watchlistId: textValue(valueByHeader(headers, row, 'Watchlist ID')),
     strategyId: textValue(valueByHeader(headers, row, 'Strategy ID')),
     strategyName: textValue(valueByHeader(headers, row, 'Strategy')),
-    strategyVersion: textValue(valueByHeader(headers, row, 'Strategy Version')),
     ticker: textValue(valueByHeader(headers, row, 'Ticker')),
     openedAt: snapshotValue(valueByHeader(headers, row, 'Opened At')),
     closedAt: snapshotValue(valueByHeader(headers, row, 'Closed At')),
@@ -626,14 +581,7 @@ function journalEntryFromRow(headers: string[], row: unknown[]): JournalEntry {
 }
 
 function signalSnapshotFromRow(headers: string[], row: unknown[]): SignalSnapshot {
-  const baseHeaders = new Set([
-    'Signal Date',
-    'Detected At',
-    'Strategy ID',
-    'Strategy',
-    'Strategy Version',
-    'Ticker'
-  ]);
+  const baseHeaders = new Set(['Signal Date', 'Detected At', 'Strategy ID', 'Strategy', 'Ticker']);
   const attributes: Record<string, unknown> = {};
   for (const header of headers) {
     if (!header || baseHeaders.has(header)) continue;
@@ -648,7 +596,6 @@ function signalSnapshotFromRow(headers: string[], row: unknown[]): SignalSnapsho
     detectedAt: dateValue(valueByHeader(headers, row, 'Detected At')),
     strategyId: textValue(valueByHeader(headers, row, 'Strategy ID')).toUpperCase(),
     strategyName: textValue(valueByHeader(headers, row, 'Strategy')),
-    strategyVersion: textValue(valueByHeader(headers, row, 'Strategy Version')),
     ticker: textValue(valueByHeader(headers, row, 'Ticker')).toUpperCase(),
     attributes
   };
@@ -657,14 +604,12 @@ function signalSnapshotFromRow(headers: string[], row: unknown[]): SignalSnapsho
 function latestSignals(signals: readonly SignalSnapshot[]): SignalSnapshot[] {
   const latestDateByStrategy = new Map<string, string>();
   for (const signal of signals) {
-    const key = `${signal.strategyId}|${signal.strategyVersion}`;
+    const key = signal.strategyId;
     const latest = latestDateByStrategy.get(key);
     if (!latest || signal.signalDate > latest) latestDateByStrategy.set(key, signal.signalDate);
   }
   return signals.filter(
-    (signal) =>
-      signal.signalDate ===
-      latestDateByStrategy.get(`${signal.strategyId}|${signal.strategyVersion}`)
+    (signal) => signal.signalDate === latestDateByStrategy.get(signal.strategyId)
   );
 }
 
@@ -695,24 +640,6 @@ export async function readStrategyRecords(sheets: RequestScopedSheets): Promise<
         type: textValue(valueByHeader(table.headers, row, 'Type')),
         enabled: requiredBoolean(valueByHeader(table.headers, row, 'Enabled'), 'Enabled'),
         description: textValue(valueByHeader(table.headers, row, 'Description'))
-      })
-    );
-}
-
-export async function readStrategyVersionRecords(
-  sheets: RequestScopedSheets
-): Promise<TradingStrategyVersion[]> {
-  const table = await readTable(sheets, SHEET_DEFINITIONS.strategyVersions);
-  return table.rows
-    .filter((row) => hasMeaningfulTableRow(row))
-    .map((row) =>
-      normalizeTradingStrategyVersion({
-        strategyId: textValue(valueByHeader(table.headers, row, 'Strategy ID')),
-        version: textValue(valueByHeader(table.headers, row, 'Version')),
-        enabled: requiredBoolean(valueByHeader(table.headers, row, 'Enabled'), 'Enabled'),
-        screenerCode: textValue(valueByHeader(table.headers, row, 'Screener Code')),
-        screener: textValue(valueByHeader(table.headers, row, 'Screener')),
-        screenerUrl: textValue(valueByHeader(table.headers, row, 'Finviz URL'))
       })
     );
 }

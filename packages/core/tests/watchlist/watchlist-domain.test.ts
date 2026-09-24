@@ -11,7 +11,6 @@ import {
 const candidate: WatchlistCandidate = {
   strategyId: ' momentum_breakout ',
   strategyName: ' Momentum Breakout ',
-  strategyVersion: ' V1 ',
   signalDate: '2026-08-27',
   ticker: ' urnb ',
   company: 'Urban Outfitters',
@@ -25,23 +24,22 @@ describe('Watchlist domain', () => {
       ...candidate,
       strategyId: 'MOMENTUM_BREAKOUT',
       strategyName: 'Momentum Breakout',
-      strategyVersion: 'V1',
       ticker: 'URNB'
     });
   });
 
-  it('normalizes ticker and Strategy ID but keeps Strategy Version case-sensitive', () => {
+  it('normalizes ticker and Strategy ID', () => {
     expect(
       sameWatchlistIdentity(
-        { strategyId: ' momentum_breakout ', strategyVersion: 'V1', ticker: ' urnb ' },
-        { strategyId: 'MOMENTUM_BREAKOUT', strategyVersion: 'V1', ticker: 'URNB' }
+        { strategyId: ' momentum_breakout ', ticker: ' urnb ' },
+        { strategyId: 'MOMENTUM_BREAKOUT', ticker: 'URNB' }
       )
     ).toBe(true);
 
     expect(
       sameWatchlistIdentity(
-        { strategyId: 'MOMENTUM_BREAKOUT', strategyVersion: 'V1', ticker: 'URNB' },
-        { strategyId: 'MOMENTUM_BREAKOUT', strategyVersion: 'v1', ticker: 'URNB' }
+        { strategyId: 'MOMENTUM_BREAKOUT', ticker: 'URNB' },
+        { strategyId: 'QUALITY_DIP', ticker: 'URNB' }
       )
     ).toBe(false);
   });
@@ -66,7 +64,6 @@ describe('Watchlist domain', () => {
       id: 'watchlist-id',
       strategyId: 'MOMENTUM_BREAKOUT',
       strategyName: 'Momentum Breakout',
-      strategyVersion: 'V1',
       signalDate: '2026-08-27',
       ticker: 'URNB',
       company: 'Urban Outfitters',
@@ -85,7 +82,6 @@ describe('Watchlist domain', () => {
     });
     expect(watchlistIdentityOf(entry)).toEqual({
       strategyId: 'MOMENTUM_BREAKOUT',
-      strategyVersion: 'V1',
       ticker: 'URNB'
     });
   });
@@ -93,11 +89,6 @@ describe('Watchlist domain', () => {
   it.each([
     ['Strategy ID', { strategyId: ' ' }, 'Strategy ID absent de la ligne sélectionnée.'],
     ['Strategy', { strategyName: ' ' }, 'Strategy absente de la ligne sélectionnée.'],
-    [
-      'Strategy Version',
-      { strategyVersion: ' ' },
-      'Strategy Version absente de la ligne sélectionnée.'
-    ],
     ['Signal Date', { signalDate: '' }, 'Signal Date absente de la ligne sélectionnée.'],
     ['Ticker', { ticker: '' }, 'Ticker absent de la ligne sélectionnée.']
   ] as const)('rejects a missing %s', (_field, override, message) => {

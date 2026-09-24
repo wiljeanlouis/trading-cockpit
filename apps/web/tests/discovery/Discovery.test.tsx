@@ -10,15 +10,13 @@ const discovery: DiscoveryDto = {
     {
       strategyId: 'MOMENTUM_BREAKOUT',
       strategyName: 'Momentum Breakout',
-      strategyVersion: '1.0',
-      screener: 'FINVIZ'
+      strategyType: 'MOMENTUM'
     }
   ],
   items: [
     {
       strategyId: 'MOMENTUM_BREAKOUT',
       strategyName: 'Momentum Breakout',
-      strategyVersion: '1.0',
       signalDate: '2026-08-28',
       detectedAt: '2026-08-28T14:30:00.000Z',
       ticker: 'NVDA',
@@ -43,7 +41,6 @@ const discovery: DiscoveryDto = {
     {
       strategyId: 'MOMENTUM_BREAKOUT',
       strategyName: 'Momentum Breakout',
-      strategyVersion: '1.0',
       signalDate: '2026-08-27',
       detectedAt: '2026-08-27T14:30:00.000Z',
       ticker: 'BOX',
@@ -76,7 +73,7 @@ describe('Discovery', () => {
     expect(screen.getByText('Loading Discovery candidates…')).toBeInTheDocument();
     expect(await screen.findByRole('heading', { name: 'Discovery' })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /Strategy/i })).toHaveValue('ALL');
-    expect(screen.getByRole('option', { name: 'Momentum Breakout · 1.0' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Momentum Breakout' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /Ticker/ })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /Strategy/ })).toBeInTheDocument();
     expect(screen.getByText('NVDA')).toBeInTheDocument();
@@ -86,35 +83,34 @@ describe('Discovery', () => {
     expect(load).toHaveBeenCalledOnce();
   });
 
-  it('refreshes provider signals and reloads Discovery', async () => {
+  it('runs Discovery for the selected strategy and runtime Finviz URL', async () => {
     const load = vi.fn(async () => discovery);
     const cockpit = createGatewayStub({
       getDiscovery: load,
-      refreshSignals: vi.fn(async () => ({
-        scope: 'STRATEGY' as const,
+      runDiscovery: vi.fn(async () => ({
+        strategyId: 'MOMENTUM_BREAKOUT',
         archived: 12,
-        refreshed: [
-          {
-            strategyId: 'MOMENTUM_BREAKOUT',
-            strategyVersion: '1.0',
-            signalCount: 12,
-            archived: 12
-          }
-        ]
+        signalCount: 12
       }))
     });
     render(<Discovery gateway={cockpit} />);
     await screen.findByText('NVDA');
 
     fireEvent.change(screen.getByRole('combobox', { name: /Strategy/i }), {
-      target: { value: 'MOMENTUM_BREAKOUT::1.0' }
+      target: { value: 'MOMENTUM_BREAKOUT' }
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh Signals' }));
+    fireEvent.change(screen.getByLabelText('Finviz URL'), {
+      target: { value: 'https://elite.finviz.com/export/screener?v=151' }
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Run Discovery' }));
 
     expect(
-      await screen.findByText(/12 signal\(s\) refreshed for MOMENTUM_BREAKOUT/)
+      await screen.findByText(/12 signal\(s\) archived for MOMENTUM_BREAKOUT/)
     ).toBeInTheDocument();
-    expect(cockpit.refreshSignals).toHaveBeenCalledWith({ strategyId: 'MOMENTUM_BREAKOUT' });
+    expect(cockpit.runDiscovery).toHaveBeenCalledWith({
+      strategyId: 'MOMENTUM_BREAKOUT',
+      finvizUrl: 'https://elite.finviz.com/export/screener?v=151'
+    });
     expect(load).toHaveBeenCalledTimes(2);
     expect(screen.queryByRole('button', { name: 'Refresh Ranking' })).not.toBeInTheDocument();
   });
@@ -127,34 +123,10 @@ describe('Discovery', () => {
     await screen.findByText('NVDA');
 
     fireEvent.change(screen.getByRole('combobox', { name: /Strategy/i }), {
-      target: { value: 'MOMENTUM_BREAKOUT::1.0' }
+      target: { value: 'MOMENTUM_BREAKOUT' }
     });
 
-    expect(cockpit.refreshSignals).not.toHaveBeenCalled();
-    expect(cockpit.refreshAllSignals).not.toHaveBeenCalled();
-  });
-
-  it('keeps scoped refresh unavailable when all strategies are selected and supports refresh all', async () => {
-    const load = vi.fn(async () => discovery);
-    const cockpit = createGatewayStub({
-      getDiscovery: load,
-      refreshAllSignals: vi.fn(async () => ({
-        scope: 'ALL' as const,
-        archived: 12,
-        refreshed: []
-      }))
-    });
-    render(<Discovery gateway={cockpit} />);
-    await screen.findByText('NVDA');
-
-    expect(screen.getByRole('button', { name: 'Refresh Signals' })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Refresh All' }));
-
-    expect(
-      await screen.findByText(/12 signal\(s\) refreshed across all active strategies/)
-    ).toBeInTheDocument();
-    expect(cockpit.refreshAllSignals).toHaveBeenCalledOnce();
-    expect(load).toHaveBeenCalledTimes(2);
+    expect(cockpit.runDiscovery).not.toHaveBeenCalled();
   });
 
   it('adds a Discovery candidate to Watchlist through the gateway identity command', async () => {
@@ -176,7 +148,6 @@ describe('Discovery', () => {
     expect(await screen.findByText('NVDA added to Watchlist as WATCHING.')).toBeInTheDocument();
     expect(cockpit.addDiscoveryCandidateToWatchlist).toHaveBeenCalledWith({
       strategyId: 'MOMENTUM_BREAKOUT',
-      strategyVersion: '1.0',
       signalDate: '2026-08-28',
       ticker: 'NVDA'
     });

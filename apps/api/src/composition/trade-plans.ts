@@ -10,7 +10,6 @@ import type {
 import {
   LoadedTradePlanReader,
   readStrategyIds,
-  readStrategyVersionRecords,
   readTradePlans,
   SHEET_DEFINITIONS
 } from '../adapters/outbound/google-sheets-api/cockpit-query-readers';
@@ -26,17 +25,11 @@ export async function getTradePlansForCloudRun(dependencies: {
   sheets: RequestScopedSheets;
   now: () => Date;
 }): Promise<TradePlansDto> {
-  await dependencies.sheets.batchLoad([
-    SHEET_DEFINITIONS.tradePlans,
-    SHEET_DEFINITIONS.strategies,
-    SHEET_DEFINITIONS.strategyVersions
-  ]);
+  await dependencies.sheets.batchLoad([SHEET_DEFINITIONS.tradePlans, SHEET_DEFINITIONS.strategies]);
   const strategyIds = await readStrategyIds(dependencies.sheets);
-  const strategyVersions = await readStrategyVersionRecords(dependencies.sheets);
   return createGetTradePlans({
     reader: new LoadedTradePlanReader(await readTradePlans(dependencies.sheets)),
     strategyIds: () => strategyIds,
-    strategyVersions: () => strategyVersions,
     now: dependencies.now
   })();
 }

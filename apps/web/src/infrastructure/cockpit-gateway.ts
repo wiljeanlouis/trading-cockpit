@@ -9,7 +9,6 @@ import type {
   ClosePositionResponse,
   CreateFundedTradingAccountRequest,
   CreateStrategyRequest,
-  CreateStrategyVersionRequest,
   CreateTradingAccountRequest,
   DashboardDto,
   DashboardSummaryDto,
@@ -18,15 +17,14 @@ import type {
   ExecuteTradePlanRequest,
   ExecuteTradePlanResponse,
   DiscoveryDto,
-  RefreshSignalsRequest,
-  RefreshSignalsResponse,
+  RunDiscoveryRequest,
+  RunDiscoveryResponse,
   OpenPositionsDto,
   JournalDto,
   TradePlansDto,
   TradingAccountsDto,
   TradingAccountMutationResponse,
   UpdateStrategyRequest,
-  UpdateStrategyVersionRequest,
   UpdateTradingAccountRequest,
   UpdateTradePlanPlanningRequest,
   UpdateTradePlanPlanningResponse,
@@ -39,7 +37,6 @@ export interface AccountScopedQuery {
 
 export interface AnalyticsQuery extends AccountScopedQuery {
   strategyId?: string | null;
-  strategyVersion?: string | null;
 }
 
 export interface CockpitGateway {
@@ -47,8 +44,7 @@ export interface CockpitGateway {
   getDashboardSummary(): Promise<DashboardSummaryDto>;
   getWatchlist(): Promise<WatchlistDto>;
   getDiscovery(): Promise<DiscoveryDto>;
-  refreshSignals(request: RefreshSignalsRequest): Promise<RefreshSignalsResponse>;
-  refreshAllSignals(): Promise<RefreshSignalsResponse>;
+  runDiscovery(request: RunDiscoveryRequest): Promise<RunDiscoveryResponse>;
   addDiscoveryCandidateToWatchlist(
     request: AddDiscoveryCandidateToWatchlistRequest
   ): Promise<AddDiscoveryCandidateToWatchlistResponse>;
@@ -59,8 +55,6 @@ export interface CockpitGateway {
   validateStrategies(): Promise<boolean>;
   createStrategy(request: CreateStrategyRequest): Promise<void>;
   updateStrategy(request: UpdateStrategyRequest): Promise<void>;
-  createStrategyVersion(request: CreateStrategyVersionRequest): Promise<void>;
-  updateStrategyVersion(request: UpdateStrategyVersionRequest): Promise<void>;
   setupTradingAccounts(): Promise<void>;
   createTradingAccount(
     request: CreateTradingAccountRequest

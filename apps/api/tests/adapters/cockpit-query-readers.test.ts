@@ -6,11 +6,9 @@ import {
   readSignalSnapshots,
   readPositions,
   readStrategyRecords,
-  readStrategyVersionRecords,
   readStrategyIds,
   readTradePlans,
   readTradingAccounts,
-  validateStrategies,
   readWatchlistEntries,
   SHEET_DEFINITIONS,
   WATCHLIST_HEADERS
@@ -51,7 +49,6 @@ describe('Cloud Run Google Sheets API query readers', () => {
             'Watchlist ID': 'W1',
             'Strategy ID': 'momentum_breakout',
             Strategy: 'Momentum Breakout',
-            'Strategy Version': 'V1',
             'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
             Ticker: 'BOX',
             Company: 'Box Inc',
@@ -86,7 +83,6 @@ describe('Cloud Run Google Sheets API query readers', () => {
             'Watchlist ID': 'W1',
             'Strategy ID': 'MOMENTUM_BREAKOUT',
             Strategy: 'Momentum Breakout',
-            'Strategy Version': 'V1',
             'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
             Ticker: 'BOX',
             'Entry Price': 34,
@@ -147,7 +143,6 @@ describe('Cloud Run Google Sheets API query readers', () => {
             'Watchlist ID': 'W1',
             'Strategy ID': 'MOMENTUM_BREAKOUT',
             Strategy: 'Momentum Breakout',
-            'Strategy Version': 'V1',
             Ticker: 'BOX',
             'Opened At': sheetsSerialDate('2026-08-28T14:30:00.000Z'),
             'Planned Entry': 34,
@@ -192,7 +187,6 @@ describe('Cloud Run Google Sheets API query readers', () => {
             'Watchlist ID': 'W1',
             'Strategy ID': 'MOMENTUM_BREAKOUT',
             Strategy: 'Momentum Breakout',
-            'Strategy Version': 'V1',
             Ticker: 'BOX',
             'Opened At': sheetsSerialDate('2026-08-28T14:30:00.000Z'),
             'Closed At': sheetsSerialDate('2026-08-29T14:30:00.000Z'),
@@ -274,7 +268,6 @@ describe('Cloud Run Google Sheets API query readers', () => {
             'Detected At': sheetsSerialDate('2026-08-27T14:30:00.000Z'),
             'Strategy ID': 'MOMENTUM_BREAKOUT',
             Strategy: 'Momentum Breakout',
-            'Strategy Version': 'V1',
             Ticker: 'BOX',
             'Finviz Ticker': 'BOX',
             Company: 'Box Inc',
@@ -322,127 +315,6 @@ describe('Cloud Run Google Sheets API query readers', () => {
     ).rejects.toThrow('Enabled obligatoire.');
   });
 
-  it('ignores trailing checkbox-only Strategy Version rows', async () => {
-    const headers = SHEET_DEFINITIONS.strategyVersions.requiredHeaders;
-
-    await expect(
-      readStrategyVersionRecords(
-        sheets({
-          [SHEET_DEFINITIONS.strategyVersions.range]: [
-            [...headers],
-            rowFor(headers, {
-              'Strategy ID': 'MOMENTUM_BREAKOUT',
-              Version: 'V1',
-              Enabled: true,
-              'Screener Code': 'MOMENTUM_BREAKOUT_V1',
-              Screener: 'FINVIZ',
-              'Finviz URL': 'https://elite.finviz.com/export/screener?v=151'
-            }),
-            rowFor(headers, { Enabled: false })
-          ]
-        })
-      )
-    ).resolves.toEqual([
-      {
-        strategyId: 'MOMENTUM_BREAKOUT',
-        version: 'V1',
-        enabled: true,
-        screenerCode: 'MOMENTUM_BREAKOUT_V1',
-        screener: 'FINVIZ',
-        screenerUrl: 'https://elite.finviz.com/export/screener?v=151'
-      }
-    ]);
-  });
-
-  it('validates enabled versions only when their parent Strategy is enabled', async () => {
-    const strategyHeaders = SHEET_DEFINITIONS.strategies.requiredHeaders;
-    const strategyVersionHeaders = SHEET_DEFINITIONS.strategyVersions.requiredHeaders;
-
-    await expect(
-      validateStrategies(
-        sheets({
-          [SHEET_DEFINITIONS.strategies.range]: [
-            [...strategyHeaders],
-            rowFor(strategyHeaders, {
-              'Strategy ID': 'MOMENTUM_BREAKOUT',
-              Name: 'Momentum Breakout',
-              Type: 'MOMENTUM',
-              Enabled: false,
-              Description: ''
-            }),
-            rowFor(strategyHeaders, {
-              'Strategy ID': 'QUALITY_DIP',
-              Name: 'Quality Dip',
-              Type: 'QUALITY',
-              Enabled: true,
-              Description: ''
-            })
-          ],
-          [SHEET_DEFINITIONS.strategyVersions.range]: [
-            [...strategyVersionHeaders],
-            rowFor(strategyVersionHeaders, {
-              'Strategy ID': 'MOMENTUM_BREAKOUT',
-              Version: 'V1',
-              Enabled: true,
-              'Screener Code': 'MOMENTUM_BREAKOUT_V1',
-              Screener: 'FINVIZ',
-              'Finviz URL': 'https://elite.finviz.com/export/screener?v=151'
-            }),
-            rowFor(strategyVersionHeaders, {
-              'Strategy ID': 'QUALITY_DIP',
-              Version: 'V1',
-              Enabled: true,
-              'Screener Code': 'QUALITY_DIP_V1',
-              Screener: 'FINVIZ',
-              'Finviz URL': 'https://elite.finviz.com/export/screener?v=151&f=quality'
-            })
-          ]
-        })
-      )
-    ).resolves.toBe(true);
-  });
-
-  it('still rejects multiple active versions for an enabled parent Strategy', async () => {
-    const strategyHeaders = SHEET_DEFINITIONS.strategies.requiredHeaders;
-    const strategyVersionHeaders = SHEET_DEFINITIONS.strategyVersions.requiredHeaders;
-
-    await expect(
-      validateStrategies(
-        sheets({
-          [SHEET_DEFINITIONS.strategies.range]: [
-            [...strategyHeaders],
-            rowFor(strategyHeaders, {
-              'Strategy ID': 'MOMENTUM_BREAKOUT',
-              Name: 'Momentum Breakout',
-              Type: 'MOMENTUM',
-              Enabled: true,
-              Description: ''
-            })
-          ],
-          [SHEET_DEFINITIONS.strategyVersions.range]: [
-            [...strategyVersionHeaders],
-            rowFor(strategyVersionHeaders, {
-              'Strategy ID': 'MOMENTUM_BREAKOUT',
-              Version: 'V1',
-              Enabled: true,
-              'Screener Code': 'MOMENTUM_BREAKOUT_V1',
-              Screener: 'FINVIZ',
-              'Finviz URL': 'https://elite.finviz.com/export/screener?v=151'
-            }),
-            rowFor(strategyVersionHeaders, {
-              'Strategy ID': 'MOMENTUM_BREAKOUT',
-              Version: 'V2',
-              Enabled: true,
-              'Screener Code': 'MOMENTUM_BREAKOUT_V2',
-              Screener: 'FINVIZ',
-              'Finviz URL': 'https://elite.finviz.com/export/screener?v=151&f=v2'
-            })
-          ]
-        })
-      )
-    ).rejects.toThrow('Plusieurs versions actives pour MOMENTUM_BREAKOUT');
-  });
-
   it('maps Signals History when batch-loaded with Watchlist using Google-canonical ranges', async () => {
     const signalHeaders = SHEET_DEFINITIONS.signalsHistory.requiredHeaders;
     const watchlistHeaders = SHEET_DEFINITIONS.watchlist.requiredHeaders;
@@ -457,21 +329,19 @@ describe('Cloud Run Google Sheets API query readers', () => {
               'Detected At': sheetsSerialDate('2026-08-27T14:30:00.000Z'),
               'Strategy ID': 'MOMENTUM_BREAKOUT',
               Strategy: 'Momentum Breakout',
-              'Strategy Version': 'V1',
               Ticker: 'BOX',
               'Finviz Ticker': 'BOX',
               Price: 34.82
             })
           ]
         },
-        'Watchlist!A1:U1000': {
+        'Watchlist!A1:T1000': {
           values: [
             [...watchlistHeaders],
             rowFor(watchlistHeaders, {
               'Watchlist ID': 'WL-1',
               'Strategy ID': 'MOMENTUM_BREAKOUT',
               Strategy: 'Momentum Breakout',
-              'Strategy Version': 'V1',
               Ticker: 'BOX',
               Status: 'WATCHING'
             })
@@ -503,11 +373,10 @@ describe('Cloud Run Google Sheets API query readers', () => {
   it('finds Trade Plan ID when Trade Plans are batch-loaded with Strategies using Google-canonical ranges', async () => {
     const tradePlanHeaders = SHEET_DEFINITIONS.tradePlans.requiredHeaders;
     const strategyHeaders = SHEET_DEFINITIONS.strategies.requiredHeaders;
-    const strategyVersionHeaders = SHEET_DEFINITIONS.strategyVersions.requiredHeaders;
     const client: SheetsValuesClient = {
       getValues: vi.fn(async () => ({ values: [] })),
       batchGetValues: vi.fn(async () => ({
-        'Trade Plans!A1:AC1000': {
+        'Trade Plans!A1:AB1000': {
           values: [
             [...tradePlanHeaders],
             rowFor(tradePlanHeaders, {
@@ -515,7 +384,6 @@ describe('Cloud Run Google Sheets API query readers', () => {
               'Watchlist ID': 'WL-1',
               'Strategy ID': 'MOMENTUM_BREAKOUT',
               Strategy: 'Momentum Breakout',
-              'Strategy Version': 'V1',
               Ticker: 'BOX',
               Status: 'DRAFT',
               'Account ID': 'A1'
@@ -534,22 +402,8 @@ describe('Cloud Run Google Sheets API query readers', () => {
             })
           ]
         },
-        'Strategy Versions!A1:F1000': {
-          values: [
-            [...strategyVersionHeaders],
-            rowFor(strategyVersionHeaders, {
-              'Strategy ID': 'MOMENTUM_BREAKOUT',
-              Version: 'V1',
-              Enabled: true,
-              'Screener Code': 'MOMENTUM_BREAKOUT_V1',
-              Screener: 'FINVIZ',
-              'Finviz URL': 'https://elite.finviz.com/export/screener?v=151'
-            })
-          ]
-        },
         [SHEET_DEFINITIONS.tradePlans.range]: {},
-        [SHEET_DEFINITIONS.strategies.range]: {},
-        [SHEET_DEFINITIONS.strategyVersions.range]: {}
+        [SHEET_DEFINITIONS.strategies.range]: {}
       }))
     };
     const requestSheets = createRequestScopedSheets({
@@ -557,11 +411,7 @@ describe('Cloud Run Google Sheets API query readers', () => {
       spreadsheetId: 'spreadsheet-id'
     });
 
-    await requestSheets.batchLoad([
-      SHEET_DEFINITIONS.tradePlans,
-      SHEET_DEFINITIONS.strategies,
-      SHEET_DEFINITIONS.strategyVersions
-    ]);
+    await requestSheets.batchLoad([SHEET_DEFINITIONS.tradePlans, SHEET_DEFINITIONS.strategies]);
 
     await expect(readTradePlans(requestSheets)).resolves.toEqual([
       expect.objectContaining({ id: 'TP-1', ticker: 'BOX', status: 'DRAFT' })
@@ -586,7 +436,6 @@ describe('Cloud Run Google Sheets API query readers', () => {
               'Detected At': sheetsSerialDate('2026-08-27T14:30:00.000Z'),
               'Strategy ID': 'MOMENTUM_BREAKOUT',
               Strategy: 'Momentum Breakout',
-              'Strategy Version': 'V1',
               Ticker: 'BOX',
               'Finviz Ticker': 'BOX',
               Price: 34,
@@ -594,7 +443,7 @@ describe('Cloud Run Google Sheets API query readers', () => {
             })
           ]
         },
-        'Watchlist!A1:U1000': {
+        'Watchlist!A1:T1000': {
           values: [
             [...watchlistHeaders],
             rowFor(watchlistHeaders, {
@@ -609,7 +458,7 @@ describe('Cloud Run Google Sheets API query readers', () => {
             })
           ]
         },
-        'Trade Plans!A1:AC1000': {
+        'Trade Plans!A1:AB1000': {
           values: [
             [...tradePlanHeaders],
             rowFor(tradePlanHeaders, {
@@ -619,7 +468,7 @@ describe('Cloud Run Google Sheets API query readers', () => {
             })
           ]
         },
-        'Positions!A1:Z1000': {
+        'Positions!A1:Y1000': {
           values: [
             [...positionHeaders],
             rowFor(positionHeaders, {

@@ -40,15 +40,9 @@ import {
 } from '../../../outbound/google-sheets/watchlist/watchlist-sheet';
 import {
   getOrCreateStrategiesSheet,
-  getOrCreateStrategyVersionsSheet,
-  validateStrategiesHeaders,
-  validateStrategiesInSheets
+  validateStrategiesHeaders
 } from '../../../outbound/google-sheets/trading-strategy/trading-strategy-sheet';
-import {
-  SIGNALS_HISTORY_HEADERS,
-  STRATEGY_HEADERS,
-  STRATEGY_VERSION_HEADERS
-} from '@trading-cockpit/contracts';
+import { SIGNALS_HISTORY_HEADERS, STRATEGY_HEADERS } from '@trading-cockpit/contracts';
 
 export type WorkbookSheetClassification = 'DATA' | 'CONFIG' | 'TECHNICAL' | 'LEGACY_UNUSED';
 
@@ -147,13 +141,6 @@ function tableDefinitions(): TableSheetDefinition[] {
       headers: STRATEGY_HEADERS,
       initialize: getOrCreateStrategiesSheet,
       validateHeaders: validateStrategiesHeaders
-    },
-    {
-      sheetName: 'Strategy Versions',
-      classification: 'CONFIG',
-      headers: STRATEGY_VERSION_HEADERS,
-      initialize: getOrCreateStrategyVersionsSheet,
-      validateHeaders: () => validateStrategiesInSheets()
     },
     {
       sheetName: 'Finviz Signals',

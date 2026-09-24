@@ -17,7 +17,6 @@ export interface NormalizedPositionSource {
   watchlistId: string;
   strategyId: string;
   strategyName: string;
-  strategyVersion: string;
   ticker: string;
   plannedEntry: PositionSnapshotValue;
   plannedStop: PositionSnapshotValue;
@@ -35,7 +34,6 @@ export interface Position {
   watchlistId: string;
   strategyId: string;
   strategyName: string;
-  strategyVersion: string;
   ticker: string;
   openedAt: PositionSnapshotValue;
   plannedEntry: PositionSnapshotValue;
@@ -136,7 +134,6 @@ export function normalizePositionSource(tradePlan: TradePlan): NormalizedPositio
   const watchlistId = String(tradePlan.watchlistId || '').trim();
   const strategyId = normalizeStrategyId(tradePlan.strategyId);
   const strategyName = String(tradePlan.strategyName || '').trim();
-  const strategyVersion = String(tradePlan.strategyVersion || '').trim();
   const ticker = normalizeTicker(tradePlan.ticker);
 
   if (!tradePlanId) {
@@ -156,10 +153,6 @@ export function normalizePositionSource(tradePlan: TradePlan): NormalizedPositio
     throw new Error('Strategy absente.');
   }
 
-  if (!strategyVersion) {
-    throw new Error('Strategy Version absente.');
-  }
-
   if (!ticker) {
     throw new Error('Ticker absent.');
   }
@@ -170,7 +163,6 @@ export function normalizePositionSource(tradePlan: TradePlan): NormalizedPositio
     watchlistId,
     strategyId,
     strategyName,
-    strategyVersion,
     ticker,
     plannedEntry: tradePlan.entryPrice,
     plannedStop: tradePlan.stopPrice,
@@ -255,7 +247,6 @@ export function createOpenPosition(
     watchlistId: source.watchlistId,
     strategyId: source.strategyId,
     strategyName: source.strategyName,
-    strategyVersion: source.strategyVersion,
     ticker: source.ticker,
     openedAt,
     plannedEntry: source.plannedEntry,

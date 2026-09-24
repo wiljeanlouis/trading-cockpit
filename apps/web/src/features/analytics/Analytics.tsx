@@ -381,57 +381,6 @@ export function Analytics({ gateway }: AnalyticsProps) {
               </TableScroll>
             )}
           </DataPanel>
-
-          <DataPanel aria-label="Performance by strategy version">
-            <TableSummary>
-              <span>{data.byStrategyVersion.length} version row(s)</span>
-              <small>Grouped by Strategy ID / Version</small>
-            </TableSummary>
-            {data.byStrategyVersion.length === 0 ? (
-              <div className="grid min-h-[160px] place-content-center text-center text-[#8294aa]">
-                <strong className="text-[#d7e2ee]">No strategy version analytics yet</strong>
-              </div>
-            ) : (
-              <TableScroll>
-                <Table className="min-w-[1040px] border-collapse tabular-nums">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Strategy</TableHead>
-                      <TableHead>Version</TableHead>
-                      <TableHead>Trades</TableHead>
-                      <TableHead>Wins</TableHead>
-                      <TableHead>Win Rate</TableHead>
-                      <TableHead>Total P&amp;L</TableHead>
-                      <TableHead>Average R</TableHead>
-                      <TableHead>Total R</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.byStrategyVersion.map((row, index) => (
-                      <TableRow
-                        key={`${row.strategyId}-${row.version}-${index}`}
-                        className={strategyRowClassName(index)}
-                      >
-                        <TableCell>
-                          <strong>{row.strategy}</strong>
-                          <span className={tableDetailClassName}>{row.strategyId}</span>
-                        </TableCell>
-                        <TableCell>{row.version}</TableCell>
-                        <TableCell>{row.trades}</TableCell>
-                        <TableCell>{row.wins}</TableCell>
-                        <TableCell>{formatPercent(row.winRate)}</TableCell>
-                        <TableCell className={monetaryTone(row.totalPnl)}>
-                          {formatMoney(row.totalPnl)}
-                        </TableCell>
-                        <TableCell>{formatNumber(row.averageR)}</TableCell>
-                        <TableCell>{formatNumber(row.totalR)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableScroll>
-            )}
-          </DataPanel>
         </div>
       )}
     </PageShell>

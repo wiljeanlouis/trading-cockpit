@@ -247,9 +247,7 @@ export function TradePlanDetail({ plan, gateway, onClose, onExecuted }: TradePla
                   <div>
                     <dt>Strategy</dt>
                     <dd>{plan.strategyName}</dd>
-                    <small>
-                      {plan.strategyId} · v{plan.strategyVersion}
-                    </small>
+                    <small>{plan.strategyId}</small>
                   </div>
                   <div>
                     <dt>Signal date</dt>

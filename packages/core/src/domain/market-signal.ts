@@ -2,7 +2,6 @@ export interface MarketSignalFeed {
   id: string;
   strategyId: string;
   strategyName: string;
-  strategyVersion: string;
 }
 
 export interface MarketSignal {
@@ -21,7 +20,6 @@ export interface SignalSnapshot {
   detectedAt: Date;
   strategyId: string;
   strategyName: string;
-  strategyVersion: string;
   ticker: string;
   attributes: Record<string, unknown>;
 }
@@ -35,23 +33,14 @@ export function validateMarketSignalFeed(feed: MarketSignalFeed | null): void {
   if (!String(feed.strategyName || '').trim()) {
     throw new Error(`Strategy absente pour ${feed.strategyId}.`);
   }
-  if (!String(feed.strategyVersion || '').trim()) {
-    throw new Error(`Strategy Version absente pour ${feed.strategyId}.`);
-  }
 }
 
-export function buildSignalKey(
-  date: unknown,
-  strategyId: unknown,
-  version: unknown,
-  ticker: unknown
-): string {
+export function buildSignalKey(date: unknown, strategyId: unknown, ticker: unknown): string {
   return [
     String(date || '').trim(),
     String(strategyId || '')
       .trim()
       .toUpperCase(),
-    String(version || '').trim(),
     String(ticker || '')
       .trim()
       .toUpperCase()

@@ -15,7 +15,6 @@ const data: OpenPositionsDto = {
       ticker: 'BOX',
       strategyId: 'BREAKOUT',
       strategyName: 'Breakout',
-      strategyVersion: 'V1',
       openedAt: '2026-08-28T14:00:00.000Z',
       plannedEntry: 35,
       actualEntry: 35,

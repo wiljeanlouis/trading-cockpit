@@ -4,19 +4,39 @@ import type {
   MarketSignalBatch,
   MarketSignalFeed
 } from '@trading-cockpit/core/domain/market-signal';
+import type { TradingStrategy } from '@trading-cockpit/core/domain/trading-strategy';
 import type { MarketSignalSource } from '@trading-cockpit/core/ports/outbound/market-signal-source';
+import type { TradingStrategyCatalog } from '@trading-cockpit/core/ports/outbound/trading-strategy-catalog';
 
 const feed: MarketSignalFeed = {
   id: 'MOMENTUM_V1',
   strategyId: 'MOMENTUM_BREAKOUT',
-  strategyName: 'Momentum Breakout',
-  strategyVersion: 'V1'
+  strategyName: 'Momentum Breakout'
 };
 const batch: MarketSignalBatch = {
   feed,
   attributeNames: ['Ticker', 'Price'],
   signals: [{ ticker: 'BOX', attributes: { Ticker: 'BOX', Price: 30 } }]
 };
+
+function strategy(overrides: Partial<TradingStrategy> = {}): TradingStrategy {
+  return {
+    id: feed.strategyId,
+    name: feed.strategyName,
+    type: 'MOMENTUM',
+    enabled: true,
+    description: '',
+    ...overrides
+  };
+}
+
+function catalog(getById: (strategyId: string) => TradingStrategy): TradingStrategyCatalog {
+  return {
+    getById,
+    findById: (strategyId) => getById(strategyId),
+    findAll: () => [getById(feed.strategyId)]
+  };
+}
 
 function context(source?: MarketSignalSource) {
   const marketSource: MarketSignalSource =
@@ -29,9 +49,7 @@ function context(source?: MarketSignalSource) {
   const archiveSignals = vi.fn(() => 1);
   const refresh = createRefreshMarketSignals({
     source: marketSource,
-    strategyCatalog: {
-      getById: vi.fn(() => ({ id: feed.strategyId, version: 'V1', enabled: true }))
-    },
+    strategyCatalog: catalog(vi.fn(() => strategy())),
     projection,
     archiveSignals,
     now: () => new Date('2026-08-28T12:00:00Z')
@@ -52,8 +70,7 @@ describe('refresh market signals', () => {
         {
           archived: 1,
           signalCount: 1,
-          strategyId: 'MOMENTUM_BREAKOUT',
-          strategyVersion: 'V1'
+          strategyId: 'MOMENTUM_BREAKOUT'
         }
       ]
     });
@@ -65,27 +82,13 @@ describe('refresh market signals', () => {
     const value = context();
     const refresh = createRefreshMarketSignals({
       source: value.source,
-      strategyCatalog: { getById: () => ({ id: feed.strategyId, version: 'V1', enabled: false }) },
+      strategyCatalog: catalog(() => strategy({ enabled: false })),
       projection: value.projection,
       archiveSignals: value.archiveSignals,
       now: () => new Date()
     });
     expect(refresh).toThrow('La stratégie MOMENTUM_BREAKOUT est désactivée.');
     expect(value.source.fetchSignals).not.toHaveBeenCalled();
-  });
-
-  it('preserves strategy version validation', () => {
-    const value = context();
-    const refresh = createRefreshMarketSignals({
-      source: value.source,
-      strategyCatalog: { getById: () => ({ id: feed.strategyId, version: 'V2', enabled: true }) },
-      projection: value.projection,
-      archiveSignals: value.archiveSignals,
-      now: () => new Date()
-    });
-    expect(refresh).toThrow(
-      'Version incohérente pour MOMENTUM_BREAKOUT. Screener=V1, Strategies=V2.'
-    );
   });
 
   it('aggregates archives for multiple provider-neutral feeds', () => {
@@ -101,14 +104,12 @@ describe('refresh market signals', () => {
         {
           archived: 1,
           signalCount: 1,
-          strategyId: 'MOMENTUM_BREAKOUT',
-          strategyVersion: 'V1'
+          strategyId: 'MOMENTUM_BREAKOUT'
         },
         {
           archived: 1,
           signalCount: 1,
-          strategyId: 'MOMENTUM_BREAKOUT',
-          strategyVersion: 'V1'
+          strategyId: 'MOMENTUM_BREAKOUT'
         }
       ]
     });
@@ -119,8 +120,7 @@ describe('refresh market signals', () => {
     const secondFeed: MarketSignalFeed = {
       id: 'QUALITY_DIP_V1',
       strategyId: 'QUALITY_DIP',
-      strategyName: 'Quality Dip',
-      strategyVersion: 'V1'
+      strategyName: 'Quality Dip'
     };
     const fetchSignals = vi.fn((id: string) => ({
       ...batch,
@@ -134,13 +134,7 @@ describe('refresh market signals', () => {
     const archiveSignals = vi.fn(() => 1);
     const refresh = createRefreshMarketSignals({
       source,
-      strategyCatalog: {
-        getById: vi.fn((strategyId: string) => ({
-          id: strategyId,
-          version: 'V1',
-          enabled: true
-        }))
-      },
+      strategyCatalog: catalog(vi.fn((strategyId: string) => strategy({ id: strategyId }))),
       projection,
       archiveSignals,
       now: () => new Date('2026-08-28T12:00:00Z')
@@ -152,8 +146,7 @@ describe('refresh market signals', () => {
         {
           archived: 1,
           signalCount: 1,
-          strategyId: 'QUALITY_DIP',
-          strategyVersion: 'V1'
+          strategyId: 'QUALITY_DIP'
         }
       ]
     });

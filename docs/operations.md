@@ -243,8 +243,8 @@ A concise end-to-end smoke test after deployment:
 2. Call `/health` or confirm the app shell loads.
 3. In the Google Sheet, run `Validate Trading Cockpit` and require `VALID`.
 4. Configure the Cloud Run Finviz secret/runtime configuration if needed.
-5. In React Discovery, select a Strategy and run `Refresh Signals`, or explicitly run
-   `Refresh All` when all active strategy feeds should be refreshed.
+5. In React Discovery, select one Strategy, paste the Finviz export URL for that run, and run
+   Discovery.
 6. Confirm Signals History receives rows with complete canonical headers.
 7. Add one Discovery candidate to Watchlist.
 8. Create a Trade Plan from Watchlist.

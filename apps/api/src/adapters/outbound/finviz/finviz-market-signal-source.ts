@@ -10,7 +10,6 @@ export interface FinvizFeedConfiguration {
   id: string;
   strategyId: string;
   strategyName: string;
-  strategyVersion: string;
   query: string;
 }
 
@@ -41,8 +40,7 @@ export class CloudRunFinvizMarketSignalSource implements MarketSignalSource {
     return this.configurations.map((config) => ({
       id: config.id,
       strategyId: config.strategyId,
-      strategyName: config.strategyName,
-      strategyVersion: config.strategyVersion
+      strategyName: config.strategyName
     }));
   }
 
@@ -82,8 +80,7 @@ export class CloudRunFinvizMarketSignalSource implements MarketSignalSource {
         feed: {
           id: config.id,
           strategyId: config.strategyId,
-          strategyName: config.strategyName,
-          strategyVersion: config.strategyVersion
+          strategyName: config.strategyName
         },
         attributeNames: headers,
         signals: rows.slice(1).map((values) => ({

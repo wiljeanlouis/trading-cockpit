@@ -4,12 +4,7 @@ import type {
   DiscoveryStrategyDto
 } from '@trading-cockpit/contracts';
 import type { SignalSnapshot } from '../../domain/market-signal';
-import {
-  normalizeTradingStrategyId,
-  normalizeTradingStrategyVersionText,
-  type TradingStrategy,
-  type TradingStrategyVersion
-} from '../../domain/trading-strategy';
+import { normalizeTradingStrategyId, type TradingStrategy } from '../../domain/trading-strategy';
 import { isActiveWatchlistStatus, watchlistIdentityOf } from '../../domain/watchlist';
 import type { DiscoverySignalReader } from '../../ports/outbound/discovery-signal-reader';
 import type { WatchlistReader } from '../../ports/outbound/watchlist-reader';
@@ -55,57 +50,43 @@ function serializableTextOrNumber(value: unknown): string | number | null {
   return typeof normalized === 'boolean' ? String(normalized) : normalized;
 }
 
-function strategyVersionKey(strategyId: string, strategyVersion: string): string {
-  return `${normalizeTradingStrategyId(strategyId)}|${normalizeTradingStrategyVersionText(strategyVersion)}`;
-}
-
-function signalIdentityKey(signal: Pick<SignalSnapshot, 'strategyId' | 'strategyVersion'>): string {
-  return strategyVersionKey(signal.strategyId, signal.strategyVersion);
+function signalStrategyKey(signal: Pick<SignalSnapshot, 'strategyId'>): string {
+  return normalizeTradingStrategyId(signal.strategyId);
 }
 
 function watchlistIdentityKey(identity: ReturnType<typeof watchlistIdentityOf>): string {
-  return `${identity.strategyId}|${identity.strategyVersion}|${identity.ticker}`;
+  return `${identity.strategyId}|${identity.ticker}`;
 }
 
 /**
- * Resolves the currently discoverable Strategy + Version pairs from canonical strategy
- * configuration. Disabled strategies or versions remain historically readable, but are excluded
- * from new Discovery candidate selection.
+ * Resolves currently discoverable Strategies from canonical strategy configuration. Disabled
+ * strategies remain historically readable, but are excluded from new Discovery candidate selection.
  */
 function activeDiscoveryStrategies(
-  strategies: readonly TradingStrategy[],
-  versions: readonly TradingStrategyVersion[]
+  strategies: readonly TradingStrategy[]
 ): Map<string, DiscoveryStrategyDto> {
-  const strategyById = new Map(
+  return new Map(
     strategies
       .filter((strategy) => strategy.enabled)
-      .map((strategy) => [normalizeTradingStrategyId(strategy.id), strategy])
+      .map((strategy) => [
+        normalizeTradingStrategyId(strategy.id),
+        {
+          strategyId: strategy.id,
+          strategyName: strategy.name,
+          strategyType: strategy.type
+        }
+      ])
   );
-  const active = new Map<string, DiscoveryStrategyDto>();
-
-  for (const version of versions) {
-    if (!version.enabled) continue;
-    const strategy = strategyById.get(normalizeTradingStrategyId(version.strategyId));
-    if (!strategy) continue;
-    active.set(strategyVersionKey(version.strategyId, version.version), {
-      strategyId: strategy.id,
-      strategyName: strategy.name,
-      strategyVersion: version.version,
-      screener: version.screener
-    });
-  }
-
-  return active;
 }
 
 /**
- * Finds the latest archived signal snapshot per Strategy ID + Version so Discovery reads current
- * candidates without requiring a separate materialized ranking sheet.
+ * Finds the latest archived signal snapshot per Strategy ID so Discovery reads current candidates
+ * without requiring a separate materialized ranking sheet.
  */
 function latestSignalDateByStrategy(signals: readonly SignalSnapshot[]): Map<string, string> {
   const latest = new Map<string, string>();
   for (const signal of signals) {
-    const key = signalIdentityKey(signal);
+    const key = signalStrategyKey(signal);
     const signalDate = text(signal.signalDate);
     if (!signalDate) continue;
     const current = latest.get(key);
@@ -128,14 +109,12 @@ function candidateFromSignal(
   );
   const identity = watchlistIdentityOf({
     strategyId: signal.strategyId,
-    strategyVersion: signal.strategyVersion,
     ticker: signal.ticker
   });
 
   return {
     strategyId: signal.strategyId,
     strategyName: signal.strategyName || strategy.strategyName,
-    strategyVersion: signal.strategyVersion,
     signalDate: nullableText(signal.signalDate),
     detectedAt: signal.detectedAt instanceof Date ? signal.detectedAt.toISOString() : null,
     ticker: signal.ticker,
@@ -169,13 +148,10 @@ export function createGetDiscovery({
   now
 }: GetDiscoveryDependencies) {
   return (): DiscoveryDto => {
-    const activeStrategies = activeDiscoveryStrategies(
-      signalReader.findAllStrategies(),
-      signalReader.findAllStrategyVersions()
-    );
+    const activeStrategies = activeDiscoveryStrategies(signalReader.findAllStrategies());
     const signals = signalReader
       .findAllSignals()
-      .filter((signal) => activeStrategies.has(signalIdentityKey(signal)));
+      .filter((signal) => activeStrategies.has(signalStrategyKey(signal)));
     const latestDates = latestSignalDateByStrategy(signals);
 
     const activeWatchlistStatuses = new Map<string, string>();
@@ -186,33 +162,24 @@ export function createGetDiscovery({
     }
 
     const items = signals
-      .filter((signal) => signal.signalDate === latestDates.get(signalIdentityKey(signal)))
+      .filter((signal) => signal.signalDate === latestDates.get(signalStrategyKey(signal)))
       .map((signal) =>
         candidateFromSignal(
           signal,
-          activeStrategies.get(signalIdentityKey(signal))!,
+          activeStrategies.get(signalStrategyKey(signal))!,
           activeWatchlistStatuses
         )
       )
       .sort(
         (left, right) =>
           left.strategyName.localeCompare(right.strategyName, undefined, { sensitivity: 'base' }) ||
-          left.strategyVersion.localeCompare(right.strategyVersion, undefined, {
-            sensitivity: 'base',
-            numeric: true
-          }) ||
           left.ticker.localeCompare(right.ticker, undefined, { sensitivity: 'base' })
       );
 
     return {
       generatedAt: now().toISOString(),
-      strategies: [...activeStrategies.values()].sort(
-        (left, right) =>
-          left.strategyName.localeCompare(right.strategyName, undefined, { sensitivity: 'base' }) ||
-          left.strategyVersion.localeCompare(right.strategyVersion, undefined, {
-            sensitivity: 'base',
-            numeric: true
-          })
+      strategies: [...activeStrategies.values()].sort((left, right) =>
+        left.strategyName.localeCompare(right.strategyName, undefined, { sensitivity: 'base' })
       ),
       items
     };

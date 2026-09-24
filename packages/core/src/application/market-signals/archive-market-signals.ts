@@ -37,19 +37,13 @@ export function createArchiveMarketSignals(dependencies: ArchiveMarketSignalsDep
         .trim()
         .toUpperCase();
       if (!ticker) continue;
-      const key = buildSignalKey(
-        signalDate,
-        batch.feed.strategyId,
-        batch.feed.strategyVersion,
-        ticker
-      );
+      const key = buildSignalKey(signalDate, batch.feed.strategyId, ticker);
       if (existingKeys.has(key)) continue;
       snapshots.push({
         signalDate,
         detectedAt: now,
         strategyId: batch.feed.strategyId,
         strategyName: batch.feed.strategyName,
-        strategyVersion: batch.feed.strategyVersion,
         ticker,
         attributes: Object.fromEntries(
           batch.attributeNames.map((name) => [name, signal.attributes[name]])

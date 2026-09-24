@@ -157,9 +157,7 @@ export function PositionDetail({ position, gateway, onClose, onClosed }: Positio
                   <div>
                     <dt>Strategy</dt>
                     <dd>{position.strategyName}</dd>
-                    <small>
-                      {position.strategyId} · v{position.strategyVersion}
-                    </small>
+                    <small>{position.strategyId}</small>
                   </div>
                 </FactGrid>
               </FactSection>

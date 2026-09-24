@@ -40,7 +40,6 @@ const analytics: AnalyticsDto = {
       totalR: 1.5
     }
   ],
-  byStrategyVersion: [],
   byAccount: [
     {
       accountId: 'A1',

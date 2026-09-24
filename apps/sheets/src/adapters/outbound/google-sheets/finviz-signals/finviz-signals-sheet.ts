@@ -7,7 +7,6 @@ const FINVIZ_SIGNALS_SHEET_NAME = 'Finviz Signals';
 export const FINVIZ_SIGNALS_HEADERS = [
   'Strategy ID',
   'Strategy',
-  'Strategy Version',
   'Refreshed At',
   ...FINVIZ_MOMENTUM_EXPORT_HEADERS
 ] as const;

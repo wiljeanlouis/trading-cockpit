@@ -14,7 +14,6 @@ const position: Position = {
   watchlistId: 'WL-1',
   strategyId: 'MOMENTUM_BREAKOUT',
   strategyName: 'Momentum Breakout',
-  strategyVersion: 'V1',
   ticker: 'URNB',
   openedAt,
   plannedEntry: 57,
@@ -45,14 +44,13 @@ describe('Position row mapper', () => {
     });
   });
 
-  it('writes the migration-compatible 26-column row and leaves formula-owned cells empty', () => {
+  it('writes the canonical 25-column row and leaves formula-owned cells empty', () => {
     expect(positionToRow(position)).toEqual([
       'P-1',
       'TP-1',
       'WL-1',
       'MOMENTUM_BREAKOUT',
       'Momentum Breakout',
-      'V1',
       'URNB',
       openedAt,
       57,
@@ -78,9 +76,9 @@ describe('Position row mapper', () => {
 
   it('reads all values and live formula results explicitly by header', () => {
     const row = positionToRow(position);
-    row[17] = 60;
-    row[18] = 30;
-    row[19] = 0.0526;
+    row[16] = 60;
+    row[17] = 30;
+    row[18] = 0.0526;
 
     expect(positionFromRow([...POSITION_HEADERS], row)).toEqual({
       ...position,

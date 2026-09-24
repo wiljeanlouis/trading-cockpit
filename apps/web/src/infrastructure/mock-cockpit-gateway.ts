@@ -9,7 +9,6 @@ import type {
   ClosePositionResponse,
   CreateFundedTradingAccountRequest,
   CreateStrategyRequest,
-  CreateStrategyVersionRequest,
   CreateTradingAccountRequest,
   DashboardDto,
   DashboardSummaryDto,
@@ -24,8 +23,8 @@ import type {
   JournalItemDto,
   DiscoveryCandidateDto,
   PositionItemDto,
-  RefreshSignalsRequest,
-  RefreshSignalsResponse,
+  RunDiscoveryRequest,
+  RunDiscoveryResponse,
   TradePlanItemDto,
   TradePlansDto,
   TradingAccountsDto,
@@ -35,8 +34,7 @@ import type {
   UpdateTradePlanPlanningRequest,
   UpdateTradePlanPlanningResponse,
   UpdateTradingAccountRequest,
-  UpdateStrategyRequest,
-  UpdateStrategyVersionRequest
+  UpdateStrategyRequest
 } from '@trading-cockpit/contracts';
 import type { CockpitGateway } from './cockpit-gateway';
 
@@ -60,7 +58,6 @@ const DEVELOPMENT_WATCHLIST: WatchlistDto = {
       sector: 'Technology',
       strategyId: 'MOMENTUM_BREAKOUT',
       strategyName: 'Momentum Breakout',
-      strategyVersion: '1.0',
       signalDate: '2026-08-27T04:00:00.000Z',
       signalPrice: 33.4,
       currentPrice: 34.82,
@@ -79,7 +76,6 @@ const DEVELOPMENT_WATCHLIST: WatchlistDto = {
       sector: 'Energy',
       strategyId: 'MOMENTUM_BREAKOUT',
       strategyName: 'Momentum Breakout',
-      strategyVersion: '1.0',
       signalDate: '2026-08-26T04:00:00.000Z',
       signalPrice: 1.68,
       currentPrice: 1.74,
@@ -98,7 +94,6 @@ const DEVELOPMENT_DISCOVERY_CANDIDATES: DiscoveryCandidateDto[] = [
   {
     strategyId: 'MOMENTUM_BREAKOUT',
     strategyName: 'Momentum Breakout',
-    strategyVersion: '1.0',
     signalDate: '2026-08-28',
     detectedAt: '2026-08-28T14:30:00.000Z',
     ticker: 'NVDA',
@@ -123,7 +118,6 @@ const DEVELOPMENT_DISCOVERY_CANDIDATES: DiscoveryCandidateDto[] = [
   {
     strategyId: 'MOMENTUM_BREAKOUT',
     strategyName: 'Momentum Breakout',
-    strategyVersion: '1.0',
     signalDate: '2026-08-27',
     detectedAt: '2026-08-27T14:30:00.000Z',
     ticker: 'BOX',
@@ -148,7 +142,6 @@ const DEVELOPMENT_DISCOVERY_CANDIDATES: DiscoveryCandidateDto[] = [
   {
     strategyId: 'MOMENTUM_BREAKOUT',
     strategyName: 'Momentum Breakout',
-    strategyVersion: '1.0',
     signalDate: '2026-08-26',
     detectedAt: '2026-08-26T14:30:00.000Z',
     ticker: 'URNB',
@@ -180,7 +173,6 @@ const DEVELOPMENT_TRADE_PLANS: TradePlanItemDto[] = [
     ticker: 'BOX',
     strategyId: 'MOMENTUM_BREAKOUT',
     strategyName: 'Momentum Breakout',
-    strategyVersion: '1.0',
     signalDate: '2026-08-27T04:00:00.000Z',
     signalPrice: 33.4,
     referencePrice: 34.82,
@@ -218,7 +210,6 @@ const DEVELOPMENT_TRADE_PLANS: TradePlanItemDto[] = [
     ticker: 'URNB',
     strategyId: 'MOMENTUM_BREAKOUT',
     strategyName: 'Momentum Breakout',
-    strategyVersion: '1.0',
     signalDate: '2026-08-26T04:00:00.000Z',
     signalPrice: 1.68,
     referencePrice: 1.74,
@@ -260,7 +251,6 @@ const DEVELOPMENT_POSITIONS: PositionItemDto[] = [
     ticker: 'BOX',
     strategyId: 'MOMENTUM_BREAKOUT',
     strategyName: 'Momentum Breakout',
-    strategyVersion: '1.0',
     openedAt: '2026-08-28T15:30:00.000Z',
     plannedEntry: 35,
     actualEntry: 35,
@@ -288,7 +278,6 @@ const DEVELOPMENT_JOURNAL: JournalItemDto[] = [
     watchlistId: 'W-BOX-20260820',
     strategyId: 'MOMENTUM_BREAKOUT',
     strategyName: 'Momentum Breakout',
-    strategyVersion: '1.0',
     ticker: 'BOX',
     openedAt: '2026-08-20T14:30:00.000Z',
     closedAt: '2026-08-27T15:45:00.000Z',
@@ -339,19 +328,6 @@ const DEVELOPMENT_ANALYTICS: AnalyticsDto = {
     {
       strategyId: 'MOMENTUM_BREAKOUT',
       strategy: 'Momentum Breakout',
-      trades: 14,
-      wins: 9,
-      winRate: 0.6428571428571429,
-      totalPnl: 1287,
-      averageR: 1.3,
-      totalR: 18.2
-    }
-  ],
-  byStrategyVersion: [
-    {
-      strategyId: 'MOMENTUM_BREAKOUT',
-      strategy: 'Momentum Breakout',
-      version: 'V1',
       trades: 14,
       wins: 9,
       winRate: 0.6428571428571429,
@@ -569,35 +545,14 @@ export class MockCockpitGateway implements CockpitGateway {
     return { ...DEVELOPMENT_SUMMARY, generatedAt: new Date().toISOString() };
   }
 
-  async refreshSignals(request: RefreshSignalsRequest): Promise<RefreshSignalsResponse> {
+  async runDiscovery(request: RunDiscoveryRequest): Promise<RunDiscoveryResponse> {
     await new Promise((resolve) => setTimeout(resolve, 250));
+    if (!request.strategyId.trim()) throw new Error('Strategy ID is required.');
+    if (!request.finvizUrl.trim()) throw new Error('Finviz URL is required.');
     return {
-      scope: 'STRATEGY',
+      strategyId: request.strategyId,
       archived: 2,
-      refreshed: [
-        {
-          strategyId: request.strategyId,
-          strategyVersion: '1.0',
-          signalCount: 2,
-          archived: 2
-        }
-      ]
-    };
-  }
-
-  async refreshAllSignals(): Promise<RefreshSignalsResponse> {
-    await new Promise((resolve) => setTimeout(resolve, 250));
-    return {
-      scope: 'ALL',
-      archived: 2,
-      refreshed: [
-        {
-          strategyId: 'MOMENTUM_BREAKOUT',
-          strategyVersion: '1.0',
-          signalCount: 2,
-          archived: 2
-        }
-      ]
+      signalCount: 2
     };
   }
 
@@ -622,8 +577,7 @@ export class MockCockpitGateway implements CockpitGateway {
         {
           strategyId: 'MOMENTUM_BREAKOUT',
           strategyName: 'Momentum Breakout',
-          strategyVersion: '1.0',
-          screener: 'FINVIZ'
+          strategyType: 'MOMENTUM'
         }
       ],
       items: this.discoveryItems.map((item) => ({ ...item }))
@@ -657,18 +611,7 @@ export class MockCockpitGateway implements CockpitGateway {
           name: 'Momentum Breakout',
           type: 'MOMENTUM',
           enabled: true,
-          description: 'Momentum breakout near 52-week high',
-          versions: [
-            {
-              strategyId: 'MOMENTUM_BREAKOUT',
-              version: 'V1',
-              enabled: true,
-              screenerCode: 'MOMENTUM_BREAKOUT_V1',
-              screener: 'FINVIZ',
-              finvizUrl:
-                'https://elite.finviz.com/export/screener?v=151&f=cap_smallover,sh_avgvol_o500,sh_price_o10,sh_relvol_o1,ta_highlow52w_b0to5h,ta_perf_4wup,ta_rsi_50to70,ta_sma20_pa,ta_sma200_pa,ta_sma50_pa&ft=3&c=0,1,2,3,4,5,6,7,67,65,66,63,64,59,57,52,54,53,42,43,68'
-            }
-          ]
+          description: 'Momentum breakout near 52-week high'
         }
       ]
     };
@@ -681,7 +624,6 @@ export class MockCockpitGateway implements CockpitGateway {
     const candidate = this.discoveryItems.find(
       (item) =>
         item.strategyId === request.strategyId &&
-        item.strategyVersion === request.strategyVersion &&
         item.signalDate === request.signalDate &&
         item.ticker === request.ticker
     );
@@ -690,7 +632,6 @@ export class MockCockpitGateway implements CockpitGateway {
     const existing = this.watchlistItems.find(
       (item) =>
         item.strategyId === candidate.strategyId &&
-        item.strategyVersion === candidate.strategyVersion &&
         item.ticker === candidate.ticker &&
         !['CLOSED', 'REJECTED'].includes(item.status.toUpperCase())
     );
@@ -712,7 +653,6 @@ export class MockCockpitGateway implements CockpitGateway {
       sector: candidate.sector,
       strategyId: candidate.strategyId,
       strategyName: candidate.strategyName,
-      strategyVersion: candidate.strategyVersion,
       signalDate: candidate.signalDate,
       signalPrice: candidate.price,
       currentPrice: candidate.price,
@@ -747,14 +687,6 @@ export class MockCockpitGateway implements CockpitGateway {
   }
 
   async updateStrategy(_request: UpdateStrategyRequest): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, 150));
-  }
-
-  async createStrategyVersion(_request: CreateStrategyVersionRequest): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, 150));
-  }
-
-  async updateStrategyVersion(_request: UpdateStrategyVersionRequest): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 150));
   }
 

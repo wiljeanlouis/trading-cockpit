@@ -11,7 +11,6 @@ export interface JournalEntry {
   watchlistId: string;
   strategyId: string;
   strategyName: string;
-  strategyVersion: string;
   ticker: string;
   openedAt: PositionSnapshotValue;
   closedAt: PositionSnapshotValue;
@@ -74,7 +73,6 @@ export function createJournalEntryFromClosedPosition(position: Position, id: str
     watchlistId: position.watchlistId,
     strategyId: position.strategyId,
     strategyName: position.strategyName,
-    strategyVersion: position.strategyVersion,
     ticker: position.ticker,
     openedAt: position.openedAt,
     closedAt: position.closedAt,

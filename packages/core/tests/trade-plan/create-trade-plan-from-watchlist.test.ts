@@ -11,7 +11,6 @@ const watchlist: WatchlistEntry = {
   id: 'WL-1',
   strategyId: 'STRATEGY',
   strategyName: 'Strategy',
-  strategyVersion: 'V1',
   signalDate: '',
   ticker: 'box',
   company: 'Box',
@@ -48,7 +47,6 @@ function context(
     existing?: TradePlan | null;
     accountExists?: boolean;
     riskExists?: boolean;
-    versionExists?: boolean;
     watchlistEntry?: WatchlistEntry;
   } = {}
 ) {
@@ -79,8 +77,7 @@ function context(
       updateStatus: () => undefined
     },
     strategyRepository: {
-      existsById: () => true,
-      existsVersion: () => options.versionExists !== false
+      existsById: () => true
     },
     tradingAccountRepository: {
       findById: (id) =>
@@ -227,14 +224,6 @@ describe('create account-aware Trade Plan from Watchlist', () => {
         accountId: 'A1'
       })
     ).toThrow('Risk % absent pour le compte A1.');
-  });
-
-  it('rejects an unknown historical Strategy Version before creating the plan', () => {
-    const c = context({ versionExists: false });
-    expect(() =>
-      createCreateTradePlanFromWatchlist(c.dependencies)({ watchlistId: 'WL-1', accountId: 'A1' })
-    ).toThrow('Version de stratégie inconnue : STRATEGY V1');
-    expect(c.saved()).toBeNull();
   });
 
   it('returns an account-scoped duplicate without creating another plan', () => {

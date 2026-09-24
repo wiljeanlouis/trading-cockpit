@@ -18,7 +18,6 @@ export interface RefreshMarketSignalsRequest {
 
 export interface RefreshedMarketSignalsFeed {
   strategyId: string;
-  strategyVersion: string;
   signalCount: number;
   archived: number;
 }
@@ -31,7 +30,7 @@ export interface RefreshMarketSignalsResult {
 /**
  * Orchestrates a provider-neutral market-signal refresh.
  *
- * The use case validates strategy/version consistency, writes the latest projection and
+ * The use case validates strategy availability, writes the latest projection and
  * archives new observations. Provider transport, credentials and rate limiting stay behind
  * MarketSignalSource.
  */
@@ -56,15 +55,9 @@ export function createRefreshMarketSignals(
       const strategy = dependencies.strategyCatalog.getById(feed.strategyId);
       dependencies.observe?.('STRATEGY_LOADED', {
         strategyId: strategy.id,
-        strategyVersion: strategy.version,
         enabled: strategy.enabled
       });
       if (!strategy.enabled) throw new Error(`La stratégie ${feed.strategyId} est désactivée.`);
-      if (String(feed.strategyVersion).trim() !== String(strategy.version).trim()) {
-        throw new Error(
-          `Version incohérente pour ${feed.strategyId}. Screener=${feed.strategyVersion}, Strategies=${strategy.version}.`
-        );
-      }
       const batch = dependencies.source.fetchSignals(feed.id);
       dependencies.observe?.('SOURCE_RESPONSE', {
         signals: batch.signals.length,
@@ -80,7 +73,6 @@ export function createRefreshMarketSignals(
       totalNewSignals += archived;
       refreshed.push({
         strategyId: feed.strategyId,
-        strategyVersion: feed.strategyVersion,
         signalCount: batch.signals.length,
         archived
       });

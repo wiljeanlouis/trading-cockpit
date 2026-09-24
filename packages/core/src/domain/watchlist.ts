@@ -12,14 +12,12 @@ export type SetupStatus = (typeof SETUP_STATUSES)[number];
 
 export interface WatchlistIdentity {
   strategyId: string;
-  strategyVersion: string;
   ticker: string;
 }
 
 export interface WatchlistCandidate {
   strategyId: string;
   strategyName: string;
-  strategyVersion: string;
   signalDate: WatchlistSnapshotValue;
   ticker: WatchlistSnapshotValue;
   company: WatchlistSnapshotValue;
@@ -30,7 +28,6 @@ export interface WatchlistCandidate {
 export interface NormalizedWatchlistCandidate extends WatchlistCandidate {
   strategyId: string;
   strategyName: string;
-  strategyVersion: string;
   ticker: string;
 }
 
@@ -38,7 +35,6 @@ export interface WatchlistEntry {
   id: string;
   strategyId: string;
   strategyName: string;
-  strategyVersion: string;
   signalDate: WatchlistSnapshotValue;
   ticker: string;
   company: WatchlistSnapshotValue;
@@ -62,10 +58,6 @@ export function normalizeStrategyId(value: string): string {
     .toUpperCase();
 }
 
-export function normalizeStrategyVersion(value: string): string {
-  return String(value || '').trim();
-}
-
 export function normalizeTicker(value: WatchlistSnapshotValue): string {
   return String(value).trim().toUpperCase();
 }
@@ -75,7 +67,6 @@ export function normalizeWatchlistCandidate(
 ): NormalizedWatchlistCandidate {
   const strategyId = normalizeStrategyId(candidate.strategyId);
   const strategyName = String(candidate.strategyName || '').trim();
-  const strategyVersion = normalizeStrategyVersion(candidate.strategyVersion);
 
   if (!strategyId) {
     throw new Error('Strategy ID absent de la ligne sélectionnée.');
@@ -83,10 +74,6 @@ export function normalizeWatchlistCandidate(
 
   if (!strategyName) {
     throw new Error('Strategy absente de la ligne sélectionnée.');
-  }
-
-  if (!strategyVersion) {
-    throw new Error('Strategy Version absente de la ligne sélectionnée.');
   }
 
   if (!candidate.signalDate) {
@@ -101,20 +88,15 @@ export function normalizeWatchlistCandidate(
     ...candidate,
     strategyId,
     strategyName,
-    strategyVersion,
     ticker: normalizeTicker(candidate.ticker)
   };
 }
 
 export function watchlistIdentityOf(
-  candidate: Pick<
-    WatchlistEntry | NormalizedWatchlistCandidate,
-    'strategyId' | 'strategyVersion' | 'ticker'
-  >
+  candidate: Pick<WatchlistEntry | NormalizedWatchlistCandidate, 'strategyId' | 'ticker'>
 ): WatchlistIdentity {
   return {
     strategyId: normalizeStrategyId(candidate.strategyId),
-    strategyVersion: normalizeStrategyVersion(candidate.strategyVersion),
     ticker: normalizeTicker(candidate.ticker)
   };
 }
@@ -125,7 +107,6 @@ export function sameWatchlistIdentity(left: WatchlistIdentity, right: WatchlistI
 
   return (
     normalizedLeft.strategyId === normalizedRight.strategyId &&
-    normalizedLeft.strategyVersion === normalizedRight.strategyVersion &&
     normalizedLeft.ticker === normalizedRight.ticker
   );
 }
@@ -176,7 +157,6 @@ export function createWatchlistEntry(
     id,
     strategyId: candidate.strategyId,
     strategyName: candidate.strategyName,
-    strategyVersion: candidate.strategyVersion,
     signalDate: candidate.signalDate,
     ticker: candidate.ticker,
     company: candidate.company,

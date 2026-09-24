@@ -67,7 +67,6 @@ function mutableSheetsClientByRange(
         'Journal',
         'Accounts',
         'Strategies',
-        'Strategy Versions',
         'Capital Ledger',
         'Signals History'
       ]
@@ -119,7 +118,6 @@ describe('Cloud Run Trading Cockpit API', () => {
         'Watchlist ID': 'W1',
         'Strategy ID': 'MOMENTUM_BREAKOUT',
         Strategy: 'Momentum Breakout',
-        'Strategy Version': '1.0',
         'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
         Ticker: 'BOX',
         Company: 'Box, Inc.',
@@ -139,7 +137,7 @@ describe('Cloud Run Trading Cockpit API', () => {
 
     expect(client.getValues).toHaveBeenCalledWith({
       spreadsheetId: 'spreadsheet-id',
-      range: "'Watchlist'!A:U",
+      range: "'Watchlist'!A:T",
       valueRenderOption: 'UNFORMATTED_VALUE',
       dateTimeRenderOption: 'SERIAL_NUMBER'
     });
@@ -162,7 +160,6 @@ describe('Cloud Run Trading Cockpit API', () => {
             'Watchlist ID': 'W1',
             'Strategy ID': 'MOMENTUM_BREAKOUT',
             Strategy: 'Momentum Breakout',
-            'Strategy Version': '1.0',
             'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
             'Added At': sheetsSerialDate('2026-08-27T14:30:00.000Z'),
             Ticker: 'BOX',
@@ -187,7 +184,6 @@ describe('Cloud Run Trading Cockpit API', () => {
             'Watchlist ID': 'W1',
             'Strategy ID': 'MOMENTUM_BREAKOUT',
             Strategy: 'Momentum Breakout',
-            'Strategy Version': '1.0',
             'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
             Ticker: 'BOX',
             'Current Price': '',
@@ -212,7 +208,6 @@ describe('Cloud Run Trading Cockpit API', () => {
           'Watchlist ID': 'W1',
           'Strategy ID': 'MOMENTUM_BREAKOUT',
           Strategy: 'Momentum Breakout',
-          'Strategy Version': '1.0',
           'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
           Ticker: 'BOX',
           Status: 'READY'
@@ -251,7 +246,7 @@ describe('Cloud Run Trading Cockpit API', () => {
   it('validates scoped signal refresh requests before provider access', async () => {
     const response = await handleCloudRunRequest({
       method: 'POST',
-      url: '/api/discovery/signals/refresh',
+      url: '/api/discovery/run',
       headers: authorizationHeaders(),
       body: '{}',
       spreadsheetId: 'spreadsheet-id',
@@ -265,9 +260,10 @@ describe('Cloud Run Trading Cockpit API', () => {
     expect(response.body).toEqual({ error: 'strategyId is required.' });
   });
 
-  it('recognizes the scoped and all-strategy signal refresh routes', () => {
-    expect(isMutationRoute('POST', '/api/discovery/signals/refresh')).toBe(true);
-    expect(isMutationRoute('POST', '/api/discovery/signals/refresh-all')).toBe(true);
+  it('recognizes the on-demand Discovery signal refresh route', () => {
+    expect(isMutationRoute('POST', '/api/discovery/run')).toBe(true);
+    expect(isMutationRoute('POST', '/api/discovery/signals/refresh')).toBe(false);
+    expect(isMutationRoute('POST', '/api/discovery/signals/refresh-all')).toBe(false);
     expect(isMutationRoute('POST', '/api/discovery/finviz/refresh-signals')).toBe(false);
   });
 
@@ -357,7 +353,6 @@ describe('Cloud Run Trading Cockpit API', () => {
             'Watchlist ID': 'W1',
             'Strategy ID': 'MOMENTUM_BREAKOUT',
             Strategy: 'Momentum Breakout',
-            'Strategy Version': '1.0',
             'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
             Ticker: 'BOX',
             Status: 'READY'
@@ -391,7 +386,6 @@ describe('Cloud Run Trading Cockpit API', () => {
         'Watchlist ID': 'W1',
         'Strategy ID': 'MOMENTUM_BREAKOUT',
         Strategy: 'Momentum Breakout',
-        'Strategy Version': '1.0',
         'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
         Ticker: 'BOX',
         Status: 'READY'
@@ -561,7 +555,6 @@ describe('Cloud Run Trading Cockpit API', () => {
         'Watchlist ID': 'W1',
         'Strategy ID': 'MOMENTUM_BREAKOUT',
         Strategy: 'Momentum Breakout',
-        'Strategy Version': '1.0',
         'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
         Ticker: 'BOX',
         Status: 'READY'
@@ -740,11 +733,12 @@ describe('Cloud Run Trading Cockpit API', () => {
       })
     );
     expect(client.appendValues).toHaveBeenCalledWith(
-      expect.objectContaining({ range: "'Trade Plans'!A:AC" })
+      expect.objectContaining({ range: "'Trade Plans'!A:AB" })
     );
     expect(client.batchUpdateValues).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.arrayContaining([
+          expect.objectContaining({ range: "'Watchlist'!N2" }),
           expect.objectContaining({ range: "'Watchlist'!O2" }),
           expect.objectContaining({ range: "'Watchlist'!Q2" }),
           expect.objectContaining({ range: "'Watchlist'!S2" })
@@ -782,8 +776,8 @@ describe('Cloud Run Trading Cockpit API', () => {
       expect.objectContaining({
         data: [
           expect.objectContaining({
-            range: "'Trade Plans'!P2:Z2",
-            values: [expect.arrayContaining(['=IF(OR(P2="",Q2=""),"",P2-Q2)'])]
+            range: "'Trade Plans'!O2:Y2",
+            values: [expect.arrayContaining(['=IF(OR(O2="",P2=""),"",O2-P2)'])]
           })
         ]
       })
@@ -817,10 +811,10 @@ describe('Cloud Run Trading Cockpit API', () => {
       })
     );
     expect(client.appendValues).toHaveBeenCalledWith(
-      expect.objectContaining({ range: "'Positions'!A:Z" })
+      expect.objectContaining({ range: "'Positions'!A:Y" })
     );
     expect(client.updateValues).toHaveBeenCalledWith(
-      expect.objectContaining({ range: "'Trade Plans'!AA2", values: [['EXECUTED']] })
+      expect.objectContaining({ range: "'Trade Plans'!Z2", values: [['EXECUTED']] })
     );
     expect(client.updateValues).toHaveBeenCalledWith(
       expect.objectContaining({ range: "'Watchlist'!M2", values: [['ENTERED']] })
@@ -858,7 +852,7 @@ describe('Cloud Run Trading Cockpit API', () => {
       })
     );
     expect(client.appendValues).toHaveBeenCalledWith(
-      expect.objectContaining({ range: "'Journal'!A:AA" })
+      expect.objectContaining({ range: "'Journal'!A:Z" })
     );
     expect(client.updateValues).toHaveBeenCalledWith(
       expect.objectContaining({ range: "'Watchlist'!M2", values: [['CLOSED']] })
@@ -1032,14 +1026,7 @@ describe('Cloud Run Trading Cockpit API', () => {
       strategies: [
         expect.objectContaining({
           strategyId: 'MOMENTUM_BREAKOUT',
-          enabled: true,
-          versions: [
-            expect.objectContaining({
-              version: '1.0',
-              enabled: true,
-              screener: 'FINVIZ'
-            })
-          ]
+          enabled: true
         })
       ],
       accounts: [
@@ -1110,112 +1097,6 @@ describe('Cloud Run Trading Cockpit API', () => {
     );
   });
 
-  it('creates an inactive Strategy Version without mutating historical versions', async () => {
-    const client = mutableSheetsClientByRange(queryFixtureByRange());
-
-    const response = await handleCloudRunRequest({
-      method: 'POST',
-      url: '/api/admin/strategy-versions',
-      headers: authorizationHeaders(),
-      body: JSON.stringify({
-        strategyId: 'momentum_breakout',
-        version: 'V2',
-        enabled: false,
-        screenerCode: 'MOMENTUM_BREAKOUT_V2',
-        screener: 'FINVIZ',
-        finvizUrl: 'https://elite.finviz.com/export/screener?v=151&f=v2'
-      }),
-      spreadsheetId: 'spreadsheet-id',
-      auth: testAuthConfig(),
-      cors: testCorsConfig(),
-      sheetsClientFactory: async () => client,
-      tokenVerifier: authorizedTokenVerifier()
-    });
-
-    expect(response.statusCode).toBe(200);
-    expect(client.appendValues).toHaveBeenCalledWith(
-      expect.objectContaining({
-        range: SHEET_DEFINITIONS.strategyVersions.range,
-        values: [
-          [
-            'MOMENTUM_BREAKOUT',
-            'V2',
-            false,
-            'MOMENTUM_BREAKOUT_V2',
-            'FINVIZ',
-            'https://elite.finviz.com/export/screener?v=151&f=v2'
-          ]
-        ]
-      })
-    );
-  });
-
-  it('prevents enabling two Strategy Versions for the same Strategy ID', async () => {
-    const client = mutableSheetsClientByRange(queryFixtureByRange());
-
-    const response = await handleCloudRunRequest({
-      method: 'POST',
-      url: '/api/admin/strategy-versions',
-      headers: authorizationHeaders(),
-      body: JSON.stringify({
-        strategyId: 'MOMENTUM_BREAKOUT',
-        version: 'V2',
-        enabled: true,
-        screenerCode: 'MOMENTUM_BREAKOUT_V2',
-        screener: 'FINVIZ',
-        finvizUrl: 'https://elite.finviz.com/export/screener?v=151&f=v2'
-      }),
-      spreadsheetId: 'spreadsheet-id',
-      auth: testAuthConfig(),
-      cors: testCorsConfig(),
-      sheetsClientFactory: async () => client,
-      tokenVerifier: authorizedTokenVerifier()
-    });
-
-    expect(response.statusCode).toBe(400);
-    expect(response.body).toEqual({
-      error: 'Plusieurs versions actives pour MOMENTUM_BREAKOUT'
-    });
-    expect(client.appendValues).not.toHaveBeenCalled();
-  });
-
-  it('disables a Strategy Version while preserving immutable screener configuration', async () => {
-    const client = mutableSheetsClientByRange(queryFixtureByRange());
-
-    const response = await handleCloudRunRequest({
-      method: 'PATCH',
-      url: '/api/admin/strategies/MOMENTUM_BREAKOUT/versions/1.0',
-      headers: authorizationHeaders(),
-      body: JSON.stringify({
-        strategyId: 'MOMENTUM_BREAKOUT',
-        version: '1.0',
-        enabled: false
-      }),
-      spreadsheetId: 'spreadsheet-id',
-      auth: testAuthConfig(),
-      cors: testCorsConfig(),
-      sheetsClientFactory: async () => client,
-      tokenVerifier: authorizedTokenVerifier()
-    });
-
-    expect(response.statusCode).toBe(200);
-    expect(client.updateValues).toHaveBeenCalledWith(
-      expect.objectContaining({
-        range: "'Strategy Versions'!A2:F2",
-        values: [
-          [
-            'MOMENTUM_BREAKOUT',
-            '1.0',
-            false,
-            'MOMENTUM_BREAKOUT_V1',
-            'FINVIZ',
-            'https://elite.finviz.com/export/screener?v=151'
-          ]
-        ]
-      })
-    );
-  });
-
   it('sets up Trading Accounts sheets with headers without exposing Sheets UI behavior', async () => {
     const client = mutableSheetsClientByRange(queryFixtureByRange());
 
@@ -1260,17 +1141,8 @@ describe('Cloud Run Trading Cockpit API', () => {
         values: [[...SHEET_DEFINITIONS.strategies.requiredHeaders]]
       })
     );
-    expect(client.updateValues).toHaveBeenCalledWith(
-      expect.objectContaining({
-        range: "'Strategy Versions'!A1:F1",
-        values: [[...SHEET_DEFINITIONS.strategyVersions.requiredHeaders]]
-      })
-    );
     expect(client.updateValues).not.toHaveBeenCalledWith(
       expect.objectContaining({ range: "'Strategies'!A1:E2" })
-    );
-    expect(client.updateValues).not.toHaveBeenCalledWith(
-      expect.objectContaining({ range: "'Strategy Versions'!A1:F2" })
     );
   });
 
@@ -1398,7 +1270,6 @@ describe('Cloud Run Trading Cockpit API', () => {
             'Trade Plan ID': 'TP-1',
             'Strategy ID': 'MOMENTUM_BREAKOUT',
             Strategy: 'Momentum Breakout',
-            'Strategy Version': '1.0',
             Ticker: 'BOX',
             Status: 'READY',
             'Account ID': 'A1'
@@ -1407,7 +1278,6 @@ describe('Cloud Run Trading Cockpit API', () => {
             'Trade Plan ID': 'TP-2',
             'Strategy ID': 'MOMENTUM_BREAKOUT',
             Strategy: 'Momentum Breakout',
-            'Strategy Version': '1.0',
             Ticker: 'DK',
             Status: 'READY',
             'Account ID': 'A2'
@@ -1516,7 +1386,6 @@ describe('Cloud Run Trading Cockpit API', () => {
             'Position ID': 'P-CLOSED-1',
             'Strategy ID': 'MOMENTUM_BREAKOUT',
             Strategy: 'Momentum Breakout',
-            'Strategy Version': '1.0',
             Ticker: 'BOX',
             'Realized P&L': 40,
             'R-Multiple': 2,
@@ -1528,7 +1397,6 @@ describe('Cloud Run Trading Cockpit API', () => {
             'Position ID': 'P-CLOSED-2',
             'Strategy ID': 'MOMENTUM_BREAKOUT',
             Strategy: 'Momentum Breakout',
-            'Strategy Version': '1.0',
             Ticker: 'DK',
             'Realized P&L': -20,
             'R-Multiple': -1,
@@ -1628,7 +1496,6 @@ function queryFixtureByRange(
   const journalHeaders = [...SHEET_DEFINITIONS.journal.requiredHeaders];
   const accountHeaders = [...SHEET_DEFINITIONS.accounts.requiredHeaders];
   const strategyHeaders = [...SHEET_DEFINITIONS.strategies.requiredHeaders];
-  const strategyVersionHeaders = [...SHEET_DEFINITIONS.strategyVersions.requiredHeaders];
   const signalHeaders = [...SHEET_DEFINITIONS.signalsHistory.requiredHeaders];
   const capitalLedgerHeaders = [
     'Transaction ID',
@@ -1646,7 +1513,6 @@ function queryFixtureByRange(
         'Watchlist ID': 'W1',
         'Strategy ID': 'MOMENTUM_BREAKOUT',
         Strategy: 'Momentum Breakout',
-        'Strategy Version': '1.0',
         'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
         Ticker: 'BOX',
         'Current Price': 34,
@@ -1665,7 +1531,6 @@ function queryFixtureByRange(
           'Watchlist ID': 'W1',
           'Strategy ID': 'MOMENTUM_BREAKOUT',
           Strategy: 'Momentum Breakout',
-          'Strategy Version': '1.0',
           'Signal Date': sheetsSerialDate('2026-08-27T00:00:00.000Z'),
           Ticker: 'BOX',
           'Created At': sheetsSerialDate('2026-08-27T14:00:00.000Z'),
@@ -1695,7 +1560,6 @@ function queryFixtureByRange(
           'Watchlist ID': 'W1',
           'Strategy ID': 'MOMENTUM_BREAKOUT',
           Strategy: 'Momentum Breakout',
-          'Strategy Version': '1.0',
           Ticker: 'BOX',
           'Opened At': sheetsSerialDate('2026-08-27T15:00:00.000Z'),
           'Actual Entry': 34,
@@ -1720,7 +1584,6 @@ function queryFixtureByRange(
           'Watchlist ID': 'W-CLOSED',
           'Strategy ID': 'MOMENTUM_BREAKOUT',
           Strategy: 'Momentum Breakout',
-          'Strategy Version': '1.0',
           Ticker: 'DK',
           'Opened At': sheetsSerialDate('2026-08-20T15:00:00.000Z'),
           'Closed At': sheetsSerialDate('2026-08-25T15:00:00.000Z'),
@@ -1768,17 +1631,6 @@ function queryFixtureByRange(
         Description: 'Momentum breakout near 52-week high'
       })
     ],
-    [SHEET_DEFINITIONS.strategyVersions.range]: [
-      strategyVersionHeaders,
-      rowForHeaders(strategyVersionHeaders, {
-        'Strategy ID': 'MOMENTUM_BREAKOUT',
-        Version: '1.0',
-        Enabled: true,
-        'Screener Code': 'MOMENTUM_BREAKOUT_V1',
-        Screener: 'FINVIZ',
-        'Finviz URL': 'https://elite.finviz.com/export/screener?v=151'
-      })
-    ],
     [SHEET_DEFINITIONS.signalsHistory.range]: [
       signalHeaders,
       rowForHeaders(signalHeaders, {
@@ -1786,7 +1638,6 @@ function queryFixtureByRange(
         'Detected At': sheetsSerialDate('2026-08-27T14:30:00.000Z'),
         'Strategy ID': 'MOMENTUM_BREAKOUT',
         Strategy: 'Momentum Breakout',
-        'Strategy Version': '1.0',
         Ticker: 'BOX',
         'Finviz Ticker': 'BOX',
         Company: 'Box Inc',

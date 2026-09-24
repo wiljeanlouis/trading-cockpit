@@ -21,8 +21,8 @@ describe('Journal mapper', () => {
       'J-1'
     );
     const row = journalEntryToRow(entry);
-    expect(row).toHaveLength(27);
-    expect(row.slice(19, 22)).toEqual(['', '', '']);
+    expect(row).toHaveLength(26);
+    expect(row.slice(18, 21)).toEqual(['', '', '']);
     expect(journalEntryFromRow([...JOURNAL_HEADERS], row)).toMatchObject({
       id: 'J-1',
       positionId: 'P-1',
@@ -38,9 +38,9 @@ describe('Journal mapper', () => {
     const row = Array(26).fill('');
     row[0] = 'J-1';
     row[1] = 'P-1';
-    row[19] = 0.2;
-    row[20] = 1;
-    row[21] = 'WIN';
+    row[18] = 0.2;
+    row[19] = 1;
+    row[20] = 'WIN';
     expect(journalEntryFromRow([...JOURNAL_HEADERS], row)).toMatchObject({
       positionId: 'P-1',
       returnPercent: 0.2,

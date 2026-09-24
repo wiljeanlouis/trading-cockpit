@@ -1,9 +1,3 @@
-export interface TradingStrategySnapshot {
-  id: string;
-  version: string;
-  enabled: boolean;
-}
-
 export interface TradingStrategy {
   id: string;
   name: string;
@@ -12,33 +6,15 @@ export interface TradingStrategy {
   description: string;
 }
 
-export interface TradingStrategyVersion {
-  strategyId: string;
-  version: string;
-  enabled: boolean;
-  screenerCode: string;
-  screener: string;
-  screenerUrl: string;
-}
-
-export interface StrategyVersionIdentity {
-  strategyId: string;
-  version: string;
-}
-
 export function normalizeTradingStrategyId(value: unknown): string {
   return String(value ?? '')
     .trim()
     .toUpperCase();
 }
 
-export function normalizeTradingStrategyVersionText(value: unknown): string {
-  return String(value ?? '').trim();
-}
-
 /**
- * Normalizes stable Strategy identity and metadata. Versioned provider/screener configuration
- * lives separately in TradingStrategyVersion.
+ * Normalizes stable Strategy identity and metadata. Provider URLs are runtime Discovery inputs,
+ * not Strategy configuration.
  */
 export function normalizeTradingStrategy(strategy: TradingStrategy): TradingStrategy {
   const id = normalizeTradingStrategyId(strategy.id);
@@ -56,42 +32,4 @@ export function normalizeTradingStrategy(strategy: TradingStrategy): TradingStra
     enabled: Boolean(strategy.enabled),
     description: String(strategy.description ?? '').trim()
   };
-}
-
-/**
- * Normalizes immutable Strategy ID + Version configuration before it can be referenced by signals
- * or downstream workflow records.
- */
-export function normalizeTradingStrategyVersion(
-  version: TradingStrategyVersion
-): TradingStrategyVersion {
-  const strategyId = normalizeTradingStrategyId(version.strategyId);
-  const normalizedVersion = normalizeTradingStrategyVersionText(version.version);
-  const screenerCode = String(version.screenerCode ?? '')
-    .trim()
-    .toUpperCase();
-  const screener = String(version.screener ?? '')
-    .trim()
-    .toUpperCase();
-  const screenerUrl = String(version.screenerUrl ?? '').trim();
-  if (!strategyId) throw new Error('Strategy ID obligatoire.');
-  if (!normalizedVersion) throw new Error('Strategy Version obligatoire.');
-  if (!screenerCode) throw new Error('Screener Code obligatoire.');
-  if (!screener) throw new Error('Screener obligatoire.');
-  if (!screenerUrl) throw new Error('Screener URL obligatoire.');
-  return {
-    strategyId,
-    version: normalizedVersion,
-    enabled: Boolean(version.enabled),
-    screenerCode,
-    screener,
-    screenerUrl
-  };
-}
-
-/**
- * Builds the canonical historical identity for a strategy configuration version.
- */
-export function strategyVersionKey(identity: StrategyVersionIdentity): string {
-  return `${normalizeTradingStrategyId(identity.strategyId)}|${normalizeTradingStrategyVersionText(identity.version)}`;
 }

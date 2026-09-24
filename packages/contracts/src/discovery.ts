@@ -1,7 +1,6 @@
 export interface DiscoveryCandidateDto {
   strategyId: string;
   strategyName: string;
-  strategyVersion: string;
   signalDate: string | null;
   detectedAt: string | null;
   ticker: string;
@@ -27,8 +26,7 @@ export interface DiscoveryCandidateDto {
 export interface DiscoveryStrategyDto {
   strategyId: string;
   strategyName: string;
-  strategyVersion: string;
-  screener: string;
+  strategyType: string;
 }
 
 export interface DiscoveryDto {
@@ -37,24 +35,19 @@ export interface DiscoveryDto {
   items: DiscoveryCandidateDto[];
 }
 
-export interface RefreshSignalsRequest {
+export interface RunDiscoveryRequest {
   strategyId: string;
+  finvizUrl: string;
 }
 
-export interface RefreshSignalsResponse {
-  scope: 'STRATEGY' | 'ALL';
+export interface RunDiscoveryResponse {
+  strategyId: string;
   archived: number;
-  refreshed: Array<{
-    strategyId: string;
-    strategyVersion: string;
-    signalCount: number;
-    archived: number;
-  }>;
+  signalCount: number;
 }
 
 export interface AddDiscoveryCandidateToWatchlistRequest {
   strategyId: string;
-  strategyVersion: string;
   signalDate: string;
   ticker: string;
 }

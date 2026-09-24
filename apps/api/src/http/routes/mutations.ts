@@ -8,7 +8,6 @@ import {
 import {
   checkFinvizAuthMutationForCloudRun,
   createStrategyForCloudRun,
-  createStrategyVersionForCloudRun,
   createFundedTradingAccountForCloudRun,
   createTradingAccountForCloudRun,
   deleteFinvizTokenForCloudRun,
@@ -17,13 +16,9 @@ import {
   setupStrategiesForCloudRun,
   setupTradingAccountsForCloudRun,
   updateStrategyForCloudRun,
-  updateStrategyVersionForCloudRun,
   updateTradingAccountForCloudRun
 } from '../../composition/admin';
-import {
-  refreshAllSignalsForCloudRun,
-  refreshSignalsForCloudRun
-} from '../../composition/discovery';
+import { runDiscoveryForCloudRun } from '../../composition/discovery';
 import { addDiscoveryCandidateToWatchlistForCloudRun } from '../../composition/watchlist';
 import {
   createTradePlanForCloudRun,
@@ -191,27 +186,14 @@ function matchMutationRoute(method: string, pathname: string): RouteMatch | null
     };
   }
 
-  const strategyVersion = pathname.match(/^\/api\/admin\/strategies\/([^/]+)\/versions\/([^/]+)$/);
-  if (normalizedMethod === 'PATCH' && strategyVersion) {
-    return {
-      handler: updateStrategyVersionForCloudRun,
-      pathParams: {
-        strategyId: decodeURIComponent(strategyVersion[1]),
-        version: decodeURIComponent(strategyVersion[2])
-      }
-    };
-  }
-
   return null;
 }
 
 const exactRoutes: Record<string, MutationHandler> = {
-  'POST /api/discovery/signals/refresh': refreshSignalsForCloudRun,
-  'POST /api/discovery/signals/refresh-all': refreshAllSignalsForCloudRun,
+  'POST /api/discovery/run': runDiscoveryForCloudRun,
   'POST /api/discovery/candidates/watchlist': addDiscoveryCandidateToWatchlistForCloudRun,
   'POST /api/trade-plans': createTradePlanForCloudRun,
   'POST /api/admin/strategies': createStrategyForCloudRun,
-  'POST /api/admin/strategy-versions': createStrategyVersionForCloudRun,
   'POST /api/admin/trading-accounts': createTradingAccountForCloudRun,
   'POST /api/admin/trading-accounts/funded': createFundedTradingAccountForCloudRun,
   'POST /api/admin/capital-transactions': recordCapitalTransactionForCloudRun,

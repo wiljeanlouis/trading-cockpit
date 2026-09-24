@@ -23,22 +23,22 @@ export function validateWatchlistHeaders(headers: readonly unknown[]): true {
 }
 
 export function addWatchlistFormulas(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number): void {
-  sheet.getRange(row, 11).setFormula(`=IFERROR(GOOGLEFINANCE(F${row},"price"),"")`);
-  sheet.getRange(row, 12).setFormula(`=IF(OR(J${row}="",K${row}=""),"",K${row}/J${row}-1)`);
-  sheet.getRange(row, 16).setFormula(`=IF(OR(K${row}="",O${row}=""),"",K${row}/O${row}-1)`);
+  sheet.getRange(row, 10).setFormula(`=IFERROR(GOOGLEFINANCE(E${row},"price"),"")`);
+  sheet.getRange(row, 11).setFormula(`=IF(OR(I${row}="",J${row}=""),"",J${row}/I${row}-1)`);
+  sheet.getRange(row, 15).setFormula(`=IF(OR(J${row}="",N${row}=""),"",J${row}/N${row}-1)`);
 }
 
 export function formatWatchlistRow(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number): void {
-  sheet.getRange(row, 5).setNumberFormat('yyyy-mm-dd');
-  sheet.getRange(row, 9).setNumberFormat('yyyy-mm-dd hh:mm:ss');
+  sheet.getRange(row, 4).setNumberFormat('yyyy-mm-dd');
+  sheet.getRange(row, 8).setNumberFormat('yyyy-mm-dd hh:mm:ss');
+  sheet.getRange(row, 9).setNumberFormat('$0.00');
   sheet.getRange(row, 10).setNumberFormat('$0.00');
-  sheet.getRange(row, 11).setNumberFormat('$0.00');
-  sheet.getRange(row, 12).setNumberFormat('0.00%');
-  sheet.getRange(row, 15).setNumberFormat('$0.00');
-  sheet.getRange(row, 16).setNumberFormat('0.00%');
-  sheet.getRange(row, 17).setNumberFormat('$0.00');
-  sheet.getRange(row, 18).setNumberFormat('yyyy-mm-dd');
-  sheet.getRange(row, 21).setNumberFormat('yyyy-mm-dd hh:mm:ss');
+  sheet.getRange(row, 11).setNumberFormat('0.00%');
+  sheet.getRange(row, 14).setNumberFormat('$0.00');
+  sheet.getRange(row, 15).setNumberFormat('0.00%');
+  sheet.getRange(row, 16).setNumberFormat('$0.00');
+  sheet.getRange(row, 17).setNumberFormat('yyyy-mm-dd');
+  sheet.getRange(row, 20).setNumberFormat('yyyy-mm-dd hh:mm:ss');
 }
 
 export function refreshWatchlistValidations(): void {

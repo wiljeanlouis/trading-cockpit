@@ -3,16 +3,11 @@ import { getTradingCockpitSpreadsheet } from '../trading-cockpit-spreadsheet';
 import {
   hasMeaningfulStrategyTableRow,
   mapTradingStrategyRow,
-  mapTradingStrategyVersionRow,
   type SheetTradingStrategy
 } from './trading-strategy-mapper';
-import {
-  normalizeTradingStrategy,
-  type TradingStrategyVersion
-} from '@trading-cockpit/core/domain/trading-strategy';
+import { normalizeTradingStrategy } from '@trading-cockpit/core/domain/trading-strategy';
 
 const STRATEGIES_SHEET_NAME = 'Strategies';
-const STRATEGY_VERSIONS_SHEET_NAME = 'Strategy Versions';
 
 export class GoogleSheetsTradingStrategyReader {
   getById(strategyId: string): SheetTradingStrategy {
@@ -42,35 +37,5 @@ export class GoogleSheetsTradingStrategyReader {
       if (error instanceof Error && error.message === 'Aucune stratégie configurée.') return [];
       throw error;
     }
-  }
-
-  listVersions(): TradingStrategyVersion[] {
-    const sheet = getTradingCockpitSpreadsheet().getSheetByName(STRATEGY_VERSIONS_SHEET_NAME);
-    if (!sheet || sheet.getLastRow() <= 1) {
-      return [];
-    }
-    const { headers, rows } = readSheetTable(sheet);
-    return rows
-      .filter((row) => hasMeaningfulStrategyTableRow(row))
-      .map((row) => mapTradingStrategyVersionRow(headers, row));
-  }
-
-  findVersion(strategyId: string, version: string): TradingStrategyVersion | null {
-    const expectedId = String(strategyId).trim().toUpperCase();
-    const expectedVersion = String(version).trim();
-    return (
-      this.listVersions().find(
-        (candidate) => candidate.strategyId === expectedId && candidate.version === expectedVersion
-      ) ?? null
-    );
-  }
-
-  findActiveVersion(strategyId: string): TradingStrategyVersion | null {
-    const expectedId = String(strategyId).trim().toUpperCase();
-    return (
-      this.listVersions().find(
-        (candidate) => candidate.strategyId === expectedId && candidate.enabled
-      ) ?? null
-    );
   }
 }

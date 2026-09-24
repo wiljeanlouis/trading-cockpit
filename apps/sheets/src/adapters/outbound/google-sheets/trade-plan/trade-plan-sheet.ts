@@ -38,30 +38,30 @@ export function refreshTradePlanValidations(sheet: GoogleAppsScript.Spreadsheet.
 }
 
 export function addTradePlanFormulas(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number): void {
-  sheet.getRange(row, 19).setFormula(`=IF(OR(P${row}="",Q${row}=""),"",P${row}-Q${row})`);
-  sheet.getRange(row, 20).setFormula(`=IF(OR(P${row}="",R${row}=""),"",R${row}-P${row})`);
+  sheet.getRange(row, 18).setFormula(`=IF(OR(O${row}="",P${row}=""),"",O${row}-P${row})`);
+  sheet.getRange(row, 19).setFormula(`=IF(OR(O${row}="",Q${row}=""),"",Q${row}-O${row})`);
   sheet
-    .getRange(row, 21)
-    .setFormula(`=IF(OR(S${row}="",S${row}<=0,T${row}=""),"",T${row}/S${row})`);
-  sheet.getRange(row, 24).setFormula(`=IF(OR(V${row}="",W${row}=""),"",V${row}*W${row})`);
+    .getRange(row, 20)
+    .setFormula(`=IF(OR(R${row}="",R${row}<=0,S${row}=""),"",S${row}/R${row})`);
+  sheet.getRange(row, 23).setFormula(`=IF(OR(U${row}="",V${row}=""),"",U${row}*V${row})`);
   sheet
-    .getRange(row, 25)
-    .setFormula(`=IF(OR(X${row}="",S${row}="",S${row}<=0),"",FLOOR(X${row}/S${row},1))`);
-  sheet.getRange(row, 26).setFormula(`=IF(OR(Y${row}="",P${row}=""),"",Y${row}*P${row})`);
+    .getRange(row, 24)
+    .setFormula(`=IF(OR(W${row}="",R${row}="",R${row}<=0),"",FLOOR(W${row}/R${row},1))`);
+  sheet.getRange(row, 25).setFormula(`=IF(OR(X${row}="",O${row}=""),"",X${row}*O${row})`);
 }
 
 export function formatTradePlanRow(sheet: GoogleAppsScript.Spreadsheet.Sheet, row: number): void {
-  sheet.getRange(row, 6).setNumberFormat('yyyy-mm-dd');
-  sheet.getRange(row, 7).setNumberFormat('$0.00');
-  sheet.getRange(row, 9).setNumberFormat('$0.00');
-  sheet.getRange(row, 11, 1, 2).setNumberFormat('$0.00');
-  sheet.getRange(row, 14).setNumberFormat('yyyy-mm-dd hh:mm:ss');
-  sheet.getRange(row, 16, 1, 3).setNumberFormat('$0.00');
-  sheet.getRange(row, 19, 1, 2).setNumberFormat('$0.00');
-  sheet.getRange(row, 21).setNumberFormat('0.00');
-  sheet.getRange(row, 22).setNumberFormat('$#,##0.00');
-  sheet.getRange(row, 23).setNumberFormat('0.00%');
-  sheet.getRange(row, 24).setNumberFormat('$0.00');
-  sheet.getRange(row, 25).setNumberFormat('0');
-  sheet.getRange(row, 26).setNumberFormat('$#,##0.00');
+  sheet.getRange(row, 5).setNumberFormat('yyyy-mm-dd');
+  sheet.getRange(row, 6).setNumberFormat('$0.00');
+  sheet.getRange(row, 8).setNumberFormat('$0.00');
+  sheet.getRange(row, 10, 1, 2).setNumberFormat('$0.00');
+  sheet.getRange(row, 13).setNumberFormat('yyyy-mm-dd hh:mm:ss');
+  sheet.getRange(row, 15, 1, 3).setNumberFormat('$0.00');
+  sheet.getRange(row, 18, 1, 2).setNumberFormat('$0.00');
+  sheet.getRange(row, 20).setNumberFormat('0.00');
+  sheet.getRange(row, 21).setNumberFormat('$#,##0.00');
+  sheet.getRange(row, 22).setNumberFormat('0.00%');
+  sheet.getRange(row, 23).setNumberFormat('$0.00');
+  sheet.getRange(row, 24).setNumberFormat('0');
+  sheet.getRange(row, 25).setNumberFormat('$#,##0.00');
 }

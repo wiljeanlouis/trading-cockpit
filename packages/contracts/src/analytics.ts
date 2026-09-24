@@ -31,18 +31,6 @@ export interface AnalyticsStrategyRowDto {
   totalR: number;
 }
 
-export interface AnalyticsStrategyVersionRowDto {
-  strategyId: string;
-  strategy: string;
-  version: string;
-  trades: number;
-  wins: number;
-  winRate: number;
-  totalPnl: number;
-  averageR: number;
-  totalR: number;
-}
-
 export type PortfolioScopeDto = { type: 'ALL' } | { type: 'ACCOUNT'; accountId: string };
 
 export interface AnalyticsAccountRowDto {
@@ -65,6 +53,5 @@ export interface AnalyticsDto {
   scope?: PortfolioScopeDto;
   summary: AnalyticsSummaryDto;
   byStrategy: AnalyticsStrategyRowDto[];
-  byStrategyVersion: AnalyticsStrategyVersionRowDto[];
   byAccount?: AnalyticsAccountRowDto[];
 }
